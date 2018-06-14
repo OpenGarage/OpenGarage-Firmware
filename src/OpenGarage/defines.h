@@ -50,9 +50,7 @@
 #define OG_SWITCH_LOW   0x02
 #define OG_SWITCH_HIGH  0x03
 
-#define OG_ALM_NONE     0x00
 #define OG_ALM_5        0x01
-#define OG_ALM_10       0x02
 
 #define OG_MOD_AP       0xA9
 #define OG_MOD_STA      0x2A
@@ -62,11 +60,8 @@
 #define OG_AUTO_CLOSE   0x02
 
 //Automation Option C - Notify settings
-#define OG_NOTIFY_NONE  0x00
 #define OG_NOTIFY_DO    0x01
 #define OG_NOTIFY_DC    0x02
-#define OG_NOTIFY_VL    0x04
-#define OG_NOTIFY_VA    0x08
 
 #define OG_STATE_INITIAL        0
 #define OG_STATE_CONNECTING     1
@@ -76,7 +71,6 @@
 #define OG_STATE_RESET          9
 
 #define BLYNK_PIN_LED   V0
-#define BLYNK_PIN_RELAY V1
 #define BLYNK_PIN_LCD   V2
 #define BLYNK_PIN_DIST  V3
 #define BLYNK_PIN_IP    V5
@@ -93,32 +87,32 @@
 #define DOOR_STATUS_MIXED         4
 
 typedef enum {
-  OPTION_FWV = 0, // firmware version
-  OPTION_MNT,     // mount type
-  OPTION_DTH,     // distance threshold door
-  OPTION_VTH,     // distance threshold vehicle detection
-  OPTION_RIV,     // read interval
-  OPTION_ALM,     // alarm mode
-  OPTION_HTP,     // http port
-  OPTION_CDT,     // click delay time
-  OPTION_MOD,     // mode
-  OPTION_ATI,     // automation interval (in minutes)
-  OPTION_ATO,     // automation options
-  OPTION_ATIB,    // automation interval B (in hours)
-  OPTION_ATOB,    // automation options B
-  OPTION_NOTO,    // notification options
-  OPTION_USI,     // use static IP
-  OPTION_SSID,    // wifi ssid
-  OPTION_PASS,    // wifi password
-  OPTION_AUTH,    // Blynk authentication token
-  OPTION_DKEY,    // device key
-  OPTION_NAME,    // device name
-  OPTION_IFTT,    // IFTTT token
-  OPTION_MQTT,    // MQTT IP
-  OPTION_DVIP,    // device IP
-  OPTION_GWIP,    // gateway IP
-  OPTION_SUBN,    // subnet
-  NUM_OPTIONS     // number of options
+    OPTION_FWV = 0, // firmware version
+    OPTION_MNT,     // mount type
+    OPTION_DTH,     // distance threshold door
+    OPTION_VTH,     // distance threshold vehicle detection
+    OPTION_RIV,     // read interval
+    OPTION_ALM,     // alarm mode
+    OPTION_HTP,     // http port
+    OPTION_CDT,     // click delay time
+    OPTION_MOD,     // mode
+    OPTION_ATI,     // automation interval (in minutes)
+    OPTION_ATO,     // automation options
+    OPTION_ATIB,    // automation interval B (in hours)
+    OPTION_ATOB,    // automation options B
+    OPTION_NOTO,    // notification options
+    OPTION_USI,     // use static IP
+    OPTION_SSID,    // wifi ssid
+    OPTION_PASS,    // wifi password
+    OPTION_AUTH,    // Blynk authentication token
+    OPTION_DKEY,    // device key
+    OPTION_NAME,    // device name
+    OPTION_IFTT,    // IFTTT token
+    OPTION_MQTT,    // MQTT IP
+    OPTION_DVIP,    // device IP
+    OPTION_GWIP,    // gateway IP
+    OPTION_SUBN,    // subnet
+    NUM_OPTIONS     // number of options
 } OG_OPTION_enum;
 
 // if button is pressed for 1 seconds, report IP
@@ -137,20 +131,20 @@ typedef enum {
 //#define SERIAL_DEBUG
 #if defined(SERIAL_DEBUG)
 
-  #define DEBUG_BEGIN(x)   { Serial.begin(x); }
-  #define DEBUG_PRINT(x)   Serial.print(x)
-  #define DEBUG_PRINTLN(x) Serial.println(x)
+#define DEBUG_BEGIN(x)   { Serial.begin(x); }
+#define DEBUG_PRINT(x)   Serial.print(x)
+#define DEBUG_PRINTLN(x) Serial.println(x)
 
 #else
 
-  #define DEBUG_BEGIN(x)   { Serial.begin(x); }
-  #define DEBUG_PRINT(x)   {}
-  #define DEBUG_PRINTLN(x) {}
+#define DEBUG_BEGIN(x)   { Serial.begin(x); }
+#define DEBUG_PRINT(x)   {}
+#define DEBUG_PRINTLN(x) {}
 
 #endif
 
 typedef unsigned char byte;
 typedef unsigned long ulong;
-typedef unsigned int  uint;
+typedef unsigned int uint;
 
 #endif  // _DEFINES_H

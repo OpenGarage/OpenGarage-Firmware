@@ -23,31 +23,29 @@
 #ifndef _ESP_CONNECT_H
 #define _ESP_CONNECT_H
 
-#define HTML_OK                0x00
 #define HTML_SUCCESS           0x01
 #define HTML_UNAUTHORIZED      0x02
 #define HTML_MISMATCH          0x03
 #define HTML_DATA_MISSING      0x10
 #define HTML_DATA_OUTOFBOUND   0x11
 #define HTML_DATA_FORMATERROR  0x12
-#define HTML_PAGE_NOT_FOUND    0x20
-#define HTML_FILE_NOT_FOUND    0x21
 #define HTML_NOT_PERMITTED     0x30
 #define HTML_UPLOAD_FAILED     0x40
-#define HTML_REDIRECT_HOME     0xFF
 
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
-#include <ESP8266mDNS.h>
-#include <ESP8266HTTPClient.h>
+#include <WiFi.h>
+#include <mdns.h>
+#include <HTTPClient.h>
 #include <WiFiUdp.h>
 #include <time.h>
 #include "defines.h"
 #include "htmls.h"
 
 String scan_network();
+
 void start_network_ap(const char *ssid, const char *pass);
+
 void start_network_sta(const char *ssid, const char *pass);
+
 void start_network_sta_with_ap(const char *ssid, const char *pass);
 
 #endif
