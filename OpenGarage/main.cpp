@@ -944,8 +944,12 @@ bool mqtt_connect_subscibe() {
   if(curr_utc_time > mqtt_subscribe_timeout) {
     if (!mqttclient.connected()) {
       DEBUG_PRINT(F("MQTT Not connected- (Re)connect MQTT"));
-      mqttclient.set_server(og.options[OPTION_MQTT].sval, 1883);
-      if (mqttclient.connect(og.options[OPTION_NAME].sval)) {
+      mqttclient.set_server(og.options[OPTION_MQTT].sval, og.options[OPTION_MQP].ival);
+      MQTT::Connect connect = MQTT::Connect(og.options[OPTION_NAME].sval);
+      if (og.options[OPTION_MQU].sval.length()>0) {
+        connect.set_auth(og.options[OPTION_MQU].sval, og.options[OPTION_MQPW].sval);
+      }
+      if (mqttclient.connect(connect)) {
         mqttclient.set_callback(mqtt_callback); 		
         mqttclient.subscribe(og.options[OPTION_NAME].sval);
         mqttclient.subscribe(og.options[OPTION_NAME].sval +"/IN/#");

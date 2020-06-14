@@ -366,6 +366,9 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 <tr><td><b>Blynk Port:</b></td><td><input type='text' size=5 maxlength=5 id='bprt' data-mini='true' value=0></td></tr>
 <tr><td><b>IFTTT Key:</b></td><td><input type='text' size=20 maxlength=64 id='iftt' data-mini='true' value='-'></td></tr>
 <tr><td><b>MQTT Server:</b></td><td><input type='text' size=16 maxlength=20 id='mqtt' data-mini='true' value=''></td></tr>
+<tr><td><b>MQTT Port:</b></td><td><input type='text' size=5 maxlength=5 id='mqp' data-mini='true' value=0></td></tr>
+<tr><td><b>MQTT User:</b></td><td><input type='text' size=20 id='mqu' data-mini='true' value=''></td></tr>
+<tr><td><b>MQTT Password:</b></td><td><input type='text' size=20 id='mqpw' data-mini='true' value=''></td></tr>
 </table>
 <table>
 <tr><td colspan=4><b>Choose Notifications:</b></td></tr>
@@ -473,6 +476,9 @@ comm+='&bdmn='+encodeURIComponent($('#bdmn').val());
 comm+='&bprt='+$('#bprt').val();
 comm+='&iftt='+encodeURIComponent($('#iftt').val());
 comm+='&mqtt='+encodeURIComponent($('#mqtt').val());
+comm+='&mqp='+encodeURIComponent($('#mqp').val());
+comm+='&mqu='+encodeURIComponent($('#mqu').val());
+comm+='&mqpw='+encodeURIComponent($('#mqpw').val());
 if($('#cb_key').is(':checked')) {
 if(!$('#nkey').val()) {
 if(!confirm('New device key is empty. Are you sure?')) return;
@@ -525,6 +531,9 @@ $('#bdmn').val(jd.bdmn);
 $('#bprt').val(jd.bprt);
 $('#iftt').val(jd.iftt);
 $('#mqtt').val(jd.mqtt);
+$('#mqp').val(jd.mqp);
+$('#mqu').val(jd.mqu);
+$('#mqpw').val(jd.mqpw);
 $('#dvip').val(jd.dvip);
 $('#gwip').val(jd.gwip);
 $('#subn').val(jd.subn);
