@@ -40,6 +40,7 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <ESP8266HTTPClient.h>
+#include <ESP8266WiFiMulti.h>
 #include <WiFiUdp.h>
 #include <time.h>
 #include "defines.h"
@@ -47,7 +48,8 @@
 
 String scan_network();
 void start_network_ap(const char *ssid, const char *pass);
-void start_network_sta(const char *ssid, const char *pass);
-void start_network_sta_with_ap(const char *ssid, const char *pass);
+void start_network_sta(const char *ssid1, const char *pass1, const char *ssid2, const char *pass2);
+void start_network_sta_with_ap(const char *ssid1, const char *pass1, const char *ssid2, const char *pass2);
+wl_status_t wifi_run();
 
 #endif

@@ -62,8 +62,8 @@ OptionStruct OpenGarage::options[] = {
   {"atob", OG_AUTO_NONE,255, ""},
   {"noto", OG_NOTIFY_DO|OG_NOTIFY_DC,255, ""},
   {"usi", 0,             1, ""},
-  {"ssid", 0, 0, ""},  // string options have 0 max value
-  {"pass", 0, 0, ""},
+  {"ssid1", 0, 0, ""},  // string options have 0 max value
+  {"pass1", 0, 0, ""},
   {"auth", 0, 0, ""},
   {"bdmn", 0, 0, "blynk-cloud.com"},
   {"bprt", 80,65535, ""},
@@ -74,7 +74,9 @@ OptionStruct OpenGarage::options[] = {
   {"dvip", 0, 0, "-.-.-.-"},
   {"gwip", 0, 0, "-.-.-.-"},
   {"subn", 0, 0, "255.255.255.0"},
-  {"dns1", 0, 0, "8.8.8.8"}
+  {"dns1", 0, 0, "8.8.8.8"},
+  {"ssid2", 0, 0, ""},  // string options have 0 max value
+  {"pass2", 0, 0, ""}
 };
 
 /* Variables and functions for handling Ultrasonic Distance sensor */

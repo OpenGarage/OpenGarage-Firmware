@@ -22,6 +22,7 @@
  
 #include "espconnect.h"
 
+ESP8266WiFiMulti wifiMulti;
 //const char html_ap_redirect[] PROGMEM = "<h3>WiFi config saved. Now switching to station mode.</h3>";
 
 String scan_network() {
@@ -62,8 +63,8 @@ void start_network_ap(const char *ssid, const char *pass) {
   WiFi.disconnect();  // disconnect from router
 }
 
-void start_network_sta(const char *ssid, const char *pass, bool staonly) {
-  if(!ssid || !pass) return;
+void start_network_sta(const char *ssid1, const char *pass1, const char *ssid2, const char *pass2, bool staonly) {
+  if(!ssid1 || !pass1) return;
   DEBUG_PRINTLN(F("Sarting start_network_sta"));
   if(staonly){
     DEBUG_PRINTLN(F("Setting STA mode"));
@@ -74,14 +75,20 @@ void start_network_sta(const char *ssid, const char *pass, bool staonly) {
     if(WiFi.getMode() != WIFI_AP_STA) WiFi.mode(WIFI_AP_STA);
     DEBUG_PRINTLN(F("Setting to AP+STA mode"));
   }
-  WiFi.begin(ssid, pass);
+  wifiMulti.addAP(ssid1, pass1);
+  if (ssid2 && pass2) {
+    wifiMulti.addAP(ssid2, pass2);
+  }
 }
 
-void start_network_sta_with_ap(const char *ssid, const char *pass) {
-  start_network_sta(ssid, pass, false);
+void start_network_sta_with_ap(const char *ssid1, const char *pass1, const char *ssid2, const char *pass2) {
+  start_network_sta(ssid1, pass1, ssid2, pass2, false);
 }
 
-void start_network_sta(const char *ssid, const char *pass) {
-  start_network_sta(ssid, pass, true);
+void start_network_sta(const char *ssid1, const char *pass1, const char *ssid2, const char *pass2) {
+  start_network_sta(ssid1, pass1, ssid2, pass2, true);
 }
 
+wl_status_t wifi_run() {
+  return wifiMulti.run();
+}

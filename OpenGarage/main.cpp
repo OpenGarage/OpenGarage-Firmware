@@ -490,8 +490,9 @@ void sta_change_options_main(const char *command) {
   for(i=0;i<NUM_OPTIONS;i++,o++) {
     const char *key = o->name.c_str();
     // these options cannot be modified here
-    if(i==OPTION_FWV || i==OPTION_MOD  || i==OPTION_SSID ||
-      i==OPTION_PASS || i==OPTION_DKEY)
+    if(i==OPTION_FWV || i==OPTION_MOD  || i==OPTION_SSID1 ||
+      i==OPTION_PASS1 || i==OPTION_SSID2 ||
+      i==OPTION_PASS2 || i==OPTION_DKEY)
       continue;
     
     if(o->max) {  // integer options
@@ -579,8 +580,9 @@ void sta_change_options_main(const char *command) {
   for(i=0;i<NUM_OPTIONS;i++,o++) {
     const char *key = o->name.c_str();
     // these options cannot be modified here
-    if(i==OPTION_FWV || i==OPTION_MOD  || i==OPTION_SSID ||
-      i==OPTION_PASS || i==OPTION_DKEY)
+    if(i==OPTION_FWV || i==OPTION_MOD  || i==OPTION_SSID1 ||
+      i==OPTION_PASS1 || i==OPTION_SSID2 ||
+      i==OPTION_PASS2 || i==OPTION_DKEY)
       continue;
     
     if(o->max) {  // integer options
@@ -624,7 +626,7 @@ void sta_options_fill_json(String& json) {
   OptionStruct *o = og.options;
   for(byte i=0;i<NUM_OPTIONS;i++,o++) {
     if(!o->max) {
-      if(i==OPTION_PASS || i==OPTION_DKEY) { // do not output password or device key
+      if(i==OPTION_PASS1 || i==OPTION_PASS2 || i==OPTION_DKEY) { // do not output password or device key
         continue;
       } else {
         json += F("\"");
@@ -661,9 +663,12 @@ void on_ap_scan() {
 
 void on_ap_change_config() {
   if(curr_mode == OG_MOD_STA) return;
-  if(server->hasArg("ssid")&&server->arg("ssid").length()!=0) {
-    og.options[OPTION_SSID].sval = server->arg("ssid");
-    og.options[OPTION_PASS].sval = server->arg("pass");
+  if(server->hasArg("ssid1")&&server->arg("ssid1").length()!=0) {
+    og.options[OPTION_SSID1].sval = server->arg("ssid1");
+    og.options[OPTION_PASS1].sval = server->arg("pass1");
+    og.options[OPTION_SSID2].sval = server->arg("ssid2");
+    og.options[OPTION_PASS2].sval = server->arg("pass2");
+
     // if cloud token is provided, save it
     if(server->hasArg("auth")&&server->arg("auth").length()!=0)
       og.options[OPTION_AUTH].sval = server->arg("auth");
@@ -1365,9 +1370,11 @@ void do_loop() {
     } else {
       led_blink_ms = LED_SLOW_BLINK;
       DEBUG_PRINT(F("Attempting to connect to SSID: "));
-      DEBUG_PRINTLN(og.options[OPTION_SSID].sval.c_str());
+      DEBUG_PRINT(og.options[OPTION_SSID1].sval.c_str());
+      DEBUG_PRINT(F(" or "));
+      DEBUG_PRINTLN(og.options[OPTION_SSID2].sval.c_str());
       WiFi.mode(WIFI_STA);
-      start_network_sta(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str());
+      start_network_sta(og.options[OPTION_SSID1].sval.c_str(), og.options[OPTION_PASS1].sval.c_str(), og.options[OPTION_SSID2].sval.c_str(), og.options[OPTION_PASS2].sval.c_str());
       og.config_ip();
       og.state = OG_STATE_CONNECTING;
       connecting_timeout = millis() + 60000;
@@ -1377,14 +1384,17 @@ void do_loop() {
   case OG_STATE_TRY_CONNECT:
     led_blink_ms = LED_SLOW_BLINK;
     DEBUG_PRINT(F("Attempting to connect to SSID: "));
-    DEBUG_PRINTLN(og.options[OPTION_SSID].sval.c_str());
-    start_network_sta_with_ap(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str());
+    DEBUG_PRINT(og.options[OPTION_SSID1].sval.c_str());
+    DEBUG_PRINT(F(" or "));
+    DEBUG_PRINTLN(og.options[OPTION_SSID2].sval.c_str());
+    start_network_sta_with_ap(og.options[OPTION_SSID1].sval.c_str(), og.options[OPTION_PASS1].sval.c_str(), og.options[OPTION_SSID2].sval.c_str(), og.options[OPTION_PASS2].sval.c_str());
+    wifi_run(); // First wifi_run needed for initual setup.
     og.config_ip();
     og.state = OG_STATE_CONNECTED;
     break;
     
   case OG_STATE_CONNECTING:
-    if(WiFi.status() == WL_CONNECTED) {
+    if(wifi_run() == WL_CONNECTED) {
       DEBUG_PRINT(F("Wireless connected, IP: "));
       DEBUG_PRINTLN(WiFi.localIP());
 
@@ -1465,7 +1475,7 @@ void do_loop() {
       }
       
     } else {
-      if(WiFi.status() == WL_CONNECTED) {
+      if(wifi_run() == WL_CONNECTED) {
       	//MDNS.update();
         time_keeping();
         check_status(); //This checks the door, sends info to services and processes the automation rules
