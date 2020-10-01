@@ -133,8 +133,8 @@ typedef enum {
   OPTION_ATOB,    // automation options B
   OPTION_NOTO,    // notification options
   OPTION_USI,     // use static IP
-  OPTION_SSID,    // wifi ssid
-  OPTION_PASS,    // wifi password
+  OPTION_SSID1,   // wifi ssid1
+  OPTION_PASS1,   // wifi password1
   OPTION_AUTH,    // Blynk authentication token
   OPTION_BDMN,    // Blynk Domain
   OPTION_BPRT,    // Blynk Port
@@ -146,6 +146,8 @@ typedef enum {
   OPTION_GWIP,    // gateway IP
   OPTION_SUBN,    // subnet
   OPTION_DNS1,		// dns1 IP
+  OPTION_SSID2,   // wifi ssid1
+  OPTION_PASS2,   // wifi password1
   NUM_OPTIONS     // number of options
 } OG_OPTION_enum;
 

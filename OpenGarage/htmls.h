@@ -13,15 +13,17 @@ table#rd td {	border: 1px solid black; border-collapse: collapse;}</style>
 </table>
 <br><br>
 <table cellspacing=16>
-<tr><td><input type='text' name='ssid' id='ssid' style='font-size:14pt;height:28px;'></td><td>(Your WiFi SSID)</td></tr>
-<tr><td><input type='password' name='pass' id='pass' style='font-size:14pt;height:28px;'></td><td>(Your WiFi Password)</td></tr>
+<tr><td><input type='text' name='ssid1' id='ssid1' style='font-size:14pt;height:28px;'></td><td>(Your WiFi SSID)</td></tr>
+<tr><td><input type='password' name='pass1' id='pass1' style='font-size:14pt;height:28px;'></td><td>(Your WiFi Password)</td></tr>
+<tr><td><input type='text' name='ssid2' id='ssid2' style='font-size:14pt;height:28px;'></td><td>(Your Secondary WiFi SSID)</td></tr>
+<tr><td><input type='password' name='pass2' id='pass2' style='font-size:14pt;height:28px;'></td><td>(Your Secondary WiFi Password)</td></tr>
 <tr><td><input type='text' name='auth' id='auth' style='font-size:14pt;height:28px;'></td><td><label id='lbl_auth'>(Blynk Token, Optional)</label></td></tr>
 <tr><td colspan=2><p id='msg'></p></td></tr>
 <tr><td><button type='button' id='butt' onclick='sf();' style='height:36px;width:180px'>Submit</button></td><td></td></tr>
 </table>
 <script>
 function id(s) {return document.getElementById(s);}
-function sel(i) {id('ssid').value=id('rd'+i).value;}
+function sel(i,a) {id('ssid'+a).value=id('rd'+i).value;}
 var tci;
 function tryConnect() {
 var xhr=new XMLHttpRequest();
@@ -45,12 +47,12 @@ xhr.onreadystatechange=function() {
 if(xhr.readyState==4 && xhr.status==200) {
 var jd=JSON.parse(xhr.responseText);
 if(jd.result==1) { id('butt').innerHTML='Connecting...'; id('msg').innerHTML='<font color=gray>Connecting, please wait...</font>'; tci=setInterval(tryConnect, 2000); return; }
-id('msg').innerHTML='<b><font color=red>Error code: '+jd.result+', item: '+jd.item+'</font></b>'; id('butt').innerHTML='Submit'; id('butt').disabled=false;id('ssid').disabled=false;id('pass').disabled=false;id('auth').disabled=false;
+id('msg').innerHTML='<b><font color=red>Error code: '+jd.result+', item: '+jd.item+'</font></b>'; id('butt').innerHTML='Submit'; id('butt').disabled=false;id('ssid1').disabled=false;id('pass1').disabled=false;id('ssid2').disabled=false;id('pass2').disabled=false;id('auth').disabled=false;
 }
 };
-var comm='cc?ssid='+encodeURIComponent(id('ssid').value)+'&pass='+encodeURIComponent(id('pass').value)+'&auth='+id('auth').value;
+var comm='cc?ssid1='+encodeURIComponent(id('ssid1').value)+'&pass1='+encodeURIComponent(id('pass1').value)+'&ssid2='+encodeURIComponent(id('ssid2').value)+'&pass2='+encodeURIComponent(id('pass2').value)+'&auth='+id('auth').value;
 xhr.open('GET', comm, true); xhr.send();
-id('butt').disabled=true;id('ssid').disabled=true;id('pass').disabled=true;id('auth').disabled=true;
+id('butt').disabled=true;id('ssid1').disabled=true;id('pass1').disabled=true;id('ssid2').disabled=true;id('pass2').disabled=true;id('auth').disabled=true;
 }
 function loadSSIDs() {
 var xhr=new XMLHttpRequest();
@@ -62,7 +64,7 @@ var i, jd=JSON.parse(xhr.responseText);
 for(i=0;i<jd.ssids.length;i++) {
 var signalstrength= jd.rssis[i]>-71?'Ok':(jd.rssis[i]>-81?'Weak':'Poor');
 var row=id('rd').insertRow(-1);
-row.innerHTML ="<tr><td><input name='ssids' id='rd"+i+"' onclick='sel(" + i + ")' type='radio' value='"+jd.ssids[i]+"'>" + jd.ssids[i] + "</td>"  + "<td align='center'>"+signalstrength+"</td>" + "<td align='center'>("+jd.rssis[i] +" dbm)</td>" + "</tr>";
+row.innerHTML ="<tr><td><input name='ssids' id='rd"+i+"' onclick='sel(" + i + ", 1)' type='radio' value='"+jd.ssids[i]+"'><input name='ssids' id='rd"+i+"' onclick='sel(" + i + ", 2)' type='radio' value='"+jd.ssids[i]+"'>" + jd.ssids[i] + "</td>"  + "<td align='center'>"+signalstrength+"</td>" + "<td align='center'>("+jd.rssis[i] +" dbm)</td>" + "</tr>";
 }
 };
 }
