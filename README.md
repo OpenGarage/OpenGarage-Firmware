@@ -10,9 +10,9 @@ For Firmware release notes, go to [https://github.com/OpenGarage/OpenGarage-Firm
 
 #### Requirement:
 
-* Arduino (https://arduino.cc) with ESP8266 core 2.7.4 or above for Arduino (https://github.com/esp8266/Arduino/releases/tag/2.7.4)
+* Arduino (https://arduino.cc) with ESP8266 core 2.7.4 for Arduino (https://github.com/esp8266/Arduino/releases/tag/2.7.4)
 * Instead of installing Arduino, you can also directly use make (this folder includes a copy of **makeESPArduino**: https://github.com/plerup/makeEspArduino)
-* Blynk library for Arduino (https://github.com/blynkkk/blynk-library)
+* Blynk library for Arduino (https://github.com/blynkkk/blynk-library) (version 0.61)
 * MQTT PubSUbClient https://github.com/knolleary/pubsubclient (version 2.8)
 * AM2320 library: https://github.com/hibikiledo/AM2320/releases
 * OneWire library: https://www.pjrc.com/teensy/td_libs_OneWire.html
