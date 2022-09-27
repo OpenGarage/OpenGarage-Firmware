@@ -22,6 +22,7 @@
 
 #include "OpenGarage.h"
 
+const byte SNO_DEFAULT = OG_SNO_AND;
 byte  OpenGarage::state = OG_STATE_INITIAL;
 File  OpenGarage::log_file;
 byte  OpenGarage::alarm = 0;
@@ -44,9 +45,9 @@ extern OpenGarage og;
  */
 OptionStruct OpenGarage::options[] = {
   {"fwv", OG_FWV,      255, ""},
-  {"sn1", OG_SN1_CEILING,1, ""},
+  {"sn1", OG_SN1_NONE,   2, ""},
   {"sn2", OG_SN2_NONE,   2, ""},
-  {"sno", OG_SNO_1ONLY,	 3, ""},
+  {"sno", SNO_DEFAULT,	 3, ""},
   {"dth", 50,        65535, ""},
   {"vth", 150,       65535, ""},
   {"riv", 5,           300, ""},
@@ -117,23 +118,23 @@ ICACHE_RAM_ATTR void ud_isr() {
     triggered = false;
     ud_buffer[ud_i] = micros() - ud_start; // calculate elapsed time
     if(ud_buffer[ud_i]>26000L) {
-    	// timedout
-    	if(og.options[OPTION_STO].ival==0) {
-    		// ignore
-    		return;
-    	} else {
-    		// cap to max
-	    	ud_buffer[ud_i]=26000L;
-    	}
+      // timedout
+      if(og.options[OPTION_STO].ival==0) {
+        // ignore
+        return;
+      } else {
+        // cap to max
+        ud_buffer[ud_i]=26000L;
+      }
     } else {
-		  ud_i = (ud_i+1)%KAVG; // circular buffer
-	    if(ud_i==0) fullbuffer=true;
-		}
+      ud_i = (ud_i+1)%KAVG; // circular buffer
+      if(ud_i==0) fullbuffer=true;
+    }
   }
 }
 
 void ud_ticker_cb() {
-	ud_start_trigger();
+  ud_start_trigger();
 }
     
 void OpenGarage::begin() {
@@ -183,7 +184,7 @@ void OpenGarage::begin() {
 void OpenGarage::options_setup() {
   int i;
   if(!FILESYS.exists(config_fname)) { // if config file does not exist
-  	DEBUG_PRINTLN(F("create config file"));
+    DEBUG_PRINTLN(F("create config file"));
     options_save(); // save default option values
     return;
   }
@@ -252,6 +253,9 @@ void OpenGarage::options_load() {
     } else {  // this is a string option
       options[idx].sval = sval;
     }
+    // sn2 only and sn1 only deprecated - revert to default
+    if (name == "sno" && options[idx].ival < OG_SNO_AND)
+      options[idx].sval = SNO_DEFAULT;
   }
   file.close();
 }
@@ -280,53 +284,58 @@ uint OpenGarage::read_distance() {
   byte i;
   static uint last_returned;
   uint32_t buf[KAVG];
+  if (options[OPTION_SN1].ival == OG_SN1_NONE)
+    return UINT_MAX;	// use UINT_MAX to indicate invalid value
+    
   if(!fullbuffer) {
-  	last_returned = (ud_i>0)? (uint)(ud_buffer[ud_i-1]*0.01716f) : 0;
-  	return last_returned;
+    last_returned = (ud_i>0)? (uint)(ud_buffer[ud_i-1]*0.01716f) : 0;
+    return last_returned;
   }
   for(byte i=0;i<KAVG;i++) {
-  	buf[i] = ud_buffer[i];
+    buf[i] = ud_buffer[i];
   }
 	
-	// noise filtering methods
-	if(options[OPTION_SFI].ival == OG_SFI_MEDIAN) {
-		// partial sorting of buf to perform median filtering
-		byte out, in;
-		for(out=1; out<=KAVG/2; out++){ 
-		  uint32_t temp = buf[out];
-		  in = out;
-		  while(in>0 && buf[in-1]>temp) {
-		    buf[in] = buf[in-1]; 
-		    in--;
-		  }
-		  buf[in] = temp;   
-		}
-		last_returned = (uint)(buf[KAVG/2]*0.01716f);  // 34320 cm / 2 / 10^6 s
-		return last_returned;
-	} else {
-		// use consensus algorithm
-		uint32_t vmin, vmax, sum;
-		vmin = vmax = sum = buf[0];
-		for(byte i=1;i<KAVG;i++) {
-			uint32_t v = buf[i];
-			vmin = (v<vmin)?v:vmin;
-			vmax = (v>vmax)?v:vmax;
-			sum += v;
-		}
-		// calculate margin
-		uint32_t margin = (float)options[OPTION_CMR].ival/0.01716f;
-		margin = (margin<60)?60:margin;
-		if(vmax-vmin<=margin) {
-			last_returned = (sum/KAVG)*0.01716f;
-		}
-		return last_returned;
-	}
+  // noise filtering methods
+  if(options[OPTION_SFI].ival == OG_SFI_MEDIAN) {
+    // partial sorting of buf to perform median filtering
+    byte out, in;
+    for(out=1; out<=KAVG/2; out++){ 
+      uint32_t temp = buf[out];
+      in = out;
+      while(in>0 && buf[in-1]>temp) {
+        buf[in] = buf[in-1]; 
+        in--;
+      }
+      buf[in] = temp;   
+    }
+    last_returned = (uint)(buf[KAVG/2]*0.01716f);  // 34320 cm / 2 / 10^6 s
+    return last_returned;
+  } else {
+    // use consensus algorithm
+    uint32_t vmin, vmax, sum;
+    vmin = vmax = sum = buf[0];
+    for(byte i=1;i<KAVG;i++) {
+      uint32_t v = buf[i];
+      vmin = (v<vmin)?v:vmin;
+      vmax = (v>vmax)?v:vmax;
+      sum += v;
+    }
+    // calculate margin
+    uint32_t margin = (float)options[OPTION_CMR].ival/0.01716f;
+    margin = (margin<60)?60:margin;
+    if(vmax-vmin<=margin) {
+      last_returned = (sum/KAVG)*0.01716f;
+    }
+    return last_returned;
+  }
 }
 
 void OpenGarage::init_sensors() {
-  // set up distance sensors
-  ud_ticker.attach_ms(options[OPTION_DRI].ival, ud_ticker_cb);
-  attachInterrupt(PIN_ECHO, ud_isr, CHANGE);
+  if (options[OPTION_SN1].ival != OG_SN1_NONE) {
+    // set up distance sensors
+    ud_ticker.attach_ms(options[OPTION_DRI].ival, ud_ticker_cb);
+    attachInterrupt(PIN_ECHO, ud_isr, CHANGE);
+  }
 
   switch(options[OPTION_TSN].ival) {
   case OG_TSN_AM2320:
@@ -351,7 +360,7 @@ void OpenGarage::init_sensors() {
 }
 
 void OpenGarage::read_TH_sensor(float& C, float& H) {
-	float v;
+  float v;
   switch(options[OPTION_TSN].ival) {
   case OG_TSN_AM2320:
     if(am2320) {

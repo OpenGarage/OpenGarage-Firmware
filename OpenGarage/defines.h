@@ -24,7 +24,7 @@
 #define _DEFINES_H
 
 /** Firmware version, hardware version, and maximal values */
-#define OG_FWV    112   // Firmware version: 111 means 1.1.1
+#define OG_FWV    120   // Firmware version: 111 means 1.1.1
 
 /** GPIO pins */
 #define PIN_RELAY  15 //D8 on nodemcu
@@ -52,18 +52,22 @@
 
 #define OG_SN1_CEILING  0x00	// SN1 is built-in ultrasonic sensor
 #define OG_SN1_SIDE     0x01
+#define OG_SN1_NONE     0x02
 
 #define OG_SN2_NONE			0x00	// SN2 is optional switch sensor
 #define OG_SN2_NC				0x01	// NC: normally closed
 #define OG_SN2_NO				0x02	// NO: normally open
 
-#define OG_SNO_1ONLY		0x00	// use SN1 only
-#define OG_SNO_2ONLY		0x01	// use SN2 only
+// SNO values 1 and 0 are deprecated - do not reuse
 #define OG_SNO_AND			0x02	// SN1 AND SN2
 #define OG_SNO_OR				0x03	// SN1 OR SN2
 
 #define OG_SFI_MEDIAN		 0x00	// sensor filter: median method
 #define OG_SFI_CONSENSUS 0x01	// concensus method
+
+#define OG_DOOR_CLOSED	0x00
+#define OG_DOOR_OPEN	0x01
+#define OG_DOOR_UNKNOWN	0x03
 
 #define OG_VEH_ABSENT		0x00
 #define OG_VEH_PRESENT	0x01
@@ -110,10 +114,10 @@
 #define BLYNK_PIN_TEMP	V6
 #define BLYNK_PIN_HUMID V7
 /*#define BLYNK_PIN_JC    V10
-#define BLYNK_PIN_CC    V11
-#define BLYNK_PIN_JO    V12
-#define BLYNK_PIN_CO    V13
-#define BLYNK_PIN_JL    V14*/
+  #define BLYNK_PIN_CC    V11
+  #define BLYNK_PIN_JO    V12
+  #define BLYNK_PIN_CO    V13
+  #define BLYNK_PIN_JL    V14*/
 
 enum {
   DIRTY_BIT_JC = 0,
@@ -200,13 +204,13 @@ typedef enum {
 
 #if defined(SERIAL_DEBUG)
 
-  #define DEBUG_PRINT(x)   Serial.print(x)
-  #define DEBUG_PRINTLN(x) Serial.println(x)
+#define DEBUG_PRINT(x)   Serial.print(x)
+#define DEBUG_PRINTLN(x) Serial.println(x)
 
 #else
 
-  #define DEBUG_PRINT(x)   {}
-  #define DEBUG_PRINTLN(x) {}
+#define DEBUG_PRINT(x)   {}
+#define DEBUG_PRINTLN(x) {}
 
 #endif
 

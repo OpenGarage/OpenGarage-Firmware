@@ -44,7 +44,7 @@ struct LogStruct {
   ulong tstamp; // time stamp
   uint status;  // door status
   uint dist;    // distance
-  byte sn2;			// switch sensor value
+  byte sn2;     // switch sensor value
 };
 
 class OpenGarage {

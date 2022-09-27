@@ -128,23 +128,58 @@ xhr.send(fd);
 </script>
 </body>
 )";
-const char sta_home_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'><script src='//code.jquery.com/jquery-1.9.1.min.js' type='text/javascript'></script><script src='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js' type='text/javascript'></script></head>
+const char sta_home_html[] PROGMEM = R"(<head>
+<title>OpenGarage</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<link rel='stylesheet' href='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'>
+<script src='//code.jquery.com/jquery-1.9.1.min.js' type='text/javascript'></script>
+<script src='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js' type='text/javascript'></script>
+</head>
 <body>
 <style> table, th, td {border: 0px solid black;padding: 6px; border-collapse: collapse; }</style>
 <div data-role='page' id='page_home'><div data-role='header'><h3 id='head_name'>OG</h3></div>
 <div data-role='content'><div data-role='fieldcontain'>
-<table><tr><td><b>Door State:<br></td><td><label id='lbl_status'>-</label></td>
+<table>
+<tr id='tbl_door' style='display:none;'>
+<td><b>Door State:<br></td>
+<td><label id='lbl_status'>-</label></td>
 <td rowspan='2'><img id='pic' src='' style='width:112px;height:64px;'></td>
-</tr><tr><td><b><label id='lbl_vstatus1'>Vehicle State:</label></b></td>
-<td><label id='lbl_vstatus'>-</label></td></tr>
-<tr><td><b>Distance:</b></td><td><label id='lbl_dist'>-</label></td><td></td></tr>
-<tr id='tbl_sn2' style='display:none;'><td><b>Switch State:</b></td><td><label id='lbl_sn2'>-</label></td><td></td></tr>
-<tr><td><b>Read Count:</b></td><td><label id='lbl_beat'>-</label></td><td></td></tr>
-<tr><td><b>WiFi Signal:</b></td><td colspan='2'><label id='lbl_rssi'>-</label></td></tr>
-<tr id='tbl_th' style='display:none;'><td><b>T/H sensor:</b></td><td colspan='2'><label id='lbl_th'>-</label></td></tr>
-<tr><td><b>Device Key:</b></td><td colspan='2' ><input type='password' size=20 maxlength=32 name='dkey' id='dkey'></td></tr>
-<tr><td colspan=3><label id='msg'></label></td></tr>
-</table><br />
+</tr>
+<tr id='tbl_vehicle' style='display:none;'>
+<td><b><label id='lbl_vstatus1'>Vehicle State:</label></b></td>
+<td><label id='lbl_vstatus'>-</label></td>
+</tr>
+<tr id='tbl_dist' style='display:none;'>
+<td><b>Distance:</b></td>
+<td><label id='lbl_dist'>-</label></td>
+<td></td>
+</tr>
+<tr id='tbl_sn2' style='display:none;'>
+<td><b>Switch State:</b></td>
+<td><label id='lbl_sn2'>-</label></td>
+<td></td>
+</tr>
+<tr>
+<td><b>Read Count:</b></td>
+<td><label id='lbl_beat'>-</label></td><td></td>
+</tr>
+<tr>
+<td><b>WiFi Signal:</b></td>
+<td colspan='2'><label id='lbl_rssi'>-</label></td>
+</tr>
+<tr id='tbl_th' style='display:none;'>
+<td><b>T/H sensor:</b></td>
+<td colspan='2'><label id='lbl_th'>-</label></td>
+</tr>
+<tr>
+<td><b>Device Key:</b></td>
+<td colspan='2' ><input type='password' size=20 maxlength=32 name='dkey' id='dkey'></td>
+</tr>
+<tr>
+<td colspan=3><label id='msg'></label></td>
+</tr>
+</table>
+<br />
 <div data-role='controlgroup' data-type='horizontal'>
 <button data-theme='b' id='btn_click'>Button</button>
 <button data-theme='b' id='btn_opts'>Options</button>
@@ -223,7 +258,7 @@ function show() {
 $.getJSON('jc', function(jd) {
 $('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 $('#lbl_dist').text(jd.dist +' (cm)').css('color', jd.dist==450?'red':'black');
-$('#lbl_status').text(jd.door?'OPEN':'CLOSED').css('color',jd.door?'red':'green'); 
+$('#lbl_status').text(jd.door?'OPEN':'CLOSED').css('color',jd.door?'red':'green');
 //Hide or Show vehicle info
 if (jd.vehicle >=2){
 $('#lbl_vstatus1').hide();
@@ -238,8 +273,14 @@ $('#pic').attr('src', (jd.door?'https://github.com/OpenGarage/OpenGarage-Firmwar
 }else{
 $('#pic').attr('src', jd.door?'https://github.com/OpenGarage/OpenGarage-Firmware/raw/master/icons/Open.png':(jd.vehicle?'https://github.com/OpenGarage/OpenGarage-Firmware/raw/master/icons/ClosedPresent.png':'https://github.com/OpenGarage/OpenGarage-Firmware/raw/master/icons/ClosedAbsent.png'));
 }
-if(typeof(jd.sn2)!='undefined') {$('#tbl_sn2').show(); $('#lbl_sn2').text(jd.sn2?'High':'Low');}
+if (typeof(jd.sn2) != 'undefined') {$('#tbl_sn2').show(); $('#lbl_sn2').text(jd.sn2?'High':'Low');}
 else {$('#tbl_sn2').hide();}
+if (typeof(jd.dist) != 'undefined') {$('#tbl_dist').show()}
+else {$('#tbl_dist').hide();}
+if (typeof(jd.vehicle) != 'undefined') {$('#tbl_vehicle').show()}
+else {$('#tbl_vehicle').hide();}
+if (jd.door != 3 ) {$('#tbl_door').show()}
+else {$('#tbl_door').hide();}
 $('#lbl_beat').text(jd.rcnt);
 $('#lbl_rssi').text((jd.rssi>-71?'Good':(jd.rssi>-81?'Weak':'Poor')) +' ('+ jd.rssi +' dBm)');
 $('#head_name').text(jd.name);
@@ -325,14 +366,43 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 <div id='div_basic'>
 <table cellpadding=2>
 <tr><td><b>Device Name:</b></td><td><input type='text' size=10 maxlength=32 id='name' data-mini='true' value='-'></td></tr>
-<tr><td><b>Distance Sensor:</b><br><small>mounting method</small></td><td>
-<select name='sn1' id='sn1' data-mini='true'>
+<tr>
+<td>
+<b>Distance Sensor:</b><br><small>mounting method</small>
+</td>
+<td>
+<select name='sn1' id='sn1' data-mini='true' onChange='update_sn1()'>
 <option value=0>Ceiling Mount</option>
 <option value=1>Side Mount</option>
-</select></td></tr>
-<tr><td><b>Door Thres. (cm): </b></td><td><input type='text' size=3 maxlength=4 id='dth' data-mini='true' value=0></td></tr>
-<tr><td><b>Car Thres. (cm):</b><br><small>set to 0 to disable</small></td><td><input type='text' size=3 maxlength=4 id='vth' data-mini='true' value=0 ></td></tr>
-<tr><td><b>Status Check (s):</b><br><small>check status every</small></td><td><input type='text' size=3 maxlength=3 id='riv' data-mini='true' value=0></td></tr>
+<option value=2>(none)</option>
+</select>
+</td>
+</tr>
+<tr id='tbl_dist' style='display:none;'>
+<td>
+<b>Door Thres. (cm): </b>
+</td>
+<td>
+<input type='text' size=3 maxlength=4 id='dth' data-mini='true' value=0>
+</td>
+</tr>
+<tr id='tbl_vehicle' style='display:none;'>
+<td>
+<b>Car Thres. (cm):</b><br><small>set to 0 to disable</small>
+</td>
+<td>
+<input type='text' size=3 maxlength=4 id='vth' data-mini='true' value=0 >
+</td>
+</tr>
+<tr>
+<td>
+<b>Status Check (s):</b><br>
+<small>check status every</small>
+</td>
+<td>
+<input type='text' size=3 maxlength=3 id='riv' data-mini='true' value=0>
+</td>
+</tr>
 <tr><td><b>Click Time (ms):</b></td><td><input type='text' size=3 maxlength=5 id='cdt' value=0 data-mini='true'></td></tr>
 <tr><td><b>Switch Sensor:</b><br><small>on G04 and GND</small></td><td>
 <select name='sn2' id='sn2' data-mini='true' onChange='update_sno()'>
@@ -342,8 +412,6 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 </select></td></tr>
 <tr><td><b>Sensor Logic:</b><a href='#snoInfo' data-rel='popup' data-role='button' data-inline='true' data-transition='pop' data-icon='info' data-theme='c' data-iconpos='notext'>Explanation</a><div data-role='popup' id='snoInfo' class='ui-content' data-theme='b' style='max-width:250px;'><p>Choose which sensor(s) determine door 'open' status.</p></div></td><td>
 <select name='sno' id='sno' data-mini='true' disabled='true'>
-<option value=0>Dist. sensor only</option>
-<option value=1>Switch sensor only</option>
 <option value=2>Dist. AND Switch</option>
 <option value=3>Dist. OR Switch</option>
 </select></td></tr>
@@ -422,7 +490,7 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 <tr><td><b>DNS1:</b></td><td><input type='text' size=15 maxlength=15 id='dns1' data-mini='true' disabled></td></tr>
 <tr><td colspan=2><input type='checkbox' id='cb_key' data-mini='true'><label for='cb_key'>Change Device Key</label></td></tr>
 <tr><td><b>New Key:</b></td><td><input type='password' size=24 maxlength=32 id='nkey' data-mini='true' disabled></td></tr>
-<tr><td><b>Confirm:</b></td><td><input type='password' size=24 maxlength=32 id='ckey' data-mini='true' disabled></td></tr>      
+<tr><td><b>Confirm:</b></td><td><input type='password' size=24 maxlength=32 id='ckey' data-mini='true' disabled></td></tr>
 </table>
 </div>
 <br />
@@ -432,7 +500,7 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 </table>
 <div data-role='controlgroup' data-type='horizontal'>
 <a href='#' data-role='button' data-inline='true' data-theme='a' id='btn_back'>Back</a>
-<a href='#' data-role='button' data-inline='true' data-theme='b' id='btn_submit'>Submit</a> 
+<a href='#' data-role='button' data-inline='true' data-theme='b' id='btn_submit'>Submit</a>
 </div>
 <table>
 </table>
@@ -444,9 +512,20 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 <script>
 function clear_msg() {$('#msg').text('');}
 function update_sno(){
-if(parseInt($('#sn2 option:selected').val())>0){
-$('#sno').selectmenu('enable'); 
+if(parseInt($('#sn2 option:selected').val()) > 0 &&
+parseInt($('#sn1 option:selected').val()) < 2) {
+$('#sno').selectmenu('enable');
 }else{$('#sno').selectmenu('disable');}
+}
+function update_sn1(){
+update_sno();
+if(parseInt($('#sn1 option:selected').val()) < 2) {
+$('#tbl_vehicle').show();
+$('#tbl_dist').show();
+}else{
+$('#tbl_vehicle').hide();
+$('#tbl_dist').hide();
+}
 }
 function update_mqtt(){
 if($('#mqtt').val().length>0){
@@ -545,6 +624,7 @@ $('#sn1').val(jd.sn1).selectmenu('refresh');
 $('#sn2').val(jd.sn2).selectmenu('refresh');
 $('#sno').val(jd.sno).selectmenu('refresh');
 update_sno();
+update_sn1();
 $('#dth').val(jd.dth);
 $('#vth').val(jd.vth);
 $('#riv').val(jd.riv);
@@ -580,7 +660,7 @@ if(jd.usi>0) $('#usi').attr('checked',true).checkboxradio('refresh');
 $('#dvip').textinput(jd.usi>0?'enable':'disable');
 $('#gwip').textinput(jd.usi>0?'enable':'disable');
 $('#subn').textinput(jd.usi>0?'enable':'disable');
-$('#dns1').textinput(jd.usi>0?'enable':'disable');  
+$('#dns1').textinput(jd.usi>0?'enable':'disable');
 if(jd.ntp1) $('#ntp1').val(jd.ntp1);
 if(jd.host) $('#host').val(jd.host);
 });
