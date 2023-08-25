@@ -24,7 +24,7 @@
 #define _DEFINES_H
 
 /** Firmware version, hardware version, and maximal values */
-#define OG_FWV     120 // Firmware version: 120 means 1.2.0
+#define OG_FWV     122 // Firmware version: 122 means 1.2.2
 
 /** GPIO pins */
 #define PIN_RELAY  15 // D8 on nodemcu
@@ -108,6 +108,11 @@
 #define OG_STATE_WAIT_RESTART   4
 #define OG_STATE_RESET          9
 
+#define OG_LIGHT_BLINK_FOREVER  0
+#define OG_LIGHT_BLINK_MAX      99	// limited by rcnt to 99
+#define OG_LIGHT_BLINK_TIME		25
+#define OG_LIGHT_BLINK_NOTIFY	2000 // specifies how long the last blink should last before blinking turns off
+
 #define CLOUD_NONE  0
 #define CLOUD_BLYNK 1
 #define CLOUD_OTC   2
@@ -161,6 +166,7 @@ typedef enum {
 	OPTION_ATIB,    // automation interval B (in hours)
 	OPTION_ATOB,    // automation options B
 	OPTION_NOTO,    // notification options
+	OPTION_BAS,     // blink count before turning the light off (0 means infinity)
 	OPTION_USI,     // use static IP
 	OPTION_SSID,    // wifi ssid
 	OPTION_PASS,    // wifi password

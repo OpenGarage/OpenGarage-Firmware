@@ -382,6 +382,7 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 <tr><td><b>Door Thres. (cm): </b></td><td><input type='text' size=3 maxlength=4 id='dth' data-mini='true' value=0></td></tr>
 <tr><td><b>Car Thres. (cm):</b><br><small>set to 0 to disable</small></td><td><input type='text' size=3 maxlength=4 id='vth' data-mini='true' value=0 ></td></tr>
 <tr><td><b>Status Check (s):</b><br><small>check status every</small></td><td><input type='text' size=3 maxlength=3 id='riv' data-mini='true' value=0></td></tr>
+<tr><td><b>Blinks After Start:</b><br><small>set to 0 for always</small></td><td><input type='text' size=2 maxlength=2 id='bas' data-mini='true' value=0></td></tr>
 <tr><td><b>Click Time (ms):</b></td><td><input type='text' size=3 maxlength=5 id='cdt' value=0 data-mini='true'></td></tr>
 <tr><td><b>Switch Sensor:</b><br><small>on G04 and GND</small></td><td>
 <select name='sn2' id='sn2' data-mini='true' onChange='update_sno()'>
@@ -555,7 +556,7 @@ $('#btn_submit').click(function(e){
 e.preventDefault();
 if(confirm('Submit changes?')) {
 comm='co?dkey='+encodeURIComponent($('#dkey').val());
-bc('sn1');bc('sn2');bc('sno');bc('dth');bc('vth');bc('riv');bc('alm');
+bc('sn1');bc('sn2');bc('sno');bc('dth');bc('vth');bc('riv');bc('bas');bc('alm');
 bc('lsz');bc('tsn');bc('htp');bc('cdt');bc('dri');bc('ati');bc('atib');
 comm+='&aoo='+($('#aoo').is(':checked')?1:0);
 comm+='&sto='+eval_cb('#to_cap');
@@ -615,6 +616,7 @@ update_sno();
 $('#dth').val(jd.dth);
 $('#vth').val(jd.vth);
 $('#riv').val(jd.riv);
+$('#bas').val(jd.bas);
 $('#htp').val(jd.htp);
 $('#cdt').val(jd.cdt);
 $('#dri').val(jd.dri);
