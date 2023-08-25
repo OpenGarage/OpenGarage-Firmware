@@ -651,6 +651,7 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 	if(ssid!=NULL&&strlen(ssid)!=0) {
 		og.options[OPTION_SSID].sval = ssid;
 		og.options[OPTION_PASS].sval = req.getQueryParameter("pass");
+		og.options[OPTION_HOST].sval = req.getQueryParameter("host");
 		// if cloud token is provided, save it
 		char *cld = req.getQueryParameter("cld");
 		char *auth = req.getQueryParameter("auth");
@@ -1353,8 +1354,11 @@ void do_loop() {
 			led_blink_ms = LED_SLOW_BLINK;
 			DEBUG_PRINT(F("Attempting to connect to SSID: "));
 			DEBUG_PRINTLN(og.options[OPTION_SSID].sval.c_str());
-			WiFi.mode(WIFI_STA);
-			start_network_sta(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str());
+
+			String host = og.options[OPTION_HOST].sval;
+			const char* hostname = host.length() == 0 ? NULL : host.c_str(); // use the hostname provided if one is specified
+
+			start_network_sta(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), hostname);
 			og.config_ip();
 			og.state = OG_STATE_CONNECTING;
 			connecting_timeout = millis() + 60000;
@@ -1362,14 +1366,19 @@ void do_loop() {
 		break;
 
 	case OG_STATE_TRY_CONNECT:
-		led_blink_ms = LED_SLOW_BLINK;
-		DEBUG_PRINT(F("Attempting to connect to SSID: "));
-		DEBUG_PRINTLN(og.options[OPTION_SSID].sval.c_str());
-		start_network_sta_with_ap(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str());
-		og.config_ip();
-		og.state = OG_STATE_CONNECTED;
-		break;
-		
+		{
+			led_blink_ms = LED_SLOW_BLINK;
+			DEBUG_PRINT(F("Attempting to connect to SSID: "));
+			DEBUG_PRINTLN(og.options[OPTION_SSID].sval.c_str());
+
+			String host = og.options[OPTION_HOST].sval;
+			const char* hostname = host.length() == 0 ? NULL : host.c_str(); // use the hostname provided if one is specified
+
+			start_network_sta_with_ap(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), hostname);
+			og.config_ip();
+			og.state = OG_STATE_CONNECTED;
+			break;
+		}
 	case OG_STATE_CONNECTING:
 		if(WiFi.status() == WL_CONNECTED) {
 			DEBUG_PRINT(F("Wireless connected, IP: "));
