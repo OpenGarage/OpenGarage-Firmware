@@ -9,8 +9,14 @@
 <div data-role='page' id='page_log'>
 	<div data-role='header'><h3><label id='lbl_name'></label> Log</h3></div>    
 	<div data-role='content'>
-		<p>Below are the most recent <label id='lbl_nr'></label> records</p>
-		<p>Current time is <label id='lbl_time'></label></p>
+		<div data-role='timegroup'>
+			<table>
+				<tr><td>Current Time:</td><td><strong><label id='lbl_time' /></strong></td></tr>
+				<tr><td>Start Time:</td><td><strong><label id='lbl_start_time' /></strong></td></tr>
+				<tr><td>Up Time:</td><td><strong><label id='lbl_up_time' /></strong></td></tr>
+			</table>
+		</div>
+		<p>Below are the most recent <strong><label id='lbl_nr' /></strong> records</p>
 		<div data-role="controlgroup" data-type="horizontal">
 		<button data-theme="b" id="btn_back">Back</button>
 		</div>
@@ -21,16 +27,40 @@
 </div>
 <script>
 var curr_time = 0;
+var sdate = new Date();
 var date = new Date();
 $("#btn_back").click(function(){history.back();});
 $(document).ready(function(){
 	show_log();
 	setInterval(show_time, 1000);
 });
+function get_delta_time(date_now, date_future) {
+	// from: https://stackoverflow.com/a/13904120
+	// get total seconds between the times
+	var delta = Math.abs(date_future - date_now) / 1000;
+
+	// calculate (and subtract) whole days
+	var days = Math.floor(delta / 86400);
+	delta -= days * 86400;
+
+	// calculate (and subtract) whole hours
+	var hours = Math.floor(delta / 3600) % 24;
+	delta -= hours * 3600;
+
+	// calculate (and subtract) whole minutes
+	var minutes = Math.floor(delta / 60) % 60;
+	delta -= minutes * 60;
+
+	// what's left is seconds
+	var seconds = delta % 60;  // in theory the modulus is not required
+
+	return days + ":" + String(hours).padStart(2, '0') + ":" + String(minutes).padStart(2, '0') + ":" + String(seconds).padStart(2, '0');
+}
 function show_time() {
 	curr_time ++;
 	date.setTime(curr_time*1000);
 	$('#lbl_time').text(date.toLocaleString());
+	$('#lbl_up_time').text(get_delta_time(date, sdate));
 }
 function show_log() {
 	$.getJSON('jl', function(jd) {
@@ -40,6 +70,8 @@ function show_log() {
 		var logs=jd.logs;
 		logs.sort(function(a,b){return b[0]-a[0];});
 		$('#lbl_nr').text(logs.length);
+		sdate.setTime(jd.starttime*1000);
+		$('#lbl_start_time').text(sdate.toLocaleString());
 		var ldate = new Date();
 		for(var i=0;i<logs.length;i++) {
 			ldate.setTime(logs[i][0]*1000);

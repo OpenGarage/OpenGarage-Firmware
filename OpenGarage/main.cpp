@@ -69,6 +69,7 @@ extern bool fullbuffer;
 // this is one byte storing the door status histogram
 // maximum 8 bits
 static byte door_status_hist = 0;
+static ulong start_utc_time = 0;
 static ulong curr_utc_time = 0;
 static ulong curr_utc_hour= 0;
 static HTTPClient http;
@@ -322,7 +323,9 @@ void sta_logs_fill_json(String& json, OTF::Response &res) {
 	json = "";
 	json += F("{\"name\":\"");
 	json += og.options[OPTION_NAME].sval;
-	json += F("\",\"time\":");
+	json += F("\",\"starttime\":");
+	json += start_utc_time;
+	json += F(",\"time\":");
 	json += curr_utc_time;
 	json += F(",\"ncols\":");
 	json += og.options[OPTION_SN2].ival>OG_SN2_NONE ? 4 : 3;
@@ -1293,6 +1296,9 @@ void time_keeping() {
 			// if we got a response, re-try after TIME_SYNC_TIMEOUT seconds
 			time_keeping_timeout = curr_utc_time + TIME_SYNC_TIMEOUT;
 			prev_millis = millis();
+			if(!start_utc_time) {
+				start_utc_time = curr_utc_time - millis()/1000;
+			}
 		}
 	}
 
