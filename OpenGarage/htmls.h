@@ -20,6 +20,7 @@ input[type=password] {font-size: 12pt; height:28px;}
 <table>
 <tr><td><b>WiFi SSID</b>:</td><td><input type='text' id='ssid'></td></tr>
 <tr><td><b>WiFi Password</b>:</td><td><input type='password' id='pass'></td></tr>
+<tr><td><b>Host Name:</b></td><td><input type='text' size=15 maxlength=32 id='host' data-mini='true' placeholder='(optional)'></td></tr>
 </table>
 <br>
 <b>Enable Cloud Connection</b>?<br>
@@ -77,7 +78,7 @@ id('butt').innerHTML='Submit';
 dis_config(false);
 }
 };
-var comm='cc?ssid='+encodeURIComponent(id('ssid').value)+'&pass='+encodeURIComponent(id('pass').value);
+var comm='cc?ssid='+encodeURIComponent(id('ssid').value)+'&pass='+encodeURIComponent(id('pass').value)+'&host='+encodeURIComponent(id('host').value);
 if(eval_cb('otc')||eval_cb('blynk')){
 if(id('auth').value.length<32) {show_msg('Cloud token is too short!','red');return;}
 comm+='&cld='+(eval_cb('blynk')?'blynk':'otc');
