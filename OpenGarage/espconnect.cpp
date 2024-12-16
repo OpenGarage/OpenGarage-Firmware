@@ -62,7 +62,7 @@ void start_network_ap(const char *ssid, const char *pass) {
 	WiFi.disconnect();  // disconnect from router
 }
 
-void start_network_sta(const char *ssid, const char *pass, bool staonly) {
+void start_network_sta(const char *ssid, const char *pass, const char *hostname, bool staonly) {
 	if(!ssid || !pass) return;
 	DEBUG_PRINTLN(F("Sarting start_network_sta"));
 	if(staonly){
@@ -74,14 +74,17 @@ void start_network_sta(const char *ssid, const char *pass, bool staonly) {
 		if(WiFi.getMode() != WIFI_AP_STA) WiFi.mode(WIFI_AP_STA);
 		DEBUG_PRINTLN(F("Setting to AP+STA mode"));
 	}
+	if(hostname != NULL) {
+		WiFi.hostname(hostname);
+	}
 	WiFi.begin(ssid, pass);
 }
 
-void start_network_sta_with_ap(const char *ssid, const char *pass) {
-	start_network_sta(ssid, pass, false);
+void start_network_sta_with_ap(const char *ssid, const char *pass, const char *hostname) {
+	start_network_sta(ssid, pass, hostname, false);
 }
 
-void start_network_sta(const char *ssid, const char *pass) {
-	start_network_sta(ssid, pass, true);
+void start_network_sta(const char *ssid, const char *pass, const char *hostname) {
+	start_network_sta(ssid, pass, hostname, true);
 }
 

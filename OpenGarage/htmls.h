@@ -20,6 +20,7 @@ input[type=password] {font-size: 12pt; height:28px;}
 <table>
 <tr><td><b>WiFi SSID</b>:</td><td><input type='text' id='ssid'></td></tr>
 <tr><td><b>WiFi Password</b>:</td><td><input type='password' id='pass'></td></tr>
+<tr><td><b>Host Name:</b></td><td><input type='text' size=15 maxlength=32 id='host' data-mini='true' placeholder='(optional)'></td></tr>
 </table>
 <br>
 <b>Enable Cloud Connection</b>?<br>
@@ -77,7 +78,7 @@ id('butt').innerHTML='Submit';
 dis_config(false);
 }
 };
-var comm='cc?ssid='+encodeURIComponent(id('ssid').value)+'&pass='+encodeURIComponent(id('pass').value);
+var comm='cc?ssid='+encodeURIComponent(id('ssid').value)+'&pass='+encodeURIComponent(id('pass').value)+'&host='+encodeURIComponent(id('host').value);
 if(eval_cb('otc')||eval_cb('blynk')){
 if(id('auth').value.length<32) {show_msg('Cloud token is too short!','red');return;}
 comm+='&cld='+(eval_cb('blynk')?'blynk':'otc');
@@ -311,8 +312,14 @@ const char sta_logs_html[] PROGMEM = R"(<head>
 <div data-role='page' id='page_log'>
 <div data-role='header'><h3><label id='lbl_name'></label> Log</h3></div>    
 <div data-role='content'>
-<p>Below are the most recent <label id='lbl_nr'></label> records</p>
-<p>Current time is <label id='lbl_time'></label></p>
+<div data-role='timegroup'>
+<table>
+<tr><td>Current Time:</td><td><strong><label id='lbl_time' /></strong></td></tr>
+<tr><td>Start Time:</td><td><strong><label id='lbl_start_time' /></strong></td></tr>
+<tr><td>Up Time:</td><td><strong><label id='lbl_up_time' /></strong></td></tr>
+</table>
+</div>
+<p>Below are the most recent <strong><label id='lbl_nr' /></strong> records</p>
 <div data-role="controlgroup" data-type="horizontal">
 <button data-theme="b" id="btn_back">Back</button>
 </div>
@@ -323,16 +330,35 @@ const char sta_logs_html[] PROGMEM = R"(<head>
 </div>
 <script>
 var curr_time = 0;
+var sdate = new Date();
 var date = new Date();
 $("#btn_back").click(function(){history.back();});
 $(document).ready(function(){
 show_log();
 setInterval(show_time, 1000);
 });
+function get_delta_time(date_now, date_future) {
+// from: https://stackoverflow.com/a/13904120
+// get total seconds between the times
+var delta = Math.abs(date_future - date_now) / 1000;
+// calculate (and subtract) whole days
+var days = Math.floor(delta / 86400);
+delta -= days * 86400;
+// calculate (and subtract) whole hours
+var hours = Math.floor(delta / 3600) % 24;
+delta -= hours * 3600;
+// calculate (and subtract) whole minutes
+var minutes = Math.floor(delta / 60) % 60;
+delta -= minutes * 60;
+// what's left is seconds
+var seconds = delta % 60;  // in theory the modulus is not required
+return days + ":" + String(hours).padStart(2, '0') + ":" + String(minutes).padStart(2, '0') + ":" + String(seconds).padStart(2, '0');
+}
 function show_time() {
 curr_time ++;
 date.setTime(curr_time*1000);
 $('#lbl_time').text(date.toLocaleString());
+$('#lbl_up_time').text(get_delta_time(date, sdate));
 }
 function show_log() {
 $.getJSON('jl', function(jd) {
@@ -342,6 +368,8 @@ $('#tab_log').find('tr:gt(0)').remove();
 var logs=jd.logs;
 logs.sort(function(a,b){return b[0]-a[0];});
 $('#lbl_nr').text(logs.length);
+sdate.setTime(jd.starttime*1000);
+$('#lbl_start_time').text(sdate.toLocaleString());
 var ldate = new Date();
 for(var i=0;i<logs.length;i++) {
 ldate.setTime(logs[i][0]*1000);
@@ -382,6 +410,7 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 <tr><td><b>Door Thres. (cm): </b></td><td><input type='text' size=3 maxlength=4 id='dth' data-mini='true' value=0></td></tr>
 <tr><td><b>Car Thres. (cm):</b><br><small>set to 0 to disable</small></td><td><input type='text' size=3 maxlength=4 id='vth' data-mini='true' value=0 ></td></tr>
 <tr><td><b>Status Check (s):</b><br><small>check status every</small></td><td><input type='text' size=3 maxlength=3 id='riv' data-mini='true' value=0></td></tr>
+<tr><td><b>Blinks After Start:</b><br><small>set to 0 for always</small></td><td><input type='text' size=2 maxlength=2 id='bas' data-mini='true' value=0></td></tr>
 <tr><td><b>Click Time (ms):</b></td><td><input type='text' size=3 maxlength=5 id='cdt' value=0 data-mini='true'></td></tr>
 <tr><td><b>Switch Sensor:</b><br><small>on G04 and GND</small></td><td>
 <select name='sn2' id='sn2' data-mini='true' onChange='update_sno()'>
@@ -565,7 +594,7 @@ $('#btn_submit').click(function(e){
 e.preventDefault();
 if(confirm('Submit changes?')) {
 comm='co?dkey='+encodeURIComponent($('#dkey').val());
-bc('sn1');bc('sn2');bc('sno');bc('dth');bc('vth');bc('riv');bc('alm');
+bc('sn1');bc('sn2');bc('sno');bc('dth');bc('vth');bc('riv');bc('bas');bc('alm');
 bc('lsz');bc('tsn');bc('htp');bc('cdt');bc('dri');bc('ati');bc('atib');
 comm+='&aoo='+($('#aoo').is(':checked')?1:0);
 comm+='&sto='+eval_cb('#to_cap');
@@ -627,6 +656,7 @@ update_sno();
 $('#dth').val(jd.dth);
 $('#vth').val(jd.vth);
 $('#riv').val(jd.riv);
+$('#bas').val(jd.bas);
 $('#htp').val(jd.htp);
 $('#cdt').val(jd.cdt);
 $('#dri').val(jd.dri);

@@ -69,9 +69,11 @@ extern bool fullbuffer;
 // this is one byte storing the door status histogram
 // maximum 8 bits
 static byte door_status_hist = 0;
+static ulong start_utc_time = 0;
 static ulong curr_utc_time = 0;
 static ulong curr_utc_hour= 0;
 static HTTPClient http;
+static bool light_blink_enabled = true;
 
 void do_setup();
 
@@ -322,7 +324,9 @@ void sta_logs_fill_json(String& json, OTF::Response &res) {
 	json = "";
 	json += F("{\"name\":\"");
 	json += og.options[OPTION_NAME].sval;
-	json += F("\",\"time\":");
+	json += F("\",\"starttime\":");
+	json += start_utc_time;
+	json += F(",\"time\":");
 	json += curr_utc_time;
 	json += F(",\"ncols\":");
 	json += og.options[OPTION_SN2].ival>OG_SN2_NONE ? 4 : 3;
@@ -653,6 +657,7 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 	if(ssid!=NULL&&strlen(ssid)!=0) {
 		og.options[OPTION_SSID].sval = ssid;
 		og.options[OPTION_PASS].sval = req.getQueryParameter("pass");
+		og.options[OPTION_HOST].sval = req.getQueryParameter("host");
 		// if cloud token is provided, save it
 		char *cld = req.getQueryParameter("cld");
 		char *auth = req.getQueryParameter("auth");
@@ -1150,8 +1155,10 @@ void check_status() {
 	static ulong checkstatus_timeout = 0;
 	static ulong checkstatus_report_timeout = 0; 
 	if((curr_utc_time > checkstatus_timeout) || (checkstatus_timeout == 0))  { //also check on first boot
-		og.set_led(HIGH);
-		aux_ticker.once_ms(25, og.set_led, (byte)LOW);
+		if(light_blink_enabled) {
+			og.set_led(HIGH);
+			aux_ticker.once_ms(OG_LIGHT_BLINK_TIME, og.set_led, (byte)LOW);
+		}
 		
 		// Read SN1 -- ultrasonic sensor
 		uint dth = og.options[OPTION_DTH].ival;
@@ -1203,7 +1210,19 @@ void check_status() {
 		
 		// get temperature readings
 		og.read_TH_sensor(tempC, humid);
-		read_cnt = (read_cnt+1)%100;    
+		
+		read_cnt = (read_cnt+1)%100;
+
+		// once the light is disabled, quit blinking until a restart or a reset to 0.
+		byte blink_limit = og.options[OPTION_BAS].ival;
+		bool current_light_blink_enabled = light_blink_enabled;
+		light_blink_enabled = blink_limit == OG_LIGHT_BLINK_FOREVER || (light_blink_enabled && read_cnt <= blink_limit);
+		
+		// do a long blink to notify that we are turning the light off
+		if(current_light_blink_enabled && !light_blink_enabled){
+			og.set_led(HIGH);
+			aux_ticker.once_ms(OG_LIGHT_BLINK_NOTIFY, og.set_led, (byte)LOW);
+		}
 		
 		if (checkstatus_timeout == 0){
 			DEBUG_PRINTLN(F("First time checking status don't trigger a status change, set full history to current value"));
@@ -1336,6 +1355,9 @@ void time_keeping() {
 			// if we got a response, re-try after TIME_SYNC_TIMEOUT seconds
 			time_keeping_timeout = curr_utc_time + TIME_SYNC_TIMEOUT;
 			prev_millis = millis();
+			if(!start_utc_time) {
+				start_utc_time = curr_utc_time - millis()/1000;
+			}
 		}
 	}
 
@@ -1398,8 +1420,11 @@ void do_loop() {
 			led_blink_ms = LED_SLOW_BLINK;
 			DEBUG_PRINT(F("Attempting to connect to SSID: "));
 			DEBUG_PRINTLN(og.options[OPTION_SSID].sval.c_str());
-			WiFi.mode(WIFI_STA);
-			start_network_sta(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str());
+
+			String host = og.options[OPTION_HOST].sval;
+			const char* hostname = host.length() == 0 ? NULL : host.c_str(); // use the hostname provided if one is specified
+
+			start_network_sta(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), hostname);
 			og.config_ip();
 			og.state = OG_STATE_CONNECTING;
 			connecting_timeout = millis() + 60000;
@@ -1407,14 +1432,19 @@ void do_loop() {
 		break;
 
 	case OG_STATE_TRY_CONNECT:
-		led_blink_ms = LED_SLOW_BLINK;
-		DEBUG_PRINT(F("Attempting to connect to SSID: "));
-		DEBUG_PRINTLN(og.options[OPTION_SSID].sval.c_str());
-		start_network_sta_with_ap(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str());
-		og.config_ip();
-		og.state = OG_STATE_CONNECTED;
-		break;
-		
+		{
+			led_blink_ms = LED_SLOW_BLINK;
+			DEBUG_PRINT(F("Attempting to connect to SSID: "));
+			DEBUG_PRINTLN(og.options[OPTION_SSID].sval.c_str());
+
+			String host = og.options[OPTION_HOST].sval;
+			const char* hostname = host.length() == 0 ? NULL : host.c_str(); // use the hostname provided if one is specified
+
+			start_network_sta_with_ap(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), hostname);
+			og.config_ip();
+			og.state = OG_STATE_CONNECTED;
+			break;
+		}
 	case OG_STATE_CONNECTING:
 		if(WiFi.status() == WL_CONNECTED) {
 			DEBUG_PRINT(F("Wireless connected, IP: "));
