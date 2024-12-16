@@ -24,18 +24,19 @@
 #define _DEFINES_H
 
 /** Firmware version, hardware version, and maximal values */
-#define OG_FWV     123 // Firmware version: 123 means 1.2.3
+#define OG_FWV     124 // Firmware version: 124 means 1.2.4
 
 /** GPIO pins */
-#define PIN_RELAY  15 // D8 on nodemcu
+#define PIN_RELAY  15 // NodeMCU D8. Relay pin for triggering door action.
 #define PIN_BUTTON  0
-#define PIN_TRIG   12 // D6 on nodemcu
-#define PIN_ECHO   14 // D5 on nodemcu
+#define PIN_TRIG   12 // NodeMCU D6. Distance sensor trigger pin.
+#define PIN_ECHO   14 // NodeMCU D5. Distance sensor echo pin.
 #define PIN_LED     2
-#define PIN_RESET  16
-#define PIN_BUZZER 13 // D7 on nodemcu
-#define PIN_SWITCH  4 // switch sensor: D2 on nodemcu
-#define PIN_TH      5 // temperature sensor: D1 on nodemcu
+#define PIN_SW_TX  15 // NodeMCU D8. Software serial output pin.
+#define PIN_SW_RX   5 // NodeMCU D1. Software serial input pin.
+#define PIN_BUZZER 13 // NodeMCU D7. Buzzer pin.
+#define PIN_SWITCH  4 // NodeMCU D2. Optional switch sensor pin.
+#define PIN_TH      5 // NodeMCU D1. Optional temperature sensor pin.
 
 // Default device name
 #define DEFAULT_NAME    "My OpenGarage"
