@@ -246,6 +246,8 @@ void sta_controller_fill_json(String& json, bool fullversion=true) {
 		json += F(",\"sn2\":");
 		json += sn2_value;
 	}
+	json += F(",\"sysv\":");
+	json += og.options[OPTION_SYSV].ival;
 	json += F(",\"door\":");
 	json += door_status;
 	json += F(",\"vehicle\":");

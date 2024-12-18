@@ -187,8 +187,9 @@ const char sta_home_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta nam
 </table><br />
 <div data-role='controlgroup' data-type='horizontal'>
 <button data-theme='b' id='btn_click'>Button</button>
+<button data-theme='b' id='btn_light' disabled>Light</button>
 <button data-theme='b' id='btn_opts'>Options</button>
-<button data-theme='b' id='btn_log'>Show Log</button>
+<button data-theme='b' id='btn_log'>Log</button>
 </div>
 <span style='display:block;height:5px'></span>
 <div data-role='controlgroup' data-type='horizontal'>
@@ -245,6 +246,19 @@ $('#msg').html('Device is now in AP mode. Log on<br>to SSID OG_xxxxxx, then <br>
 });
 }
 });
+$('#btn_light').click(function(e) {
+var comm = 'cc?light=1&dkey='+encodeURIComponent($('#dkey').val());
+$.getJSON(comm)
+.done(function( jd ) {
+if(jd.result!=1) {
+show_msg('Check device key and try again.',2000,'red');
+}else{clear_msg();};
+})
+.fail(function( jqxhr, textStatus, error ) {
+var err = error;
+$('#msg').text('Request Failed: ' + err).css('color','red');
+});
+});
 $('#btn_click').click(function(e) {
 var comm = 'cc?click=1&dkey='+encodeURIComponent($('#dkey').val());
 $.getJSON(comm)
@@ -267,7 +281,8 @@ timeout:5000,
 success:function(jd){
 $('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 $('#lbl_dist').text(jd.dist +' (cm)').css('color', jd.dist==450?'red':'black');
-$('#lbl_status').text(jd.door?'OPEN':'CLOSED').css('color',jd.door?'red':'green'); 
+$('#lbl_status').text(jd.door?'OPEN':'CLOSED').css('color',jd.door?'red':'green');
+$('#btn_light').button(jd.sysv==2?'enable':'disable');
 if (jd.vehicle >=2){
 $('#lbl_vstatus1').hide();
 $('#lbl_vstatus').text('');
@@ -288,7 +303,7 @@ if(jd.cld==0) $('#lbl_cld').text('None');
 else if(jd.cld==1) {$('#lbl_cld').text('Blynk '+['(disconnected)','(connected)'][jd.clds]);}
 else {$('#lbl_cld').text('OTC '+['(not enabled)','(connecting...)','(disconnected)','(connected)'][jd.clds]);}
 $('#head_name').text(jd.name);
-$('#btn_click').html(jd.door?'Close Door':'Open Door').button('refresh');
+$('#btn_click').html(jd.door?'Close':'Open').button('refresh');
 if(typeof(jd.temp)!='undefined') {$('#tbl_th').show(); $('#lbl_th').text(jd.temp.toFixed(1)+String.fromCharCode(176)+'C / '+(jd.temp*1.8+32).toFixed(1)+String.fromCharCode(176)+'F (H:'+jd.humid.toFixed(1)+'%)');}
 else {$('#tbl_th').hide();}
 },
@@ -390,7 +405,9 @@ setTimeout(show_log, 10000);
 )";
 const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'><script src='//code.jquery.com/jquery-1.9.1.min.js' type='text/javascript'></script><script src='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js' type='text/javascript'></script></head>
 <body>
-<style> table, th, td { border: 0px solid black; padding: 1px; border-collapse: collapse; } .ui-select{width:160px;}</style>
+<style> table, th, td { border: 0px solid black; padding: 1px; border-collapse: collapse; } .ui-select{width:160px;}
+input[type="radio"].yellow:checked + label span{ background-color:#C0C000; }
+</style>
 <div data-role='page' id='page_opts'>
 <div data-role='header'><h3>Edit Options</h3></div>
 <div data-role='content'>
@@ -407,10 +424,15 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 <option value=0>Ceiling Mount</option>
 <option value=1>Side Mount</option>
 </select></td></tr>
+<tr><td><b>System Version:</b><br><small>Learn button color</small></td><td>
+<fieldset data-role='controlgroup' data-mini='true' data-type='horizontal'>
+<input type='radio' name='sysv' id='sysv_p2' value=2 class='yellow'><label for='sysv_p2'>Security+ 2.0</label>
+<input type='radio' name='sysv' id='sysv_other' value=0><label for='sysv_other'>Other</label>
+</fieldset>
+</td></tr>
 <tr><td><b>Door Thres. (cm): </b></td><td><input type='text' size=3 maxlength=4 id='dth' data-mini='true' value=0></td></tr>
 <tr><td><b>Car Thres. (cm):</b><br><small>set to 0 to disable</small></td><td><input type='text' size=3 maxlength=4 id='vth' data-mini='true' value=0 ></td></tr>
 <tr><td><b>Status Check (s):</b><br><small>check status every</small></td><td><input type='text' size=3 maxlength=3 id='riv' data-mini='true' value=0></td></tr>
-<tr><td><b>Blinks After Start:</b><br><small>set to 0 for always</small></td><td><input type='text' size=2 maxlength=2 id='bas' data-mini='true' value=0></td></tr>
 <tr><td><b>Click Time (ms):</b></td><td><input type='text' size=3 maxlength=5 id='cdt' value=0 data-mini='true'></td></tr>
 <tr><td><b>Switch Sensor:</b><br><small>on G04 and GND</small></td><td>
 <select name='sn2' id='sn2' data-mini='true' onChange='update_sno()'>
@@ -507,6 +529,7 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 <input type='radio' name='rd_to' id='to_cap' value=1><label for='to_cap'>Cap</label>
 </fieldset>
 </td></tr>
+<tr><td><b>Stop Blink After:</b><br><small>set to 0 to disable</small></td><td><input type='text' size=2 maxlength=2 id='bas' data-mini='true' value=0></td></tr>
 <tr><td><b>HTTP Port:</b></td><td><input type='text' size=5 maxlength=5 id='htp' value=0 data-mini='true'></td></tr>
 <tr><td><b>Host Name:</b></td><td><input type='text' size=15 maxlength=32 id='host' data-mini='true' placeholder='(optional)'></td></tr>
 <tr><td><b>NTP Server:</b></td><td><input type='text' size=15 maxlength=64 id='ntp1' data-mini='true' placeholder='(optional)'></td></tr>
@@ -597,6 +620,7 @@ comm='co?dkey='+encodeURIComponent($('#dkey').val());
 bc('sn1');bc('sn2');bc('sno');bc('dth');bc('vth');bc('riv');bc('bas');bc('alm');
 bc('lsz');bc('tsn');bc('htp');bc('cdt');bc('dri');bc('ati');bc('atib');
 comm+='&aoo='+($('#aoo').is(':checked')?1:0);
+comm+='&sysv='+$('input[name="sysv"]:checked').val();
 comm+='&sto='+eval_cb('#to_cap');
 comm+='&sfi='+eval_cb('#sf_con');
 if(eval_cb('#sf_con')) bc('cmr');
@@ -660,6 +684,8 @@ $('#bas').val(jd.bas);
 $('#htp').val(jd.htp);
 $('#cdt').val(jd.cdt);
 $('#dri').val(jd.dri);
+if(jd.sysv==2) cbt('sysv_p2');
+else cbt('sysv_other');
 if(jd.sto) cbt('to_cap');
 else cbt('to_ignore');
 if(jd.sfi) cbt('sf_con');

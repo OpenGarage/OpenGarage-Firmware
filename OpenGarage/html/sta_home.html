@@ -18,8 +18,9 @@
 </table><br />
 <div data-role='controlgroup' data-type='horizontal'>
 <button data-theme='b' id='btn_click'>Button</button>
+<button data-theme='b' id='btn_light' disabled>Light</button>
 <button data-theme='b' id='btn_opts'>Options</button>
-<button data-theme='b' id='btn_log'>Show Log</button>
+<button data-theme='b' id='btn_log'>Log</button>
 </div>
 <span style='display:block;height:5px'></span>
 <div data-role='controlgroup' data-type='horizontal'>
@@ -76,6 +77,19 @@ $('#btn_rap').click(function(e){
 		});
 	}
 });
+$('#btn_light').click(function(e) {
+	var comm = 'cc?light=1&dkey='+encodeURIComponent($('#dkey').val());
+	$.getJSON(comm)
+	.done(function( jd ) {
+		if(jd.result!=1) {
+			show_msg('Check device key and try again.',2000,'red');
+		}else{clear_msg();};
+	})
+	.fail(function( jqxhr, textStatus, error ) {
+		var err = error;
+		$('#msg').text('Request Failed: ' + err).css('color','red');
+	});
+});
 $('#btn_click').click(function(e) {
 var comm = 'cc?click=1&dkey='+encodeURIComponent($('#dkey').val());
 	$.getJSON(comm)
@@ -98,7 +112,8 @@ function show() {
 	success:function(jd){
 		$('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 		$('#lbl_dist').text(jd.dist +' (cm)').css('color', jd.dist==450?'red':'black');
-		$('#lbl_status').text(jd.door?'OPEN':'CLOSED').css('color',jd.door?'red':'green'); 
+		$('#lbl_status').text(jd.door?'OPEN':'CLOSED').css('color',jd.door?'red':'green');
+		$('#btn_light').button(jd.sysv==2?'enable':'disable');
 		if (jd.vehicle >=2){
 			$('#lbl_vstatus1').hide();
 			$('#lbl_vstatus').text('');
@@ -119,7 +134,7 @@ function show() {
 		else if(jd.cld==1) {$('#lbl_cld').text('Blynk '+['(disconnected)','(connected)'][jd.clds]);}
 		else {$('#lbl_cld').text('OTC '+['(not enabled)','(connecting...)','(disconnected)','(connected)'][jd.clds]);}
 		$('#head_name').text(jd.name);
-		$('#btn_click').html(jd.door?'Close Door':'Open Door').button('refresh');
+		$('#btn_click').html(jd.door?'Close':'Open').button('refresh');
 		if(typeof(jd.temp)!='undefined') {$('#tbl_th').show(); $('#lbl_th').text(jd.temp.toFixed(1)+String.fromCharCode(176)+'C / '+(jd.temp*1.8+32).toFixed(1)+String.fromCharCode(176)+'F (H:'+jd.humid.toFixed(1)+'%)');}
 		else {$('#tbl_th').hide();}
 	},

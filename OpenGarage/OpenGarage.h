@@ -59,7 +59,7 @@ public:
 	static void options_load();
 	static void options_save();
 	static void options_reset();
-	static void restart() { ESP.restart();} //digitalWrite(PIN_RESET, LOW); }
+	static void restart() { ESP.restart();}
 	static uint read_distance(); // centimeter
 	static void init_sensors(); // initialize all sensor
 	static void read_TH_sensor(float& C, float &H);
