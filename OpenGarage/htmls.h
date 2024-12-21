@@ -282,7 +282,7 @@ success:function(jd){
 $('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 $('#lbl_dist').text(jd.dist +' (cm)').css('color', jd.dist==450?'red':'black');
 $('#lbl_status').text(jd.door?'OPEN':'CLOSED').css('color',jd.door?'red':'green');
-$('#btn_light').button(jd.sysv==2?'enable':'disable');
+$('#btn_light').button(jd.secv>0?'enable':'disable');
 if (jd.vehicle >=2){
 $('#lbl_vstatus1').hide();
 $('#lbl_vstatus').text('');
@@ -407,6 +407,8 @@ const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta 
 <body>
 <style> table, th, td { border: 0px solid black; padding: 1px; border-collapse: collapse; } .ui-select{width:160px;}
 input[type="radio"].yellow:checked + label span{ background-color:#C0C000; }
+input[type="radio"].purple:checked + label span{ background-color:#A000A0; }
+input[type="radio"].green:checked + label span{ background-color:#00A000; }
 </style>
 <div data-role='page' id='page_opts'>
 <div data-role='header'><h3>Edit Options</h3></div>
@@ -424,10 +426,11 @@ input[type="radio"].yellow:checked + label span{ background-color:#C0C000; }
 <option value=0>Ceiling Mount</option>
 <option value=1>Side Mount</option>
 </select></td></tr>
-<tr><td><b>System Version:</b><br><small>Learn button color</small></td><td>
+<tr><td><b>Security+ Version:</b><br><small>Learn button color</small></td><td>
 <fieldset data-role='controlgroup' data-mini='true' data-type='horizontal'>
-<input type='radio' name='sysv' id='sysv_p2' value=2 class='yellow'><label for='sysv_p2'>Security+ 2.0</label>
-<input type='radio' name='sysv' id='sysv_other' value=0><label for='sysv_other'>Other</label>
+<input type='radio' name='secv' id='secv2' value=2 class='yellow'><label for='secv2'>2.0</label>
+<input type='radio' name='secv' id='secv1' value=1 class='purple'><label for='secv1'>1.0</label>
+<input type='radio' name='secv' id='secv0' value=0 class='green'><label for='secv0'>None</label>
 </fieldset>
 </td></tr>
 <tr><td><b>Door Thres. (cm): </b></td><td><input type='text' size=3 maxlength=4 id='dth' data-mini='true' value=0></td></tr>
@@ -620,7 +623,7 @@ comm='co?dkey='+encodeURIComponent($('#dkey').val());
 bc('sn1');bc('sn2');bc('sno');bc('dth');bc('vth');bc('riv');bc('bas');bc('alm');
 bc('lsz');bc('tsn');bc('htp');bc('cdt');bc('dri');bc('ati');bc('atib');
 comm+='&aoo='+($('#aoo').is(':checked')?1:0);
-comm+='&sysv='+$('input[name="sysv"]:checked').val();
+comm+='&secv='+$('input[name="secv"]:checked').val();
 comm+='&sto='+eval_cb('#to_cap');
 comm+='&sfi='+eval_cb('#sf_con');
 if(eval_cb('#sf_con')) bc('cmr');
@@ -684,8 +687,9 @@ $('#bas').val(jd.bas);
 $('#htp').val(jd.htp);
 $('#cdt').val(jd.cdt);
 $('#dri').val(jd.dri);
-if(jd.sysv==2) cbt('sysv_p2');
-else cbt('sysv_other');
+if(jd.secv==2) cbt('secv2');
+else if(jd.secv==1) cbt('secv1');
+else cbt('secv0');
 if(jd.sto) cbt('to_cap');
 else cbt('to_ignore');
 if(jd.sfi) cbt('sf_con');

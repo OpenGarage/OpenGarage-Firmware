@@ -44,7 +44,7 @@ OptionStruct OpenGarage::options[] = {
 	{"sn1", OG_SN1_CEILING,1, ""},
 	{"sn2", OG_SN2_NONE,   2, ""},
 	{"sno", OG_SNO_1ONLY,  3, ""},
-	{"sysv",0,             2, ""},
+	{"secv",0,             2, ""},
 	{"dth", 50,        65535, ""},
 	{"vth", 150,       65535, ""},
 	{"riv", 5,           300, ""},

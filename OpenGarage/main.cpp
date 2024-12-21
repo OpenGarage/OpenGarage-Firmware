@@ -246,8 +246,8 @@ void sta_controller_fill_json(String& json, bool fullversion=true) {
 		json += F(",\"sn2\":");
 		json += sn2_value;
 	}
-	json += F(",\"sysv\":");
-	json += og.options[OPTION_SYSV].ival;
+	json += F(",\"secv\":");
+	json += og.options[OPTION_SECV].ival;
 	json += F(",\"door\":");
 	json += door_status;
 	json += F(",\"vehicle\":");
@@ -1544,7 +1544,7 @@ void do_loop() {
 				otf->loop();
 				updateServer->handleClient();
 
-				if(og.options[OPTION_CLD].ival==CLD_BLYNK && Blynk.connected()) {
+				if(og.options[OPTION_CLD].ival==CLD_BLYNK) {
 					Blynk.run();
 				}
 

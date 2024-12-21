@@ -113,7 +113,7 @@ function show() {
 		$('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 		$('#lbl_dist').text(jd.dist +' (cm)').css('color', jd.dist==450?'red':'black');
 		$('#lbl_status').text(jd.door?'OPEN':'CLOSED').css('color',jd.door?'red':'green');
-		$('#btn_light').button(jd.sysv==2?'enable':'disable');
+		$('#btn_light').button(jd.secv>0?'enable':'disable');
 		if (jd.vehicle >=2){
 			$('#lbl_vstatus1').hide();
 			$('#lbl_vstatus').text('');

@@ -151,7 +151,7 @@ typedef enum {
 	OPTION_SN1,     // distance sensor mounting method
 	OPTION_SN2,     // switch sensor type
 	OPTION_SNO,     // sensor logic
-	OPTION_SYSV,    // system version (2: security+ 2.0; 0: other)
+	OPTION_SECV,    // security+ version (2.0, 1.0, or none)
 	OPTION_DTH,     // distance threshold for door
 	OPTION_VTH,     // distance threshold for vehicle
 	OPTION_RIV,     // status check interval
