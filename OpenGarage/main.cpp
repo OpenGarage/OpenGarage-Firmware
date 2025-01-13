@@ -455,6 +455,7 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
             break;
         }
 	} else if(req.getQueryParameter("light")) {
+        otf_send_result(res, HTML_SUCCESS, nullptr);
         switch (og.options[OPTION_SECV].ival) {
             case 1: // SecPlus 1
                 // Not yet implemented
@@ -1611,6 +1612,16 @@ void do_loop() {
 					}
 				}
 			}
+            switch (og.options[OPTION_SECV].ival) {
+            case 1: // SecPlus 1
+                // Not yet implemented
+                break;
+            case 2: // SecPlus 2
+                secplus2_garage.loop();
+                break;
+            default: // No secplus
+                break;
+        }
 		break;
 	}
 
