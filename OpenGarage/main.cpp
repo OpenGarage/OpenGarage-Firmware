@@ -19,7 +19,7 @@
  * along with this program.  If not, see
  * <http://www.gnu.org/licenses/>.
  */
-
+#define SERIAL_DEBUG
 #if defined(SERIAL_DEBUG)
 	#define BLYNK_DEBUG
 	#define BLYNK_PRINT Serial
@@ -74,6 +74,10 @@ static ulong curr_utc_time = 0;
 static ulong curr_utc_hour= 0;
 static HTTPClient http;
 static bool light_blink_enabled = true;
+
+
+SoftwareSerial serial;
+SecPlus2::Garage secplus2_garage(0x777, &serial, PIN_SW_RX, PIN_SW_TX);
 
 void do_setup();
 
@@ -408,26 +412,59 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 	bool open = req.getQueryParameter("open");
 
 	if(click || close || open) {
-		DEBUG_PRINTLN(F("Received button request (click, close, or open)"));
-		otf_send_result(res, HTML_SUCCESS, nullptr);
-		//1 is open
-		if ((close && door_status) ||
-				(open && !door_status) ||
-				(click)) {
-			DEBUG_PRINTLN(F("Valid command recieved based on door status"));
-			if(!og.options[OPTION_ALM].ival) {
-				// if alarm is not enabled, trigger relay right away
-				og.click_relay();
-			} else if(og.options[OPTION_AOO].ival && !door_status) {
-				// if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
-				og.click_relay();
-			} else {
-				// else, set alarm
-				og.set_alarm();
-			}
-		}else{
-		  DEBUG_PRINTLN(F("Command request not valid, door already in requested state"));
-		}
+        DEBUG_PRINTLN(F("Received button request (click, close, or open)"));
+        otf_send_result(res, HTML_SUCCESS, nullptr);
+        switch (og.options[OPTION_SECV].ival) {
+            case 1: // SecPlus 1
+                // Not yet implemented
+                break;
+            case 2: // SecPlus 2
+                if (click + close + open != 1) {
+                    DEBUG_PRINTLN(F("Command request not valid, recieved multiple states"));
+                } else {
+                    // Security plus 2.0 allows you to send the target state instead of only being able to toggle
+                    if (open) {
+                        secplus2_garage.open_door();
+                    } else if (close) {
+                        secplus2_garage.close_door();
+                    } else if (click) {
+                        secplus2_garage.toggle_door();
+                    }
+                }
+                break;
+            default: // No secplus
+            //1 is open
+            if ((close && door_status) ||
+                    (open && !door_status) ||
+                    (click)) {
+                DEBUG_PRINTLN(F("Valid command recieved based on door status"));
+                if(!og.options[OPTION_ALM].ival) {
+                    // if alarm is not enabled, trigger relay right away
+                    og.click_relay();
+                } else if(og.options[OPTION_AOO].ival && !door_status) {
+                    // if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
+                    og.click_relay();
+                } else {
+                    // else, set alarm
+                    og.set_alarm();
+                }
+            }else{
+            DEBUG_PRINTLN(F("Command request not valid, door already in requested state"));
+            }
+            break;
+        }
+	} else if(req.getQueryParameter("light")) {
+        switch (og.options[OPTION_SECV].ival) {
+            case 1: // SecPlus 1
+                // Not yet implemented
+                break;
+            case 2: // SecPlus 2
+                secplus2_garage.toggle_light();
+                break;
+            default: // No secplus
+            DEBUG_PRINTLN(F("Command request not valid, light requires secplus?"));
+            break;
+        }
 	} else if(req.getQueryParameter("reboot") != NULL) {
 		otf_send_result(res, HTML_SUCCESS, nullptr);
 		//restart_ticker.once_ms(1000, og.restart);
