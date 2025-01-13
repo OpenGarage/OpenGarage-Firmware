@@ -23,6 +23,7 @@
 #if defined(SERIAL_DEBUG)
 	#define BLYNK_DEBUG
 	#define BLYNK_PRINT Serial
+    #define GARAGELIB_DEBUG
 #endif
 
 #include <BlynkSimpleEsp8266.h>
