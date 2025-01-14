@@ -36,7 +36,7 @@
 #define PIN_SW_RX   5 // NodeMCU D1. Software serial input pin.
 #define PIN_BUZZER 13 // NodeMCU D7. Buzzer pin.
 #define PIN_SWITCH  4 // NodeMCU D2. Optional switch sensor pin.
-#define PIN_TH      5 // NodeMCU D1. Optional temperature sensor pin.
+#define PIN_TH     16 // NodeMCU D1. Optional temperature sensor pin.
 
 // Default device name
 #define DEFAULT_NAME    "My OpenGarage"

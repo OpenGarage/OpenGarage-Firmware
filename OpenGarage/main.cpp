@@ -821,6 +821,8 @@ void do_setup()
 	og.begin();
 	og.options_setup();
 	og.init_sensors();
+	serial.begin(9600, SWSERIAL_8N1, PIN_SW_RX, PIN_SW_TX, true);
+	serial.enableIntTx(false);
 	if(og.get_mode() == OG_MOD_AP) og.play_startup_tune();
 	curr_mode = og.get_mode();
 	if(!otf) {

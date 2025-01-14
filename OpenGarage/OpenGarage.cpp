@@ -150,6 +150,8 @@ void OpenGarage::begin() {
 	digitalWrite(PIN_RELAY, LOW);
 	pinMode(PIN_RELAY, OUTPUT);
 
+	digitalWrite(PIN_SW_RX, INPUT);
+
 	// detect LED logic
 	pinMode(PIN_LED, INPUT);
 	// use median filtering to detect led logic
