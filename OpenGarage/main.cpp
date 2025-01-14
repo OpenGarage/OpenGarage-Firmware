@@ -805,6 +805,10 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 	}
 }
 
+void secplus2_state_callback(SecPlus2::state_struct_t state) {
+    
+}
+
 void do_setup()
 {
 	Serial.begin(115200);
@@ -822,6 +826,9 @@ void do_setup()
 	og.init_sensors();
 	if(og.get_mode() == OG_MOD_AP) og.play_startup_tune();
 	curr_mode = og.get_mode();
+    
+    secplus2_garage.enable_callback(secplus2_state_callback);
+
 	if(!otf) {
 		const String otfDeviceKey = og.options[OPTION_AUTH].sval;
 
