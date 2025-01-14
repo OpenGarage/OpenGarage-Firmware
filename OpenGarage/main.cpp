@@ -77,8 +77,7 @@ static HTTPClient http;
 static bool light_blink_enabled = true;
 
 
-SoftwareSerial serial;
-SecPlus2::Garage secplus2_garage(0x777, &serial, PIN_SW_RX, PIN_SW_TX);
+SecPlus2::Garage secplus2_garage(0x777, PIN_SW_RX, PIN_SW_TX);
 
 void do_setup();
 
@@ -821,8 +820,6 @@ void do_setup()
 	og.begin();
 	og.options_setup();
 	og.init_sensors();
-	serial.begin(9600, SWSERIAL_8N1, PIN_SW_RX, PIN_SW_TX, true);
-	serial.enableIntTx(false);
 	if(og.get_mode() == OG_MOD_AP) og.play_startup_tune();
 	curr_mode = og.get_mode();
 	if(!otf) {
