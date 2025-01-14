@@ -55,13 +55,22 @@ PubSubClient mqttclient(wificlient);
 String mqtt_topic;
 String mqtt_id;
 
+enum {
+    DOOR_STATUS_UNKNOWN = 0,
+    DOOR_STATUS_CLOSED,
+    DOOR_STATUS_CLOSING,
+    DOOR_STATUS_STOPPED,
+    DOOR_STATUS_OPENING,
+    DOOR_STATUS_OPEN,
+};
+
 static String scanned_ssids;
 static byte read_cnt = 0;
 static uint distance = 0;
 static byte sn2_value = 0;
 static float tempC = 0;
 static float humid = 0;
-static byte door_status = 0; //0: closed, 1: open
+static byte door_status = 0; //door_status enum
 static int vehicle_status = OG_VEH_ABSENT;
 static uint led_blink_ms = LED_FAST_BLINK;
 static ulong justopen_timestamp = 0;
@@ -423,25 +432,37 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
                     DEBUG_PRINTLN(F("Command request not valid, recieved multiple states"));
                 } else {
                     // Security plus 2.0 allows you to send the target state instead of only being able to toggle
-                    if (open) {
+                    if (!og.options[OPTION_ALM].ival) { // If no alarm process right away
+                        if (open) {
+                            secplus2_garage.open_door();
+                        } else if (close) {
+                            secplus2_garage.close_door();
+                        } else if (click) {
+                            secplus2_garage.toggle_door();
+                        }
+                    } else if (og.options[OPTION_AOO].ival && open) { // If opening and "no alarm on open"
                         secplus2_garage.open_door();
-                    } else if (close) {
-                        secplus2_garage.close_door();
-                    } else if (click) {
-                        secplus2_garage.toggle_door();
+                    } else {
+                        if (open) {
+                            og.set_alarm(0, 2);
+                        } else if (close) {
+                            og.set_alarm(0, 1);
+                        } else if (click) {
+                            og.set_alarm(0, 0);
+                        }
                     }
                 }
                 break;
             default: // No secplus
             //1 is open
-            if ((close && door_status) ||
-                    (open && !door_status) ||
+            if ((close && (door_status == DOOR_STATUS_OPEN)) ||
+                    (open && (door_status == DOOR_STATUS_CLOSED)) ||
                     (click)) {
                 DEBUG_PRINTLN(F("Valid command recieved based on door status"));
                 if(!og.options[OPTION_ALM].ival) {
                     // if alarm is not enabled, trigger relay right away
                     og.click_relay();
-                } else if(og.options[OPTION_AOO].ival && !door_status) {
+                } else if(og.options[OPTION_AOO].ival && (door_status == DOOR_STATUS_CLOSED)) {
                     // if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
                     og.click_relay();
                 } else {
@@ -771,15 +792,36 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 		DEBUG_PRINTLN(F("MQTT Button request received, change door state"));
 		if(!og.options[OPTION_ALM].ival) {
 			// if alarm is not enabled, trigger relay right away
-			og.click_relay();
-		} else if(og.options[OPTION_AOO].ival && !door_status) {
+			switch (og.options[OPTION_SECV].ival) {
+                    case 1: // SecPlus 1
+                        // Not yet implemented
+                        break;
+                    case 2: // SecPlus 2
+                        secplus2_garage.toggle_door();
+                        break;
+                    default: // No secplus
+                        og.click_relay();
+                        break;
+                }
+		} else if(og.options[OPTION_AOO].ival && (door_status == DOOR_STATUS_CLOSED)) {
 			// if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
-			og.click_relay();
+			switch (og.options[OPTION_SECV].ival) {
+                    case 1: // SecPlus 1
+                        // Not yet implemented
+                        break;
+                    case 2: // SecPlus 2
+                        secplus2_garage.toggle_door();
+                        break;
+                    default: // No secplus
+                        og.click_relay();
+                        break;
+                }
 		} else {
 			// else, set alarm
 			og.set_alarm();
 		}
 	}
+    //TODO: Set state
 	//Accept click for consistency with api, open and close should be used instead, use IN topic if possible
 	if (Topic==(mqtt_topic+"/IN/STATE")){
 		DEBUG_PRINT(F("MQTT IN Message detected, check data for action, Data:"));
@@ -788,10 +830,30 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 			DEBUG_PRINTLN(F("Command is valid based on existing state, trigger change"));
 			if(!og.options[OPTION_ALM].ival) {
 				// if alarm is not enabled, trigger relay right away
-				og.click_relay();
+                switch (og.options[OPTION_SECV].ival) {
+                    case 1: // SecPlus 1
+                        // Not yet implemented
+                        break;
+                    case 2: // SecPlus 2
+                        secplus2_garage.toggle_door();
+                        break;
+                    default: // No secplus
+                        og.click_relay();
+                        break;
+                }
 			} else if(og.options[OPTION_AOO].ival && !door_status) {
 				// if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
-				og.click_relay();
+				switch (og.options[OPTION_SECV].ival) {
+                    case 1: // SecPlus 1
+                        // Not yet implemented
+                        break;
+                    case 2: // SecPlus 2
+                        secplus2_garage.toggle_door();
+                        break;
+                    default: // No secplus
+                        og.click_relay();
+                        break;
+                }
 			} else {
 				// else, set alarm
 				og.set_alarm();
@@ -806,7 +868,26 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 }
 
 void secplus2_state_callback(SecPlus2::state_struct_t state) {
-    
+    switch (state.door_state) {
+        case SecPlus2::DoorStatus::OPEN:
+            door_status = DOOR_STATUS_OPEN;
+            break;
+        case SecPlus2::DoorStatus::CLOSED:
+            door_status = DOOR_STATUS_CLOSED;
+            break;
+        case SecPlus2::DoorStatus::STOPPED:
+            door_status = DOOR_STATUS_STOPPED;
+            break;
+        case SecPlus2::DoorStatus::OPENING:
+            door_status = DOOR_STATUS_OPENING;
+            break;
+        case SecPlus2::DoorStatus::CLOSING:
+            door_status = DOOR_STATUS_CLOSING;
+            break;
+        default:
+            // Unknown
+            break;
+    }
 }
 
 void do_setup()
@@ -883,7 +964,17 @@ void process_ui()
 				ipString.replace(".", ". ");
 				report_ip();
 			} else if(curr > button_down_time + 50) {
-				og.click_relay();
+                switch (og.options[OPTION_SECV].ival) {
+                    case 1: // SecPlus 1
+                        // Not yet implemented
+                        break;
+                    case 2: // SecPlus 2
+                        secplus2_garage.toggle_door();
+                        break;
+                    default: // No secplus
+                        og.click_relay();
+                        break;
+                }
 			}
 			button_down_time = 0;
 		}
@@ -1243,17 +1334,30 @@ void check_status() {
 			sn2_status = 1-sn2_value;
 		}
 
-		// Process Sensor Logic
-		if(og.options[OPTION_SN2].ival==OG_SN2_NONE || og.options[OPTION_SNO].ival==OG_SNO_1ONLY) {
-			// if SN2 not installed or logic is SN1 only
-			door_status = sn1_status;
-		} else if(og.options[OPTION_SNO].ival==OG_SNO_2ONLY) {
-			door_status = sn2_status;
-		} else if(og.options[OPTION_SNO].ival==OG_SNO_AND) {
-			door_status = sn1_status && sn2_status;
-		} else if(og.options[OPTION_SNO].ival==OG_SNO_OR) {
-			door_status = sn1_status || sn2_status;
-		}
+        switch (og.options[OPTION_SECV].ival) {
+            case 1: // SecPlus 1
+                // Not yet implemented
+                break;
+            case 2: // SecPlus 2
+                // Handled by the callback function
+                break;
+            default: // No secplus
+                // Process Sensor Logic
+                bool status;
+                if(og.options[OPTION_SN2].ival==OG_SN2_NONE || og.options[OPTION_SNO].ival==OG_SNO_1ONLY) {
+                    // if SN2 not installed or logic is SN1 only
+                    status = sn1_status;
+                } else if(og.options[OPTION_SNO].ival==OG_SNO_2ONLY) {
+                    status = sn2_status;
+                } else if(og.options[OPTION_SNO].ival==OG_SNO_AND) {
+                    status = sn1_status && sn2_status;
+                } else if(og.options[OPTION_SNO].ival==OG_SNO_OR) {
+                    status = sn1_status || sn2_status;
+                }
+
+                door_status = status ? DOOR_STATUS_OPEN : DOOR_STATUS_CLOSED;
+                break;
+        }
 		
 		// get temperature readings
 		og.read_TH_sensor(tempC, humid);
@@ -1273,7 +1377,7 @@ void check_status() {
 		
 		if (checkstatus_timeout == 0){
 			DEBUG_PRINTLN(F("First time checking status don't trigger a status change, set full history to current value"));
-			if (door_status) { door_status_hist = B11111111; }
+			if (door_status == DOOR_STATUS_OPEN) { door_status_hist = B11111111; }
 			else { door_status_hist = B00000000; }
 		}else{
 			 door_status_hist = (door_status_hist<<1) | door_status;
@@ -1342,7 +1446,8 @@ void check_status() {
 			
 			// to reduce traffic, only send updated values
 			if(distance != old_distance) {  Blynk.virtualWrite(BLYNK_PIN_DIST, distance); old_distance = distance; }
-			if(door_status != old_door_status) { (door_status) ? blynk_door.on() : blynk_door.off(); old_door_status = door_status; }
+            // TODO: What to do here since there are many states
+			if(door_status != old_door_status) { (door_status == DOOR_STATUS_OPEN) ? blynk_door.on() : blynk_door.off(); old_door_status = door_status; }
 			if(vehicle_status != old_vehicle_status) { (vehicle_status==1) ? blynk_car.on() : blynk_car.off(); old_vehicle_status = vehicle_status; }
 			if(old_ip != get_ip()) { Blynk.virtualWrite(BLYNK_PIN_IP, get_ip()); old_ip = get_ip(); }
 			// hack to simulate temp humid changes
@@ -1429,7 +1534,27 @@ void process_alarm() {
 		og.alarm--;
 		if(og.alarm==0) {
 			og.play_note(0);
-			og.click_relay();
+            switch (og.options[OPTION_SECV].ival) {
+            case 1: // SecPlus 1
+                // Not yet implemented
+                break;
+            case 2: // SecPlus 2
+                switch (og.alarm_action) {
+                    case 1: // Close
+                        secplus2_garage.close_door();
+                        break;
+                    case 2: // Open
+                        secplus2_garage.open_door();
+                        break;
+                    default: // Toggle
+                        secplus2_garage.toggle_door();
+                        break;
+                }
+                break;
+            default: // No secplus
+                og.click_relay();
+                break;
+            }
 		}
 	}
 }
@@ -1637,22 +1762,57 @@ void do_loop() {
 		process_alarm();
 }
 
+bool last_blink_button_state = 0;
+
 BLYNK_WRITE(BLYNK_PIN_RELAY) {
 	DEBUG_PRINTLN(F("Received Blynk generated button request"));
 	if(!og.options[OPTION_ALM].ival) {
 		// if alarm is disabled, trigger right away
 		if(param.asInt()) {
-		  og.set_relay(HIGH);
+            switch (og.options[OPTION_SECV].ival) {
+                case 1: // SecPlus 1
+                    // Not yet implemented
+                    break;
+                case 2: // SecPlus 2
+                    if (!last_blink_button_state) {
+                        secplus2_garage.toggle_door();
+                    }
+                    break;
+                default: // No secplus
+                    og.set_relay(HIGH);
+                    break;
+            }
+          last_blink_button_state = 1;
 		} else {
-		  og.set_relay(LOW);
+            switch (og.options[OPTION_SECV].ival) {
+                case 1: // SecPlus 1
+                    // Not yet implemented
+                    break;
+                case 2: // SecPlus 2
+                    break;
+                default: // No secplus
+                    og.set_relay(LOW);
+                    break;
+            }
+          last_blink_button_state = 0;
 		}
 	} else {
 		// otherwise, set alarm
 		if(param.asInt()) {
 			if(!og.options[OPTION_ALM].ival) {
 				og.set_alarm(OG_ALM_5);
-			} else if(og.options[OPTION_AOO].ival && !door_status) {
-				og.click_relay();
+			} else if(og.options[OPTION_AOO].ival && (door_status == DOOR_STATUS_CLOSED)) {
+				switch (og.options[OPTION_SECV].ival) {
+                    case 1: // SecPlus 1
+                        // Not yet implemented
+                        break;
+                    case 2: // SecPlus 2
+                        secplus2_garage.toggle_door();
+                        break;
+                    default: // No secplus
+                        og.click_relay();
+                        break;
+                }
 			} else {
 				og.set_alarm();
 			}

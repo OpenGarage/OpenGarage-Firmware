@@ -55,6 +55,7 @@ public:
 	static OptionStruct options[];
 	static byte state;
 	static byte alarm;
+	static byte alarm_action;
 	static byte led_reverse;
 	static void begin();
 	static void options_setup();
@@ -83,11 +84,12 @@ public:
 	static bool read_log_next(LogStruct& data);
 	static bool read_log_end();
 	static void play_note(uint freq);
-	static void set_alarm(byte ov=0) { // ov = override value
+	static void set_alarm(byte ov=0, byte action=0) { // ov = override value //action (0: toggle, 1: close, 2: open)
 		if(ov) alarm = ov*10+1;
 		else alarm = options[OPTION_ALM].ival * 10 + 1;
+        alarm_action = action;
 	}
-	static void reset_alarm() { alarm = 0; }
+	static void reset_alarm() { alarm = 0; alarm_action = 0; }
 	static void reset_to_ap() {
 		options[OPTION_MOD].ival = OG_MOD_AP;
 		options_save();
