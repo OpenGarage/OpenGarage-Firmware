@@ -56,12 +56,12 @@ String mqtt_topic;
 String mqtt_id;
 
 enum {
-    DOOR_STATUS_UNKNOWN = 0,
-    DOOR_STATUS_CLOSED,
-    DOOR_STATUS_CLOSING,
-    DOOR_STATUS_STOPPED,
-    DOOR_STATUS_OPENING,
+    DOOR_STATUS_CLOSED = 0,
     DOOR_STATUS_OPEN,
+    DOOR_STATUS_UNKNOWN,
+    DOOR_STATUS_STOPPED,
+    DOOR_STATUS_CLOSING,
+    DOOR_STATUS_OPENING,
 };
 
 static String scanned_ssids;
@@ -70,7 +70,7 @@ static uint distance = 0;
 static byte sn2_value = 0;
 static float tempC = 0;
 static float humid = 0;
-static byte door_status = 0; //door_status enum
+static byte door_status = DOOR_STATUS_UNKNOWN; //door_status enum
 static int vehicle_status = OG_VEH_ABSENT;
 static uint led_blink_ms = LED_FAST_BLINK;
 static ulong justopen_timestamp = 0;
