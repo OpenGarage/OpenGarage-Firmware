@@ -821,49 +821,66 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 			og.set_alarm();
 		}
 	}
-    //TODO: Set state
 	//Accept click for consistency with api, open and close should be used instead, use IN topic if possible
 	if (Topic==(mqtt_topic+"/IN/STATE")){
 		DEBUG_PRINT(F("MQTT IN Message detected, check data for action, Data:"));
 		DEBUG_PRINTLN(Payload);
-		if ( (Payload == "close" && door_status) || (Payload == "open" && !door_status) || Payload == "click") {
-			DEBUG_PRINTLN(F("Command is valid based on existing state, trigger change"));
-			if(!og.options[OPTION_ALM].ival) {
-				// if alarm is not enabled, trigger relay right away
-                switch (og.options[OPTION_SECV].ival) {
-                    case 1: // SecPlus 1
-                        // Not yet implemented
-                        break;
-                    case 2: // SecPlus 2
-                        secplus2_garage.toggle_door();
-                        break;
-                    default: // No secplus
-                        og.click_relay();
-                        break;
+        switch (og.options[OPTION_SECV].ival) {
+            case 1: // SecPlus 1
+                // Not yet implemented
+                break;
+            case 2: { // SecPlus 2
+                bool close = Payload == "close";
+                bool open = Payload == "open";
+                bool click = Payload == "click";
+
+                if (click + close + open != 1) {
+                    DEBUG_PRINTLN(F("Command request not valid, invalid state"));
+                } else {
+                    // Security plus 2.0 allows you to send the target state instead of only being able to toggle
+                    if (!og.options[OPTION_ALM].ival) { // If no alarm process right away
+                        if (open) {
+                            secplus2_garage.open_door();
+                        } else if (close) {
+                            secplus2_garage.close_door();
+                        } else if (click) {
+                            secplus2_garage.toggle_door();
+                        }
+                    } else if (og.options[OPTION_AOO].ival && open) { // If opening and "no alarm on open"
+                        secplus2_garage.open_door();
+                    } else {
+                        if (open) {
+                            og.set_alarm(0, 2);
+                        } else if (close) {
+                            og.set_alarm(0, 1);
+                        } else if (click) {
+                            og.set_alarm(0, 0);
+                        }
+                    }
                 }
-			} else if(og.options[OPTION_AOO].ival && !door_status) {
-				// if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
-				switch (og.options[OPTION_SECV].ival) {
-                    case 1: // SecPlus 1
-                        // Not yet implemented
-                        break;
-                    case 2: // SecPlus 2
-                        secplus2_garage.toggle_door();
-                        break;
-                    default: // No secplus
+                break;
+            }
+            default: // No secplus
+                if ( (Payload == "close" && door_status) || (Payload == "open" && !door_status) || Payload == "click") {
+                    DEBUG_PRINTLN(F("Command is valid based on existing state, trigger change"));
+                    if(!og.options[OPTION_ALM].ival) {
+                        // if alarm is not enabled, trigger relay right away
                         og.click_relay();
-                        break;
+                    } else if(og.options[OPTION_AOO].ival && !door_status) {
+                        // if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
+                        og.click_relay();
+                    } else {
+                        // else, set alarm
+                        og.set_alarm();
+                    }
+                } else if ( (Payload=="close" && !door_status) || (Payload=="open" && door_status) ){
+                    DEBUG_PRINTLN(F("Command request not valid, door already in requested state"));
                 }
-			} else {
-				// else, set alarm
-				og.set_alarm();
-			}
-		}else if ( (Payload=="close" && !door_status) || (Payload=="open" && door_status) ){
-			DEBUG_PRINTLN(F("Command request not valid, door already in requested state"));
-		}
-		else {
-		  DEBUG_PRINT(F("Unrecognized MQTT data/command:"));
-		}
+                else {
+                DEBUG_PRINT(F("Unrecognized MQTT data/command:"));
+                }
+                break;
+        }
 	}
 }
 
@@ -1446,7 +1463,6 @@ void check_status() {
 			
 			// to reduce traffic, only send updated values
 			if(distance != old_distance) {  Blynk.virtualWrite(BLYNK_PIN_DIST, distance); old_distance = distance; }
-            // TODO: What to do here since there are many states
 			if(door_status != old_door_status) { (door_status == DOOR_STATUS_OPEN) ? blynk_door.on() : blynk_door.off(); old_door_status = door_status; }
 			if(vehicle_status != old_vehicle_status) { (vehicle_status==1) ? blynk_car.on() : blynk_car.off(); old_vehicle_status = vehicle_status; }
 			if(old_ip != get_ip()) { Blynk.virtualWrite(BLYNK_PIN_IP, get_ip()); old_ip = get_ip(); }
