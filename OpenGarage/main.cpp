@@ -886,27 +886,35 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 	}
 }
 
-void secplus2_state_callback(SecPlus2::state_struct_t state) {
-    switch (state.door_state) {
-        case SecPlus2::DoorStatus::OPEN:
+void secplus_update_door(SecPlusCommon::DoorStatus door_state) {
+    switch (door_state) {
+        case SecPlusCommon::DoorStatus::OPEN:
             door_status = DOOR_STATUS_OPEN;
             break;
-        case SecPlus2::DoorStatus::CLOSED:
+        case SecPlusCommon::DoorStatus::CLOSED:
             door_status = DOOR_STATUS_CLOSED;
             break;
-        case SecPlus2::DoorStatus::STOPPED:
+        case SecPlusCommon::DoorStatus::STOPPED:
             door_status = DOOR_STATUS_STOPPED;
             break;
-        case SecPlus2::DoorStatus::OPENING:
+        case SecPlusCommon::DoorStatus::OPENING:
             door_status = DOOR_STATUS_OPENING;
             break;
-        case SecPlus2::DoorStatus::CLOSING:
+        case SecPlusCommon::DoorStatus::CLOSING:
             door_status = DOOR_STATUS_CLOSING;
             break;
         default:
             // Unknown
             break;
     }
+}
+
+void secplus1_state_callback(SecPlus1::state_struct_t state) {
+    secplus_update_door(state.door_state);
+}
+
+void secplus2_state_callback(SecPlus2::state_struct_t state) {
+    secplus_update_door(state.door_state);
 }
 
 void do_setup()
