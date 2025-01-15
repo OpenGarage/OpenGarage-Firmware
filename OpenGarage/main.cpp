@@ -272,6 +272,20 @@ void sta_controller_fill_json(String& json, bool fullversion=true) {
 		json += og.options[OPTION_FWV].ival;
 		json += F(",\"has_swrx\":");
 		json += og.has_swrx;
+		if(og.has_swrx) {
+			if(og.options[OPTION_SECV].ival>=1) {
+				json += F(",\"light\":");
+				json += secplus2_garage.get_light_state();
+				json += F(",\"lock\":");
+				json += secplus2_garage.get_lock_state();
+				if(og.options[OPTION_SECV].ival>=2) {
+					json += F(",\"obstruction\":");
+					json += secplus2_garage.get_obstruction_state();
+					json += F(",\"nopenings\":");
+					json += secplus2_garage.get_opening_count();
+				}
+			}
+		}
 		json += F(",\"name\":\"");
 		json += og.options[OPTION_NAME].sval;
 		json += F("\",\"mac\":\"");
