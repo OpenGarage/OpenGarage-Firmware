@@ -86,6 +86,7 @@ static HTTPClient http;
 static bool light_blink_enabled = true;
 
 
+SecPlus1::Garage secplus1_garage(PIN_SW_RX, PIN_SW_TX);
 SecPlus2::Garage secplus2_garage(0x777, PIN_SW_RX, PIN_SW_TX);
 
 void do_setup();
@@ -440,9 +441,6 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
         DEBUG_PRINTLN(F("Received button request (click, close, or open)"));
         otf_send_result(res, HTML_SUCCESS, nullptr);
         switch (og.options[OPTION_SECV].ival) {
-            case 1: // SecPlus 1
-                // Not yet implemented
-                break;
             case 2: // SecPlus 2
                 if (click + close + open != 1) {
                     DEBUG_PRINTLN(F("Command request not valid, recieved multiple states"));
@@ -469,6 +467,7 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
                     }
                 }
                 break;
+            case 1: // SecPlus 1
             default: // No secplus
             //1 is open
             if ((close && (door_status == DOOR_STATUS_OPEN)) ||
@@ -477,10 +476,20 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
                 DEBUG_PRINTLN(F("Valid command recieved based on door status"));
                 if(!og.options[OPTION_ALM].ival) {
                     // if alarm is not enabled, trigger relay right away
-                    og.click_relay();
+                    switch (og.options[OPTION_SECV].ival) {
+                        case 1:
+                        secplus1_garage.toggle_door();
+                        default:
+                        og.click_relay();
+                    }
                 } else if(og.options[OPTION_AOO].ival && (door_status == DOOR_STATUS_CLOSED)) {
                     // if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
-                    og.click_relay();
+                    switch (og.options[OPTION_SECV].ival) {
+                        case 1:
+                        secplus1_garage.toggle_door();
+                        default:
+                        og.click_relay();
+                    }
                 } else {
                     // else, set alarm
                     og.set_alarm();
@@ -494,7 +503,7 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
         otf_send_result(res, HTML_SUCCESS, nullptr);
         switch (og.options[OPTION_SECV].ival) {
             case 1: // SecPlus 1
-                // Not yet implemented
+                secplus1_garage.toggle_light();
                 break;
             case 2: // SecPlus 2
                 secplus2_garage.toggle_light();
@@ -810,7 +819,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 			// if alarm is not enabled, trigger relay right away
 			switch (og.options[OPTION_SECV].ival) {
                     case 1: // SecPlus 1
-                        // Not yet implemented
+                        secplus1_garage.toggle_door();
                         break;
                     case 2: // SecPlus 2
                         secplus2_garage.toggle_door();
@@ -823,7 +832,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 			// if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
 			switch (og.options[OPTION_SECV].ival) {
                     case 1: // SecPlus 1
-                        // Not yet implemented
+                        secplus1_garage.toggle_door();
                         break;
                     case 2: // SecPlus 2
                         secplus2_garage.toggle_door();
@@ -842,9 +851,6 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 		DEBUG_PRINT(F("MQTT IN Message detected, check data for action, Data:"));
 		DEBUG_PRINTLN(Payload);
         switch (og.options[OPTION_SECV].ival) {
-            case 1: // SecPlus 1
-                // Not yet implemented
-                break;
             case 2: { // SecPlus 2
                 bool close = Payload == "close";
                 bool open = Payload == "open";
@@ -876,15 +882,26 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
                 }
                 break;
             }
+            case 1: // SecPlus 1
             default: // No secplus
                 if ( (Payload == "close" && door_status) || (Payload == "open" && !door_status) || Payload == "click") {
                     DEBUG_PRINTLN(F("Command is valid based on existing state, trigger change"));
                     if(!og.options[OPTION_ALM].ival) {
                         // if alarm is not enabled, trigger relay right away
-                        og.click_relay();
+                        switch (og.options[OPTION_SECV].ival) {
+                            case 1:
+                            secplus1_garage.toggle_door();
+                            default:
+                            og.click_relay();
+                        }
                     } else if(og.options[OPTION_AOO].ival && !door_status) {
                         // if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
-                        og.click_relay();
+                        switch (og.options[OPTION_SECV].ival) {
+                            case 1:
+                            secplus1_garage.toggle_door();
+                            default:
+                            og.click_relay();
+                        }
                     } else {
                         // else, set alarm
                         og.set_alarm();
@@ -948,6 +965,7 @@ void do_setup()
 	og.init_sensors();
 	if(og.get_mode() == OG_MOD_AP) og.play_startup_tune();
 	curr_mode = og.get_mode();
+	secplus1_garage.enable_callback(secplus1_state_callback);
 	secplus2_garage.enable_callback(secplus2_state_callback);
 
 	if(!otf) {
@@ -1006,7 +1024,7 @@ void process_ui()
 			} else if(curr > button_down_time + 50) {
                 switch (og.options[OPTION_SECV].ival) {
                     case 1: // SecPlus 1
-                        // Not yet implemented
+                        secplus1_garage.toggle_door();
                         break;
                     case 2: // SecPlus 2
                         secplus2_garage.toggle_door();
@@ -1376,7 +1394,7 @@ void check_status() {
 
         switch (og.options[OPTION_SECV].ival) {
             case 1: // SecPlus 1
-                // Not yet implemented
+                // handled by the callback function
                 break;
             case 2: // SecPlus 2
                 // Handled by the callback function
@@ -1575,7 +1593,7 @@ void process_alarm() {
 			og.play_note(0);
             switch (og.options[OPTION_SECV].ival) {
             case 1: // SecPlus 1
-                // Not yet implemented
+                secplus1_garage.toggle_door();
                 break;
             case 2: // SecPlus 2
                 switch (og.alarm_action) {
@@ -1784,7 +1802,7 @@ void do_loop() {
 			}
             switch (og.options[OPTION_SECV].ival) {
             case 1: // SecPlus 1
-                // Not yet implemented
+                secplus1_garage.loop();
                 break;
             case 2: // SecPlus 2
                 secplus2_garage.loop();
@@ -1810,7 +1828,9 @@ BLYNK_WRITE(BLYNK_PIN_RELAY) {
 		if(param.asInt()) {
             switch (og.options[OPTION_SECV].ival) {
                 case 1: // SecPlus 1
-                    // Not yet implemented
+                    if (!last_blink_button_state) {
+                        secplus1_garage.toggle_door();
+                    }
                     break;
                 case 2: // SecPlus 2
                     if (!last_blink_button_state) {
@@ -1825,7 +1845,6 @@ BLYNK_WRITE(BLYNK_PIN_RELAY) {
 		} else {
             switch (og.options[OPTION_SECV].ival) {
                 case 1: // SecPlus 1
-                    // Not yet implemented
                     break;
                 case 2: // SecPlus 2
                     break;
@@ -1843,7 +1862,7 @@ BLYNK_WRITE(BLYNK_PIN_RELAY) {
 			} else if(og.options[OPTION_AOO].ival && (door_status == DOOR_STATUS_CLOSED)) {
 				switch (og.options[OPTION_SECV].ival) {
                     case 1: // SecPlus 1
-                        // Not yet implemented
+                        secplus1_garage.toggle_door();
                         break;
                     case 2: // SecPlus 2
                         secplus2_garage.toggle_door();

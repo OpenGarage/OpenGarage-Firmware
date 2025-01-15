@@ -222,7 +222,7 @@ $('#lbl_vstatus').text(jd.vehicle == 1 ?'Present':(jd.vehicle == 0 ?'Absent':'Un
 const car_img = document.getElementById("car_pic");
 if (jd.vehicle < 3 && jd.vehicle > 0) {
 car_img.src = base+"car.svg";
-car_img.style.filter=jd.vehicle == 1 ? 'brightness(2);' : '';
+car_img.style.filter=jd.vehicle == 1 ? 'brightness(0)' : '';
 } else {
 car_img.src = "";
 }
