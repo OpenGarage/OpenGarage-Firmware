@@ -270,6 +270,8 @@ void sta_controller_fill_json(String& json, bool fullversion=true) {
 	if(fullversion) {
 		json += F(",\"fwv\":");
 		json += og.options[OPTION_FWV].ival;
+		json += F(",\"has_swrx\":");
+		json += og.has_swrx;
 		json += F(",\"name\":\"");
 		json += og.options[OPTION_NAME].sval;
 		json += F("\",\"mac\":\"");
@@ -924,8 +926,7 @@ void do_setup()
 	og.init_sensors();
 	if(og.get_mode() == OG_MOD_AP) og.play_startup_tune();
 	curr_mode = og.get_mode();
-    
-    secplus2_garage.enable_callback(secplus2_state_callback);
+	secplus2_garage.enable_callback(secplus2_state_callback);
 
 	if(!otf) {
 		const String otfDeviceKey = og.options[OPTION_AUTH].sval;
@@ -1360,7 +1361,7 @@ void check_status() {
                 break;
             default: // No secplus
                 // Process Sensor Logic
-                bool status;
+                bool status = false;
                 if(og.options[OPTION_SN2].ival==OG_SN2_NONE || og.options[OPTION_SNO].ival==OG_SNO_1ONLY) {
                     // if SN2 not installed or logic is SN1 only
                     status = sn1_status;

@@ -36,7 +36,10 @@
 #define PIN_SW_RX   5 // NodeMCU D1. Software serial input pin.
 #define PIN_BUZZER 13 // NodeMCU D7. Buzzer pin.
 #define PIN_SWITCH  4 // NodeMCU D2. Optional switch sensor pin.
-#define PIN_TH     16 // NodeMCU D1. Optional temperature sensor pin.
+#define PIN_TH     16 // NodeMCU D0. Optional temperature sensor pin.
+#define PIN_SW_SDA  4 // Software SDA, for I2C temperature sensor
+#define PIN_SW_SCL 16 // Software SCL, for I2C temperature sensor
+#define PIN_SWRX_DETECT 10 // Hardware version detect (if software rx exists)
 
 // Default device name
 #define DEFAULT_NAME    "My OpenGarage"
@@ -114,8 +117,8 @@
 
 #define OG_LIGHT_BLINK_FOREVER  0
 #define OG_LIGHT_BLINK_MAX      99	// limited by rcnt to 99
-#define OG_LIGHT_BLINK_TIME		25
-#define OG_LIGHT_BLINK_NOTIFY	2000 // specifies how long the last blink should last before blinking turns off
+#define OG_LIGHT_BLINK_TIME     25
+#define OG_LIGHT_BLINK_NOTIFY   2000 // specifies how long the last blink should last before blinking turns off
 
 #define CLOUD_NONE  0
 #define CLOUD_BLYNK 1

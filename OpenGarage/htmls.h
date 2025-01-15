@@ -365,9 +365,9 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <select name='tsn' id='tsn' data-mini='true'>
 <option value=0>(none)</option>
 <option value=1>AM2320 (I2C)</option>
-<option value=2>DHT11 on G05</option>
-<option value=3>DHT22 on G05</option>
-<option value=4>DS18B20 on G05</option>
+<option value=2>DHT11 on G16</option>
+<option value=3>DHT22 on G16</option>
+<option value=4>DS18B20 on G16</option>
 </select></td></tr>
 <tr><td><b>Sound Alarm:</b></td><td>
 <select name='alm' id='alm' data-mini='true'>

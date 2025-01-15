@@ -57,6 +57,7 @@ public:
 	static byte alarm;
 	static byte alarm_action;
 	static byte led_reverse;
+	static byte has_swrx;
 	static void begin();
 	static void options_setup();
 	static void options_load();

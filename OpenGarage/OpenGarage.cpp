@@ -27,6 +27,7 @@ File  OpenGarage::log_file;
 byte  OpenGarage::alarm = 0;
 byte  OpenGarage::alarm_action = 0;
 byte  OpenGarage::led_reverse = 0;
+byte  OpenGarage::has_swrx = 0;
 Ticker ud_ticker;
 
 static const char* config_fname = CONFIG_FNAME;
@@ -151,7 +152,12 @@ void OpenGarage::begin() {
 	digitalWrite(PIN_RELAY, LOW);
 	pinMode(PIN_RELAY, OUTPUT);
 
-	digitalWrite(PIN_SW_RX, INPUT);
+	has_swrx = 0;
+	pinMode(PIN_SWRX_DETECT, INPUT_PULLUP);
+	if(digitalRead(PIN_SWRX_DETECT) == 0) {
+		digitalWrite(PIN_SW_RX, INPUT); // software rx exists
+		has_swrx = 1;
+	}
 
 	// detect LED logic
 	pinMode(PIN_LED, INPUT);
@@ -333,7 +339,7 @@ void OpenGarage::init_sensors() {
 	switch(options[OPTION_TSN].ival) {
 	case OG_TSN_AM2320:
 		am2320 = new AM2320();
-		am2320->begin();
+		am2320->begin(PIN_SW_SDA, PIN_SW_SCL);
 		break;
 	case OG_TSN_DHT11:
 		dht = new DHTesp();
