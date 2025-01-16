@@ -4,10 +4,12 @@
 <div data-role='page' id='page_home'><div data-role='header'><h3 id='head_name'>OG</h3></div>
 <div data-role='content'><div data-role='fieldcontain'>
 <table><tr><td><b>Door:<br></td><td><label id='lbl_status'>-</label></td>
-<td rowspan='2'><div id='pic' style='width:112px;height:64px;'><img id='car_pic' src='' class='img'><img id='door_pic' src='' class='img'><img id='arrow_pic' src='' class='img'></div></td>
-</tr><tr><td><b><label id='lbl_vstatus1'>Vehicle:</label></b></td>
-<td><label id='lbl_vstatus'>-</label></td></tr>
+<td rowspan='2'><div id='pic' style='width:112px;height:64px;'><img id='car_pic' src='' class='img'><img id='door_pic' src='' class='img'><img id='arrow_pic' src='' class='img'></div></td></tr>
+<tr><td><b><label id='lbl_vstatus1'>Vehicle:</label></b></td><td><label id='lbl_vstatus'>-</label></td></tr>
 <tr><td><b>Distance:</b></td><td><label id='lbl_dist'>-</label></td><td></td></tr>
+<tr id='tbl_light'><td><b>Light:</b></td><td><label id='lbl_light'>-</label></td><td></td></tr>
+<tr id='tbl_lock'><td><b>Lock:</b></td><td><label id='lbl_lock'>-</label></td><td></td></tr>
+<tr id='tbl_obstruct'><td><b>Obstructed:</b></td><td><label id='lbl_obstruct'>-</label></td><td></td></tr>
 <tr id='tbl_sn2' style='display:none;'><td><b>Switch State:</b></td><td><label id='lbl_sn2'>-</label></td><td></td></tr>
 <tr><td><b>Read Count:</b></td><td><label id='lbl_beat'>-</label></td><td></td></tr>
 <tr><td><b>WiFi Signal:</b></td><td colspan='2'><label id='lbl_rssi'>-</label></td></tr>
@@ -112,51 +114,49 @@ function show() {
 	success:function(jd){
 		$('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 		$('#lbl_dist').text(jd.dist +' (cm)').css('color', jd.dist==450?'red':'black');
-        let status_text;
-        let status_color;
-        
-        const door_img = document.getElementById("door_pic");
-        const arrow_img = document.getElementById("arrow_pic");
+		let status_text;
+		let status_color;
+		const door_img = document.getElementById("door_pic");
+		const arrow_img = document.getElementById("arrow_pic");
+		let base = "https://raw.githubusercontent.com/OpenGarage/OpenGarage-Firmware/refs/heads/dev/1.2.4/icons/parts/";
 
-        let base = "https://raw.githubusercontent.com/OpenGarage/OpenGarage-Firmware/refs/heads/dev/1.2.4/icons/parts/";
-
-        switch (jd.door) {
-            case 0: // Closed
-                status_text = "CLOSED";
-                status_color = "green";
-                door_img.src = base+"closed.svg"
-                arrow_img.src = ""
-                break;
-            case 1: // Open
-                status_text = "OPENED";
-                status_color = "red";
-                door_img.src = base+"open.svg"
-                arrow_img.src = ""
-                break;
-            case 3: // Stopped
-                status_text = "STOPPED";
-                status_color = "red";
-                door_img.src = base+"partial.svg"
-                arrow_img.src = ""
-                break;
-            case 4: // Closing
-                status_text = "CLOSING";
-                status_color = "green";
-                door_img.src = base+"partial.svg"
-                arrow_img.src = base+"arrow_down.svg"
-                break;
-            case 5: // Opening
-                status_text = "OPENING";
-                status_color = "red";
-                door_img.src = base+"partial.svg"
-                arrow_img.src = base+"arrow_up.svg"
-                break;
-            case 2: // UNKNOWN / UNSET 
-            default:
-                status_text = "UNKNOWN";
-                status_color = "red";
-                break;
-        }
+		switch (jd.door) {
+			case 0: // Closed
+				status_text = "CLOSED";
+				status_color = "green";
+				door_img.src = base+"closed.svg"
+				arrow_img.src = ""
+				break;
+			case 1: // Open
+				status_text = "OPENED";
+				status_color = "red";
+				door_img.src = base+"open.svg"
+				arrow_img.src = ""
+				break;
+			case 3: // Stopped
+				status_text = "STOPPED";
+				status_color = "red";
+				door_img.src = base+"partial.svg"
+				arrow_img.src = ""
+				break;
+			case 4: // Closing
+				status_text = "CLOSING";
+				status_color = "green";
+				door_img.src = base+"partial.svg"
+				arrow_img.src = base+"arrow_down.svg"
+				break;
+			case 5: // Opening
+				status_text = "OPENING";
+				status_color = "red";
+				door_img.src = base+"partial.svg"
+				arrow_img.src = base+"arrow_up.svg"
+				break;
+			case 2: // UNKNOWN / UNSET
+			default:
+				status_text = "UNKNOWN";
+				status_color = "red";
+				break;
+		}
 		$('#lbl_status').text(status_text).css('color', status_color);
 		$('#btn_light').button(jd.secv>0?'enable':'disable');
 		if (jd.vehicle >=2){
@@ -166,13 +166,13 @@ function show() {
 			$('#lbl_vstatus1').show()
 			$('#lbl_vstatus').text(jd.vehicle == 1 ?'Present':(jd.vehicle == 0 ?'Absent':'Unavailable'));
 		}
-        const car_img = document.getElementById("car_pic");
-        if (jd.vehicle < 3 && jd.vehicle > 0) {
-            car_img.src = base+"car.svg";
-            car_img.style.filter=jd.vehicle == 1 ? 'brightness(0)' : '';
-        } else {
-            car_img.src = "";
-        }
+		const car_img = document.getElementById("car_pic");
+		if(jd.vehicle < 3 && jd.vehicle > 0) {
+			car_img.src = base+"car.svg";
+			car_img.style.filter=jd.vehicle == 1 ? 'brightness(0)' : '';
+		}else{
+			car_img.src = "";
+		}
 		if(typeof(jd.sn2)!='undefined') {$('#tbl_sn2').show(); $('#lbl_sn2').text(jd.sn2?'High':'Low');}
 		else {$('#tbl_sn2').hide();}
 		$('#lbl_beat').text(jd.rcnt).css('color','black');
@@ -184,6 +184,9 @@ function show() {
 		$('#btn_click').html(jd.door?'Close':'Open').button('refresh');
 		if(typeof(jd.temp)!='undefined') {$('#tbl_th').show(); $('#lbl_th').text(jd.temp.toFixed(1)+String.fromCharCode(176)+'C / '+(jd.temp*1.8+32).toFixed(1)+String.fromCharCode(176)+'F (H:'+jd.humid.toFixed(1)+'%)');}
 		else {$('#tbl_th').hide();}
+		if(typeof(jd.light)!='undefined') {$('#tbl_light').show(); $('#lbl_light').text(jd.light?'ON':'off').css('color',jd.light?'green':'black');} else {$('#tbl_light').hide();}
+		if(typeof(jd.lock)!='undefined') {$('#tbl_lock').show(); $('#lbl_lock').text(jd.lock?'ON':'off').css('color',jd.lock?'red':'black');} else {$('#tbl_lock').hide();}
+		if(typeof(jd.obstruct)!='undefined') {$('#tbl_obstruct').show(); $('#lbl_obstruct').text(jd.obstruct?'YES':'no').css('color',jd.obstruct?'red':'black');} else {$('#tbl_obstruct').hide();}
 	},
 	error:function(){
 		$('#lbl_beat').text('(offline)').css('color','red');

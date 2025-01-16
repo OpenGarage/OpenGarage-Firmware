@@ -66,7 +66,7 @@ function tryConnect(){
 	xhr.open('GET', 'jt', true); xhr.send();
 }
 function sf(){
-  show_msg('','black');
+	show_msg('','black');
 	if(!id('ssid').value) {show_msg('WiFi SSID cannot be empty!','red');return;}
 	var xhr=new XMLHttpRequest();
 	xhr.onreadystatechange=function() {

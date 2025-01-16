@@ -279,9 +279,9 @@ void sta_controller_fill_json(String& json, bool fullversion=true) {
 				json += secplus2_garage.get_light_state();
 				json += F(",\"lock\":");
 				json += secplus2_garage.get_lock_state();
+				json += F(",\"obstruct\":");
+				json += secplus2_garage.get_obstruction_state();
 				if(og.options[OPTION_SECV].ival>=2) {
-					json += F(",\"obstruction\":");
-					json += secplus2_garage.get_obstruction_state();
 					json += F(",\"nopenings\":");
 					json += secplus2_garage.get_opening_count();
 				}
