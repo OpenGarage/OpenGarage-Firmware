@@ -436,6 +436,8 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 	bool click = req.getQueryParameter("click");
 	bool close = req.getQueryParameter("close");
 	bool open = req.getQueryParameter("open");
+	char* light = req.getQueryParameter("light");
+	char* lock = req.getQueryParameter("lock");
 
 	if(click || close || open) {
         DEBUG_PRINTLN(F("Received button request (click, close, or open)"));
@@ -499,20 +501,43 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
             }
             break;
         }
-	} else if(req.getQueryParameter("light")) {
+	} else if(light) {
         otf_send_result(res, HTML_SUCCESS, nullptr);
-        switch (og.options[OPTION_SECV].ival) {
-            case 1: // SecPlus 1
-                secplus1_garage.toggle_light();
-                break;
-            case 2: // SecPlus 2
-                secplus2_garage.toggle_light();
-                break;
-            default: // No secplus
-            DEBUG_PRINTLN(F("Command request not valid, light requires secplus?"));
-            break;
-        }
-	} else if(req.getQueryParameter("reboot") != NULL) {
+				if(strcmp(light, "toggle")==0) {
+					switch (og.options[OPTION_SECV].ival) {
+							case 1: // SecPlus 1
+									secplus1_garage.toggle_light();
+									break;
+							case 2: // SecPlus 2
+									secplus2_garage.toggle_light();
+									break;
+							default: // No secplus
+							DEBUG_PRINTLN(F("Command request not valid, light requires secplus?"));
+							break;
+					}
+				} else {
+					// TODO: handle light=1 or 0
+				}
+	} else if(lock) {
+        otf_send_result(res, HTML_SUCCESS, nullptr);
+				if(strcmp(lock, "toggle")==0) {
+					switch (og.options[OPTION_SECV].ival) {
+							case 1: // SecPlus 1
+									secplus1_garage.toggle_lock();
+									break;
+							case 2: // SecPlus 2
+									secplus2_garage.toggle_lock();
+									break;
+							default: // No secplus
+							DEBUG_PRINTLN(F("Command request not valid, lock requires secplus?"));
+							break;
+					}
+				} else {
+					// TODO: handle lock=1 or 0
+				}
+	}
+	
+	else if(req.getQueryParameter("reboot") != NULL) {
 		otf_send_result(res, HTML_SUCCESS, nullptr);
 		//restart_ticker.once_ms(1000, og.restart);
 		restart_in(1000);

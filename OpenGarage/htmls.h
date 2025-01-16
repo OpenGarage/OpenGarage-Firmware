@@ -260,8 +260,8 @@ $('#msg').html('Device is now in AP mode. Log on<br>to SSID OG_xxxxxx, then <br>
 });
 }
 });
-$('#lightflip').on('change', function(e) {
-var comm = 'cc?light=1&dkey='+encodeURIComponent($('#dkey').val());
+function do_action_command(comm) {
+var comm = 'cc?'+comm+'&dkey='+encodeURIComponent($('#dkey').val());
 $.getJSON(comm)
 .done(function( jd ) {
 if(jd.result!=1) {
@@ -272,19 +272,15 @@ show_msg('Check device key and try again.',2000,'red');
 var err = error;
 $('#msg').text('Request Failed: ' + err).css('color','red');
 });
+}
+$('#lightflip').on('change', function(e) {
+do_action_command('light=toggle');
+});
+$('#lockflip').on('change', function(e) {
+do_action_command('lock=toggle');
 });
 $('#btn_click').click(function(e) {
-var comm = 'cc?click=1&dkey='+encodeURIComponent($('#dkey').val());
-$.getJSON(comm)
-.done(function( jd ) {
-if(jd.result!=1) {
-show_msg('Check device key and try again.',2000,'red');
-}else{clear_msg();};
-})
-.fail(function( jqxhr, textStatus, error ) {
-var err = error;
-$('#msg').text('Request Failed: ' + err).css('color','red');
-});
+do_action_command('click=1');
 });
 $(document).ready(function() { show(); si=setInterval('show()', 5000); });
 function show() {
