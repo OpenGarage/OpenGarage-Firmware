@@ -972,15 +972,15 @@ void secplus_update_door(SecPlusCommon::DoorStatus door_state) {
 void secplus1_state_callback(SecPlus1::state_struct_t state) {
     secplus_update_door(state.door_state);
     light_status = state.light_state;
-    lock_status = state.light_state;
-    obstruction_status = state.light_state;
+    lock_status = state.lock_state;
+    obstruction_status = state.obstruction_state;
 }
 
 void secplus2_state_callback(SecPlus2::state_struct_t state) {
     secplus_update_door(state.door_state);
     light_status = state.light_state;
-    lock_status = state.light_state;
-    obstruction_status = state.light_state;
+    lock_status = state.lock_state;
+    obstruction_status = state.obstruction_state;
     opening_count = state.openings;
 }
 
