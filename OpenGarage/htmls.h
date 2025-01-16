@@ -167,31 +167,43 @@ xhr.send(fd);
 </script>
 </body>
 )";
-const char sta_home_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'><script src='//code.jquery.com/jquery-1.9.1.min.js' type='text/javascript'></script><script src='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js' type='text/javascript'></script></head>
+const char sta_home_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='https://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'><script src='https://code.jquery.com/jquery-1.9.1.min.js' type='text/javascript'></script><script src='https://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js' type='text/javascript'></script></head>
 <body>
-<style> table, th, td {border: 0px solid black;padding: 6px; border-collapse: collapse; } .img {width: inherit; height: inherit; position: absolute; top: inherit; left: inherit;} .img[src=""] {display:none;} </style>
+<style> table, th, td {border: 0px solid black;padding: 6px; border-collapse: collapse; } .img {width: inherit; height: inherit; position: absolute; top: inherit; left: inherit;} .img[src=""] {display:none;} 
+.lightlock-ctrl div.ui-slider-switch {width:160px;}
+</style>
 <div data-role='page' id='page_home'><div data-role='header'><h3 id='head_name'>OG</h3></div>
 <div data-role='content'><div data-role='fieldcontain'>
 <table><tr><td><b>Door:<br></td><td><label id='lbl_status'>-</label></td>
 <td rowspan='2'><div id='pic' style='width:112px;height:64px;'><img id='car_pic' src='' class='img'><img id='door_pic' src='' class='img'><img id='arrow_pic' src='' class='img'></div></td></tr>
 <tr><td><b><label id='lbl_vstatus1'>Vehicle:</label></b></td><td><label id='lbl_vstatus'>-</label></td></tr>
 <tr><td><b>Distance:</b></td><td><label id='lbl_dist'>-</label></td><td></td></tr>
-<tr id='tbl_light'><td><b>Light:</b></td><td><label id='lbl_light'>-</label></td><td></td></tr>
-<tr id='tbl_lock'><td><b>Lock:</b></td><td><label id='lbl_lock'>-</label></td><td></td></tr>
-<tr id='tbl_obstruct'><td><b>Obstructed:</b></td><td><label id='lbl_obstruct'>-</label></td><td></td></tr>
-<tr id='tbl_sn2' style='display:none;'><td><b>Switch State:</b></td><td><label id='lbl_sn2'>-</label></td><td></td></tr>
-<tr><td><b>Read Count:</b></td><td><label id='lbl_beat'>-</label></td><td></td></tr>
+<tr><td><b>Read Cnt.:</b></td><td><label id='lbl_beat'>-</label></td><td></td></tr>
+<tr id='tbl_sn2' style='display:none'><td><b>Switch Sn.:</b></td><td><label id='lbl_sn2'>-</label></td><td></td></tr>
+<tr id='tbl_obstruct' style='display:none'><td><b>Obstructed:</b></td><td><label id='lbl_obstruct'>-</label></td><td></td></tr>
 <tr><td><b>WiFi Signal:</b></td><td colspan='2'><label id='lbl_rssi'>-</label></td></tr>
 <tr><td><b>Cloud:</b></td><td colspan='2'><label id='lbl_cld'>-</label></td></tr>
-<tr id='tbl_th' style='display:none;'><td><b>T/H sensor:</b></td><td colspan='2'><label id='lbl_th'>-</label></td></tr>
+<tr id='tbl_th'><td><b>T/H sensor:</b></td><td colspan='2'><label id='lbl_th'>-</label></td></tr>
 <tr><td><b>Device Key:</b></td><td colspan='2' ><input type='password' size=20 maxlength=64 name='dkey' id='dkey'></td></tr>
 <tr><td colspan=3><label id='msg'></label></td></tr>
-</table><br />
+</table>
+<div class="lightlock-ctrl" style='display:none'>
+<label for="lightflip" class="ui-hidden-accessible"></label>
+<select name="lightflip" id="lightflip" data-role="slider">
+<option value=0>Light Off</option>
+<option value=1>Light On</option>
+</select>
+<label for="lockflip" class="ui-hidden-accessible"></label>
+<select name="lockflip" id="lockflip" data-role="slider">
+<option value=0>Lock Inactive</option>
+<option value=1>Lock Active</option>
+</select>
+</div>
+<span style='display:block;height:5px'></span>
 <div data-role='controlgroup' data-type='horizontal'>
-<button data-theme='b' id='btn_click'>Button</button>
-<button data-theme='b' id='btn_light' disabled>Light</button>
+<button data-theme='b' id='btn_click'>Door</button>
 <button data-theme='b' id='btn_opts'>Options</button>
-<button data-theme='b' id='btn_log'>Log</button>
+<button data-theme='b' id='btn_log'>View Log</button>
 </div>
 <span style='display:block;height:5px'></span>
 <div data-role='controlgroup' data-type='horizontal'>
@@ -248,7 +260,7 @@ $('#msg').html('Device is now in AP mode. Log on<br>to SSID OG_xxxxxx, then <br>
 });
 }
 });
-$('#btn_light').click(function(e) {
+$('#lightflip').on('change', function(e) {
 var comm = 'cc?light=1&dkey='+encodeURIComponent($('#dkey').val());
 $.getJSON(comm)
 .done(function( jd ) {
@@ -319,18 +331,24 @@ status_color = "red";
 door_img.src = base+"partial.svg"
 arrow_img.src = base+"arrow_up.svg"
 break;
-case 2: // UNKNOWN / UNSET 
+case 2: // UNKNOWN / UNSET
 default:
 status_text = "UNKNOWN";
 status_color = "red";
 break;
 }
 $('#lbl_status').text(status_text).css('color', status_color);
-$('#btn_light').button(jd.secv>0?'enable':'disable');
+if(typeof(jd.light)=='undefined'||typeof(jd.lock)=='undefined') {
+$('.lightlock-ctrl').hide();
+}else{
+$('.lightlock-ctrl').show();
+$('#lightflip').val(jd.light).slider('refresh');
+$('#lockflip').val(jd.lock).slider('refresh');
+}
 if (jd.vehicle >=2){
 $('#lbl_vstatus1').hide();
 $('#lbl_vstatus').text('');
-}else {
+}else{
 $('#lbl_vstatus1').show()
 $('#lbl_vstatus').text(jd.vehicle == 1 ?'Present':(jd.vehicle == 0 ?'Absent':'Unavailable'));
 }
@@ -349,11 +367,9 @@ if(jd.cld==0) $('#lbl_cld').text('None');
 else if(jd.cld==1) {$('#lbl_cld').text('Blynk '+['(disconnected)','(connected)'][jd.clds]);}
 else {$('#lbl_cld').text('OTC '+['(not enabled)','(connecting...)','(disconnected)','(connected)'][jd.clds]);}
 $('#head_name').text(jd.name);
-$('#btn_click').html(jd.door?'Close':'Open').button('refresh');
+$('#btn_click').html(jd.door?'Close Door':'Open Door').button('refresh');
 if(typeof(jd.temp)!='undefined') {$('#tbl_th').show(); $('#lbl_th').text(jd.temp.toFixed(1)+String.fromCharCode(176)+'C / '+(jd.temp*1.8+32).toFixed(1)+String.fromCharCode(176)+'F (H:'+jd.humid.toFixed(1)+'%)');}
 else {$('#tbl_th').hide();}
-if(typeof(jd.light)!='undefined') {$('#tbl_light').show(); $('#lbl_light').text(jd.light?'ON':'off').css('color',jd.light?'green':'black');} else {$('#tbl_light').hide();}
-if(typeof(jd.lock)!='undefined') {$('#tbl_lock').show(); $('#lbl_lock').text(jd.lock?'ON':'off').css('color',jd.lock?'red':'black');} else {$('#tbl_lock').hide();}
 if(typeof(jd.obstruct)!='undefined') {$('#tbl_obstruct').show(); $('#lbl_obstruct').text(jd.obstruct?'YES':'no').css('color',jd.obstruct?'red':'black');} else {$('#tbl_obstruct').hide();}
 },
 error:function(){
@@ -374,7 +390,7 @@ const char sta_logs_html[] PROGMEM = R"(<head>
 </head>
 <body>
 <div data-role='page' id='page_log'>
-<div data-role='header'><h3><label id='lbl_name'></label> Log</h3></div>    
+<div data-role='header'><h3><label id='lbl_name'></label> Log</h3></div>
 <div data-role='content'>
 <div data-role='timegroup'>
 <table>
@@ -555,7 +571,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <tr><td><b>IFTTT Key:</b></td><td><input type='text' size=20 maxlength=64 id='iftt' data-mini='true' placeholder='(if using IFTTT notification)'></td></tr>
 </table>
 <table>
-<tr><td colspan=4><hr></td></tr>  
+<tr><td colspan=4><hr></td></tr>
 <tr><td colspan=4><b>Automation:</b></td></tr>
 <tr><td colspan=4></td></tr><tr><td colspan=4></td></tr>
 <tr><td colspan=4>If open for longer than:</td></tr>
@@ -592,7 +608,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <tr class='si'><td><b>DNS1:</b></td><td><input type='text' size=15 maxlength=64 id='dns1' data-mini='true'></td></tr>
 <tr><td colspan=2><input type='checkbox' id='cb_key' data-mini='true' onclick='update_ckey()'><label for='cb_key'>Change Device Key</label></td></tr>
 <tr class='ckey'><td><b>New Key:</b></td><td><input type='password' size=16 maxlength=64 id='nkey' data-mini='true'></td></tr>
-<tr class='ckey'><td><b>Confirm:</b></td><td><input type='password' size=16 maxlength=64 id='ckey' data-mini='true'></td></tr>      
+<tr class='ckey'><td><b>Confirm:</b></td><td><input type='password' size=16 maxlength=64 id='ckey' data-mini='true'></td></tr>
 </table>
 </div>
 <br />
@@ -803,7 +819,7 @@ const char sta_update_html[] PROGMEM = R"(<head>
 <tr><td><b>Device key: </b><input type='password' name='dkey' size=16 maxlength=64 id='dkey'></td></tr>
 <tr><td><label id='msg'></label></td></tr>
 </table>
-<div data-role='controlgroup' data-type='horizontal'>    
+<div data-role='controlgroup' data-type='horizontal'>
 <a href='#' data-role='button' data-inline='true' data-theme='a' id='btn_back'>Back</a>
 <a href='#' data-role='button' data-inline='true' data-theme='b' id='btn_submit'>Submit</a>
 </div>
