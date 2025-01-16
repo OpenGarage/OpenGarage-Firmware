@@ -71,6 +71,10 @@ static byte sn2_value = 0;
 static float tempC = 0;
 static float humid = 0;
 static byte door_status = DOOR_STATUS_UNKNOWN; //door_status enum
+static bool light_status = 0;
+static bool lock_status = 0;
+static bool obstruction_status = 0;
+static uint16_t opening_count = 0;
 static int vehicle_status = OG_VEH_ABSENT;
 static uint led_blink_ms = LED_FAST_BLINK;
 static ulong justopen_timestamp = 0;
@@ -276,14 +280,14 @@ void sta_controller_fill_json(String& json, bool fullversion=true) {
 		if(og.has_swrx) {
 			if(og.options[OPTION_SECV].ival>=1) {
 				json += F(",\"light\":");
-				json += secplus2_garage.get_light_state()?1:0;
+				json += light_status;
 				json += F(",\"lock\":");
-				json += secplus2_garage.get_lock_state()?1:0;
+				json += lock_status;
 				json += F(",\"obstruct\":");
-				json += secplus2_garage.get_obstruction_state()?1:0;
+				json += obstruction_status;
 				if(og.options[OPTION_SECV].ival>=2) {
 					json += F(",\"nopenings\":");
-					json += secplus2_garage.get_opening_count();
+					json += opening_count;
 				}
 			}
 		}
@@ -967,10 +971,17 @@ void secplus_update_door(SecPlusCommon::DoorStatus door_state) {
 
 void secplus1_state_callback(SecPlus1::state_struct_t state) {
     secplus_update_door(state.door_state);
+    light_status = state.light_state;
+    lock_status = state.light_state;
+    obstruction_status = state.light_state;
 }
 
 void secplus2_state_callback(SecPlus2::state_struct_t state) {
     secplus_update_door(state.door_state);
+    light_status = state.light_state;
+    lock_status = state.light_state;
+    obstruction_status = state.light_state;
+    opening_count = state.openings;
 }
 
 void do_setup()
