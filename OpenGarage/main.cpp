@@ -1474,7 +1474,9 @@ void check_status() {
 			if (door_status == DOOR_STATUS_OPEN) { door_status_hist = B11111111; }
 			else { door_status_hist = B00000000; }
 		}else{
-			 door_status_hist = (door_status_hist<<1) | door_status;
+            if (door_status < 2) {
+			    door_status_hist = (door_status_hist<<1) | door_status;
+            }
 		}
 		//DEBUG_PRINT(F("Histogram value:"));
 		//DEBUG_PRINTLN(door_status_hist);
