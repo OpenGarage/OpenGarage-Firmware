@@ -1,0 +1,29 @@
+@import "tailwindcss" source("./public/*.{html,js}");
+@plugin "daisyui";
+@plugin "@tailwindcss/typography";
+
+@variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+.door-img {
+    width: inherit;
+    height: inherit;
+    position: absolute;
+    top: inherit;
+    left: inherit;
+}
+
+.door-img[src=""] {
+    display: none;
+}
+
+.drawer-toggle {
+    &:checked {
+        & ~ .drawer-content {
+            * & .floating-label {
+                & > span {
+                    opacity: 0;
+                }
+            }
+        }
+    }
+}
