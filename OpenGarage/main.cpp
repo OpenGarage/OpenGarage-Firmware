@@ -360,9 +360,9 @@ void sta_logs_fill_json(String& json, OTF::Response &res) {
 	json = "";
 	json += F("{\"name\":\"");
 	json += og.options[OPTION_NAME].sval;
-    json += F(",\"fwv\":");
+    json += F("\",\"fwv\":");
 	json += og.options[OPTION_FWV].ival;
-	json += F("\",\"starttime\":");
+	json += F(",\"starttime\":");
 	json += start_utc_time;
 	json += F(",\"time\":");
 	json += curr_utc_time;
