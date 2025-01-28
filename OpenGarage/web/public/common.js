@@ -1,4 +1,4 @@
-const openGarageRoot = "http://192.168.12.206/";
+const openGarageRoot = localStorage.getItem("openGarageRoot") || "/";
 export async function garageFetch(path, params = []) {
     return await fetch(openGarageRoot + path + "?" + params.join("&"));
 }
@@ -150,10 +150,10 @@ function createDrawerMenuItem(name, href) {
 }
 
 createDrawerMenuItem("Home", "/");
-createDrawerMenuItem("Options", "vo/");
+createDrawerMenuItem("Options", "/vo");
 createDrawerMenuItem("View Log", "/vl");
 createDrawerMenuItem("Firmware Update", "/update");
-createDrawerMenuItem("User Manual", "/https://github.com/OpenGarage/OpenGarage-Firmware/tree/master/docs");
+createDrawerMenuItem("User Manual", "https://github.com/OpenGarage/OpenGarage-Firmware/tree/master/docs");
 
 document.body.classList.remove("hidden");
 

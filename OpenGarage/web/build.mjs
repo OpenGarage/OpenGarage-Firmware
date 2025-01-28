@@ -3,7 +3,8 @@ import { glob } from 'glob'
 import { readFileSync, createWriteStream } from 'fs';
 
 const files = await glob('public/*.{html,css,js}');
-const output = createWriteStream("../htmls.h")
+//TODO: The name is temp until the rest of the html files are created
+const output = createWriteStream("../htmls2.h")
 
 output.write("#ifndef HTML_H\n#define HTML_H\n")
 files.forEach((path) => {

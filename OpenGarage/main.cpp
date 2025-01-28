@@ -107,6 +107,19 @@ void otf_send_html_P(OTF::Response &res, const __FlashStringHelper *content) {
 	DEBUG_PRINTLN(F(" bytes sent."));
 }
 
+void otf_send_compressed_P(OTF::Response &res, const __FlashStringHelper *content, size_t len, const __FlashStringHelper *content_type) {
+	res.writeStatus(200, F("OK"));
+	res.writeHeader(F("Content-Type"), content_type);
+	res.writeHeader(F("Access-Control-Allow-Origin"), F("*")); // from esp8266 2.4 this has to be sent explicitly
+	res.writeHeader(F("Content-Length"), len);
+	res.writeHeader(F("Vary"), F("Accept-Encoding"));
+	res.writeHeader(F("Content-Encoding"), F("gzip"));
+	res.writeHeader(F("Connection"), F("close"));
+	res.writeBodyData(content, len);
+	DEBUG_PRINT(len);
+	DEBUG_PRINTLN(F(" bytes sent."));
+}
+
 void otf_send_json(OTF::Response &res, String json) {
 	res.writeStatus(200, F("OK"));
 	res.writeHeader(F("Content-Type"), F("application/json"));
@@ -198,16 +211,31 @@ void on_home(const OTF::Request &req, OTF::Response &res)
 	if(curr_mode == OG_MOD_AP) {
 		otf_send_html_P(res, (const __FlashStringHelper *) ap_home_html);
 	} else {
-		otf_send_html_P(res, (const __FlashStringHelper *) sta_home_html);
+		otf_send_compressed_P(res, (const __FlashStringHelper *) index_html, index_html_size, F("text/html"));
 	}
 }
 
+void on_output_css(const OTF::Request &req, OTF::Response &res)
+{
+    otf_send_compressed_P(res, (const __FlashStringHelper *) output_css, output_css_size, F("text/css"));
+}
+
+void on_common_js(const OTF::Request &req, OTF::Response &res)
+{
+    otf_send_compressed_P(res, (const __FlashStringHelper *) common_js, common_js_size, F("text/javascript"));
+}
+
+void on_images_js(const OTF::Request &req, OTF::Response &res)
+{
+    otf_send_compressed_P(res, (const __FlashStringHelper *) images_js, images_js_size, F("text/javascript"));
+}
+
 void on_sta_view_options(const OTF::Request &req, OTF::Response &res) {
-	otf_send_html_P(res, (const __FlashStringHelper *) sta_options_html);
+	otf_send_compressed_P(res, (const __FlashStringHelper *) options_html, options_html_size, F("text/html"));
 }
 
 void on_sta_view_logs(const OTF::Request &req, OTF::Response &res) {
-	otf_send_html_P(res, (const __FlashStringHelper *) sta_logs_html);
+	otf_send_compressed_P(res, (const __FlashStringHelper *) log_html, log_html_size, F("text/html"));
 }
 
 char dec2hexchar(byte dec) {
@@ -1721,6 +1749,9 @@ void do_loop() {
 
 			time_keeping();
 			otf->on("/", on_home);
+            otf->on("/output.css", on_output_css);
+            otf->on("/common.js", on_common_js);
+            otf->on("/images.js", on_images_js);
 			otf->on("/jc", on_sta_controller);
 			otf->on("/jo", on_sta_options);
 			otf->on("/jl", on_sta_logs);

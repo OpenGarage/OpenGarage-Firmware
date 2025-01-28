@@ -2,7 +2,10 @@
 <html>
 
 <head>
-    <link href="./output.css" rel="stylesheet">
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <title>Open Garage</title>
+    <link href="/output.css" rel="stylesheet">
 </head>
 
 <body>
@@ -22,7 +25,7 @@
                 </div>
             </dialog>
 
-            <div class="flex-1 overflow-auto flex flex-col gap-4">
+            <div class="flex-1 overflow-auto flex flex-col gap-4 p-4">
                 <div role="tablist" class="tabs tabs-border">
                     <input type="radio" name="settings_tab" role="tab" class="tab" aria-label="Basic"
                         checked="checked" />
@@ -164,7 +167,7 @@
     </div>
 
     <script type="module">
-        import { garageFetch, sendCommand, updateTitle, updateVersion } from "./common.js";
+        import { garageFetch, sendCommand, updateTitle, updateVersion } from "/common.js";
         const nameInput = document.getElementById("name-input");
         const sensorMount = document.getElementById("sensor-mount");
         const secplusVersion = document.getElementById("secplus-select");
