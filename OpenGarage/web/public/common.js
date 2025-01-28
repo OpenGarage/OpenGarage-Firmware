@@ -1,5 +1,5 @@
 const openGarageRoot = "http://192.168.12.206/";
-export async function garageFetch(path, ...params) {
+export async function garageFetch(path, params = []) {
     return await fetch(openGarageRoot + path + "?" + params.join("&"));
 }
 
