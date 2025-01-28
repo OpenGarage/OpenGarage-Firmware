@@ -86,8 +86,8 @@
                 sn2Head.classList.add("hidden");
             }
 
-            currentTime.innerText = new Date(data.time * 1000).toString();
-            startTime.innerText = new Date(data.starttime * 1000).toString();
+            currentTime.innerText = new Date(data.time * 1000).toLocaleString();
+            startTime.innerText = new Date(data.starttime * 1000).toLocaleString();
             const delta = data.time - data.starttime;
             const seconds = delta % 60;
             const minutes = Math.floor((delta / 60) % 3600);
@@ -105,20 +105,29 @@
                 header.innerText = data.logs.length - i;
                 row.append(header);
 
-                let col = [];
+                const statusCell = document.createElement("td");
+                row.append(statusCell);
+
+                const statusBadge = document.createElement("div");
+                statusBadge.className = "badge";
                 switch (log[1]) { // Door status
                     case 0:
-                        col.push("Opened");
+                        statusBadge.innerText = "Opened";
+                        statusBadge.classList.add("badge-error");
                         break;
                     case 1:
-                        col.push("Closed");
+                        statusBadge.innerText = "Closed";
+                        statusBadge.classList.add("badge-success");
                         break;
                     default:
-                        col.push("UNKNOWN");
+                        statusBadge.innerText = "UNKNOWN"
+                        statusBadge.classList.add("badge-neutral");
                         break;
                 }
+                statusCell.appendChild(statusBadge);
 
-                col.push(new Date(log[0] * 1000).toString());
+                let col = [];
+                col.push(new Date(log[0] * 1000).toLocaleString());
                 col.push(log[2] + " cm");
 
                 if (data.ncols > 3) {
