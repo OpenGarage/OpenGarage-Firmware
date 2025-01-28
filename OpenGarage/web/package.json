@@ -11,8 +11,10 @@
   "description": "",
   "dependencies": {
     "@tailwindcss/postcss": "^4.0.0",
+    "glob": "^11.0.1",
     "minify": "^12.0.1",
     "postcss-cli": "^11.0.0",
+    "svgo": "^3.3.2",
     "tailwindcss": "^4.0.0"
   },
   "devDependencies": {

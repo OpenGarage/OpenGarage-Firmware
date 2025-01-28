@@ -6,12 +6,5 @@
 
 .door-img {
     width: inherit;
-    height: inherit;
     position: absolute;
-    top: inherit;
-    left: inherit;
-}
-
-.door-img[src=""] {
-    display: none;
 }

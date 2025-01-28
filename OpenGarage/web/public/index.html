@@ -109,9 +109,9 @@
                         <div class="shrink h-min p-2">
                             <div class="shrink h-min p-4">
                                 <div style='width:112px;height:64px;'>
-                                    <img id='car-pic' src='' class='door-img invert-0 dark:invert'>
-                                    <img id='door-pic' src='' class='door-img invert-0 dark:invert'>
-                                    <img id='arrow-pic' src='' class='door-img invert-0 dark:invert'>
+                                    <div id='car-pic' src='' class='door-img hidden'></div>
+                                    <div id='door-pic' src='' class='door-img fill-base-content'></div>
+                                    <div id='arrow-pic' src='' class='door-img fill-base-100'></div>
                                 </div>
                             </div>
                         </div>
@@ -150,6 +150,7 @@
 
     <script type="module">
         import { loading, garageFetch, sendCommand, updateTitle, updateVersion } from "./common.js";
+        import { partial_svg, open_svg, closed_svg, car_svg, arrow_up_svg, arrow_down_svg } from "./images.js";
         const door = document.getElementById("door-status");
         const doorActionText = document.getElementById("door-action-text");
 
@@ -220,57 +221,58 @@
             setTimeout(updateData, 100);
         });
 
+        carImg.innerHTML = car_svg;
+
         async function updateData() {
             const res = await garageFetch("jc");
             const data = await res.json();
 
             let doorStatusText;
             let doorStatusColor;
-            let base = "image/";
 
             switch (data.door) {
                 case 0: // Closed
                     doorStatusText = "Closed";
                     doorActionText.innerText = "Open Door";
                     doorStatusColor = "text-success";
-                    doorImg.src = base + "closed.svg";
-                    arrowImg.src = "";
+                    doorImg.innerHTML = closed_svg;
+                    arrowImg.innerHTML = "";
                     break;
                 case 1: // Open
                     doorStatusText = "Open";
                     doorActionText.innerText = "Close Door";
                     doorStatusColor = "text-error";
-                    doorImg.src = base + "open.svg";
-                    arrowImg.src = "";
+                    doorImg.innerHTML = open_svg;
+                    arrowImg.innerHTML = "";
                     break;
                 case 3: // Stopped
                     doorStatusText = "Stopped";
                     doorActionText.innerText = "Toggle Door";
                     doorStatusColor = "text-error";
-                    doorImg.src = base + "partial.svg";
-                    arrowImg.src = "";
+                    doorImg.innerHTML = partial_svg;
+                    arrowImg.innerHTML = "";
                     break;
                 case 4: // Closing
                     doorStatusText = "Closing";
                     doorActionText.innerText = "Open Door";
                     doorStatusColor = "text-success";
-                    doorImg.src = base + "partial.svg";
-                    arrowImg.src = base + "arrow_down.svg";
+                    doorImg.innerHTML = partial_svg;
+                    arrowImg.innerHTML = arrow_down_svg;
                     break;
                 case 5: // Opening
                     doorStatusText = "Opening";
                     doorActionText.innerText = "Stop Door";
                     doorStatusColor = "text-error";
-                    doorImg.src = base + "partial.svg";
-                    arrowImg.src = base + "arrow_up.svg";
+                    doorImg.innerHTML = partial_svg;
+                    arrowImg.innerHTML = arrow_up_svg;
                     break;
                 case 2: // UNKNOWN / UNSET
                 default:
                     doorStatusText = "Unknown";
                     doorActionText.innerText = "Unknown";
                     doorStatusColor = "text-error";
-                    doorImg.src = "";
-                    arrowImg.src = "";
+                    doorImg.innerHTML = "";
+                    arrowImg.innerHTML = "";
                     break;
             }
 
@@ -299,17 +301,15 @@
 
             switch (data.vehicle) {
                 default:
-                    carImg.src = "";
+                carImg.className = "door-img hidden";
                     vehicleStatusText = "Absent";
                     break;
                 case 1:
-                    carImg.src = base + "car.svg";
-                    carImg.className = "door-img brightness-0 dark:brightness-200";
+                    carImg.className = "door-img fill-base-content";
                     vehicleStatusText = "Detected";
                     break;
                 case 2:
-                    carImg.src = base + "car.svg";
-                    carImg.className = "door-img invert-0 dark:invert";
+                    carImg.className = "door-img fill-none stroke-info stroke-10";
                     vehicleStatusText = "Unavailable";
                     break;
             }
