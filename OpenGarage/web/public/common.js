@@ -1,6 +1,31 @@
 const openGarageRoot = "http://192.168.12.206/";
-export function garageFetch(path, params) {
+export async function garageFetch(path, ...params) {
+    return await fetch(openGarageRoot + path + "?" + params.join("&"));
+}
 
+export async function sendCommand(path, key, ...params) {
+    params.push('dkey=' + encodeURIComponent(key));
+    let res = await garageFetch(path, params);
+
+    let data = await res.json();
+    if (data.result != undefined) {
+        switch (data.result) {
+            case 1: //Success
+                break;
+            case 2: //Invalid device key
+                errorToast("Invalid device key");
+                break;
+            //Ignore other cases
+            default:
+                break;
+        }
+    }
+}
+
+export function loading(...elements) {
+    elements.forEach((element) => {
+        element.innerHTML = `<span class="loading loading-dots loading-sm"></span>`;
+    });
 }
 
 const drawerContent = document.getElementById("drawer-content");
@@ -49,7 +74,7 @@ const navbarCenter = document.createElement("div");
 navbarCenter.className = "navbar-center";
 navbar.appendChild(navbarCenter);
 
-export const title = document.createElement("a");
+const title = document.createElement("a");
 title.className = "btn btn-ghost text-xl";
 title.innerText = "Open Garage: Loading";
 navbarCenter.appendChild(title);
@@ -91,7 +116,63 @@ themeSelector.addEventListener("input", () => {
     document.documentElement.setAttribute("data-theme", themeSelector.checked ? "dark" : "light");
 });
 
+
+const drawerInner = document.getElementById("drawer-inner");
+
+const drawerList = document.createElement("ul");
+drawerList.className = "menu text-base-content w-80 p-4 flex flex-col";
+drawerInner.appendChild(drawerList);
+
+const drawerSpacer = document.createElement("div");
+drawerSpacer.className = "flex-1";
+drawerInner.appendChild(drawerSpacer);
+
+const drawerVersion = document.createElement("div");
+drawerVersion.className = "flex gap-2 p-2";
+drawerInner.appendChild(drawerVersion);
+
+const versionTitle = document.createElement("span");
+versionTitle.innerText = "Version:";
+drawerVersion.appendChild(versionTitle);
+
+const versionNumber = document.createElement("span");
+loading(versionNumber);
+drawerVersion.appendChild(versionNumber);
+
+function createDrawerMenuItem(name, href) {
+    const listItem = document.createElement("li");
+    drawerList.appendChild(listItem);
+
+    const link = document.createElement("a");
+    link.href = href;
+    listItem.appendChild(link);
+    link.innerText = name;
+}
+
+createDrawerMenuItem("Home", "/");
+createDrawerMenuItem("Options", "vo/");
+createDrawerMenuItem("View Log", "/vl");
+createDrawerMenuItem("Firmware Update", "/update");
+createDrawerMenuItem("User Manual", "/https://github.com/OpenGarage/OpenGarage-Firmware/tree/master/docs");
+
 document.body.classList.remove("hidden");
+
+function getDigits(n, count) {
+    return new Array(count).fill(undefined).map(() => {
+        const r = n % 10;
+        n = Math.floor(n / 10);
+        return r;
+    });
+}
+
+export function updateTitle(t) {
+    title.innerText = t;
+}
+
+export function updateVersion(fwv) {
+    const versionDigits = getDigits(fwv, 3);
+    versionNumber.innerText = versionDigits[2] + "." + versionDigits[1] + "." + versionDigits[0];
+}
 
 let toastTimeout;
 function showToast(level, message) {

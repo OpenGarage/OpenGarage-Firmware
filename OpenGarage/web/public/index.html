@@ -10,8 +10,6 @@
     <div class="drawer">
         <input id="og-drawer" type="checkbox" class="drawer-toggle" />
         <div class="drawer-content" id="drawer-content">
-            
-
             <dialog id="reboot-modal" class="modal">
                 <div class="modal-box">
                     <form method="dialog" class="flex flex-col gap-4">
@@ -111,9 +109,9 @@
                         <div class="shrink h-min p-2">
                             <div class="shrink h-min p-4">
                                 <div style='width:112px;height:64px;'>
-                                    <img id='car_pic' src='' class='door-img invert-0 dark:invert'>
-                                    <img id='door_pic' src='' class='door-img invert-0 dark:invert'>
-                                    <img id='arrow_pic' src='' class='door-img invert-0 dark:invert'>
+                                    <img id='car-pic' src='' class='door-img invert-0 dark:invert'>
+                                    <img id='door-pic' src='' class='door-img invert-0 dark:invert'>
+                                    <img id='arrow-pic' src='' class='door-img invert-0 dark:invert'>
                                 </div>
                             </div>
                         </div>
@@ -133,39 +131,25 @@
 
                 <button class="btn btn-wide btn-primary" id="door-action"><span id="door-action-text"></span></button>
                 <div class="flex gap-2">
-                    <button class="btn btn-accent" onclick="document.getElementById('reboot-modal').showModal()">Reboot Device</button>
-                    <button class="btn btn-accent" onclick="document.getElementById('reset-wifi-modal').showModal()">Reset to AP</button>
-                    <button class="btn btn-accent" onclick="document.getElementById('clear-log-modal').showModal()">Clear Log</button>
+                    <button class="btn btn-accent" onclick="document.getElementById('reboot-modal').showModal()">Reboot
+                        Device</button>
+                    <button class="btn btn-accent"
+                        onclick="document.getElementById('reset-wifi-modal').showModal()">Reset to AP</button>
+                    <button class="btn btn-accent"
+                        onclick="document.getElementById('clear-log-modal').showModal()">Clear Log</button>
                 </div>
-                
+
             </div>
         </div>
         <div class="drawer-side">
             <label for="og-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
-            <div class="flex flex-col min-h-full bg-base-200 z-10">
-                <ul class="menu text-base-content w-80 p-4 flex flex-col">
-                    <li><a href="/">Home</a></li>
-                    <li><a href="/vo">Options</a></li>
-                    <li><a href="/vl">View Log</a></li>
-                    <li><a href="/update">Firmware Update</a></li>
-                    <li><a href="https://github.com/OpenGarage/OpenGarage-Firmware/tree/master/docs">User Manual</a></li>
-                </ul>
-
-                <div class="flex-1 flex flex-col justify-end">
-                    <div class="flex-1"></div>
-                    <div class="flex gap-2">
-                        <span>Version:</span><span id="version-number">
-                    </div>
-                </div>
+            <div class="flex flex-col min-h-full bg-base-200 z-10" id="drawer-inner">
             </div>
         </div>
     </div>
 
     <script type="module">
-        import {title, errorToast} from "./common.js";
-        const openGarageRoot = "http://192.168.12.206/";
-        const versionNumber = document.getElementById("version-number");
-
+        import { loading, garageFetch, sendCommand, updateTitle, updateVersion } from "./common.js";
         const door = document.getElementById("door-status");
         const doorActionText = document.getElementById("door-action-text");
 
@@ -183,9 +167,9 @@
         const wifiSignal = document.getElementById("wifi-signal");
         const cloudStatus = document.getElementById("cloud-status");
 
-        const doorImg = document.getElementById("door_pic");
-        const arrowImg = document.getElementById("arrow_pic");
-        const carImg = document.getElementById("car_pic");
+        const doorImg = document.getElementById("door-pic");
+        const arrowImg = document.getElementById("arrow-pic");
+        const carImg = document.getElementById("car-pic");
 
         const keyInput = document.getElementById("key-input");
         keyInput.value = localStorage.getItem("keyInput");
@@ -193,79 +177,51 @@
             localStorage.setItem("keyInput", keyInput.value);
         });
 
-        const loading = `<span class="loading loading-dots loading-sm"></span>`;
-        door.innerHTML = loading;
-        doorActionText.innerHTML = loading;
         lightLock.classList.add("hidden");
-        lightActionText.innerHTML = loading;
-        lockActionText.innerHTML = loading;
-        vehicle.innerHTML = loading;
-        distance.innerHTML = loading;
-        readCount.innerHTML = loading;
-        sensor2Value.innerHTML = loading;
-        obstructed.innerHTML = loading;
-        temperatureValue.innerHTML = loading;
-        humidityValue.innerHTML = loading;
-        wifiSignal.innerHTML = loading;
-        cloudStatus.innerHTML = loading;
-        versionNumber.innerHTML = loading;
 
-        async function sendCommand(type, ...params) {
-            params.push('&dkey=' + encodeURIComponent(keyInput.value));
-            let res = await fetch(openGarageRoot + type + "?" + params.join("&"));
-            let data = await res.json();
-            if (data.result != undefined) {
-                switch (data.result) {
-                    case 1: //Success
-                        break;
-                    case 2: //Invalid device key
-                        errorToast("Invalid device key");
-                        break;
-                        //Ignore other cases
-                    default:
-                        break;
-                }
-            }
-        }
+        loading(door,
+            doorActionText,
+            lightActionText,
+            lockActionText,
+            vehicle,
+            distance,
+            readCount,
+            sensor2Value,
+            obstructed,
+            temperatureValue,
+            humidityValue,
+            wifiSignal,
+            cloudStatus);
 
-        
         document.getElementById("reboot-button").addEventListener("click", () => {
-            sendCommand("cc", "reboot=1");
+            sendCommand("cc", keyInput.value, "reboot=1");
         });
 
         document.getElementById("reset-wifi").addEventListener("click", () => {
-            sendCommand("cc", "apmode=1");
+            sendCommand("cc", keyInput.value, "apmode=1");
         });
 
         document.getElementById("clear-log").addEventListener("click", () => {
-            sendCommand("clearlog");
+            sendCommand("clearlog", keyInput.value);
         });
 
         document.getElementById("door-action").addEventListener("click", () => {
-            sendCommand("cc", "click=1");
+            sendCommand("cc", keyInput.value, "click=1");
             setTimeout(updateData, 500);
         });
 
         document.getElementById("light-action").addEventListener("click", () => {
-            sendCommand("cc", "light=toggle");
+            sendCommand("cc", keyInput.value, "light=toggle");
             setTimeout(updateData, 100);
         });
 
         document.getElementById("lock-action").addEventListener("click", () => {
-            sendCommand("cc", "lock=toggle");
+            sendCommand("cc", keyInput.value, "lock=toggle");
             setTimeout(updateData, 100);
         });
 
-        function getDigits(n, count) {
-            return new Array(count).fill(undefined).map(() => {
-                const r = n % 10;
-                n = Math.floor(n/10);
-                return r;
-            });
-        }
-
         async function updateData() {
-            const res = await fetch(openGarageRoot +"jc");
+            const res = await garageFetch("jc");
             const data = await res.json();
 
             let doorStatusText;
@@ -358,9 +314,8 @@
                     break;
             }
 
-            title.innerText = data.name;
-            const versionDigits = getDigits(data.fwv, 3);
-            versionNumber.innerText = versionDigits[2] + "." + versionDigits[1] + "." + versionDigits[0];
+            updateTitle(data.name);
+            updateVersion(data.fwv);
 
             door.innerText = doorStatusText;
             door.className = doorStatusColor;
@@ -380,7 +335,7 @@
                 temperatureValue.parentElement.classList.add("hidden");
             } else {
                 temperatureValue.parentElement.classList.remove("hidden");
-                temperatureValue.innerText = `${data.temp.toFixed(1)} \u00B0C (${((data.temp * 9/5) + 32).toFixed(1)} \u00B0F)`;
+                temperatureValue.innerText = `${data.temp.toFixed(1)} \u00B0C (${((data.temp * 9 / 5) + 32).toFixed(1)} \u00B0F)`;
             }
 
             if (data.humidity == undefined) {
