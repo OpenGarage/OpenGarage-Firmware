@@ -1512,7 +1512,11 @@ void check_status() {
 		//DEBUG_PRINTLN(door_status_hist);
 		//DEBUG_PRINT(F("Vehicle Status:"));
 		//DEBUG_PRINTLN(vehicle_status);
-		byte event = check_door_status_hist();
+		byte event = DOOR_STATUS_MIXED;
+
+        if (door_status < 2) {
+            event = check_door_status_hist();
+        }
 
 		//Upon change
 		if(event == DOOR_STATUS_JUST_OPENED || event == DOOR_STATUS_JUST_CLOSED) {
@@ -1529,7 +1533,7 @@ void check_status() {
 		} //End state change updates
 
 		//Send current status only on change and longer interval
-		if ((curr_utc_time >checkstatus_report_timeout) || (event == DOOR_STATUS_JUST_OPENED || event == DOOR_STATUS_JUST_CLOSED) ){
+		if ((curr_utc_time > checkstatus_report_timeout) || (event == DOOR_STATUS_JUST_OPENED || event == DOOR_STATUS_JUST_CLOSED) ){
 		#if 0
 			DEBUG_PRINT(curr_utc_time);
 			if(event == DOOR_STATUS_REMAIN_OPEN)  {	
@@ -1581,8 +1585,10 @@ void check_status() {
 		}
 		
 		process_dynamics(event);
-		checkstatus_timeout = curr_utc_time + og.options[OPTION_RIV].ival;
-		
+
+        if (door_status < 2) {
+		    checkstatus_timeout = curr_utc_time + og.options[OPTION_RIV].ival;
+        }
 	}
 }
 

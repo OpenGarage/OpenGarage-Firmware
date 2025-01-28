@@ -114,12 +114,12 @@
                 statusBadge.className = "badge";
                 switch (log[1]) { // Door status
                     case 0:
-                        statusBadge.innerText = "Opened";
-                        statusBadge.classList.add("badge-error");
-                        break;
-                    case 1:
                         statusBadge.innerText = "Closed";
                         statusBadge.classList.add("badge-success");
+                        break;
+                    case 1:
+                        statusBadge.innerText = "Opened";
+                        statusBadge.classList.add("badge-error");
                         break;
                     default:
                         statusBadge.innerText = "UNKNOWN"
