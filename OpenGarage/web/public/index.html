@@ -82,10 +82,6 @@
                                 <td id="sn2-value"></td>
                             </tr>
                             <tr>
-                                <th>Obstructed:</th>
-                                <td id="obstructed-status"></td>
-                            </tr>
-                            <tr>
                                 <th>Temperature:</th>
                                 <td id="temperature-value"></td>
                             </tr>
@@ -164,7 +160,6 @@
         const distance = document.getElementById("distance-value");
         const readCount = document.getElementById("read-count");
         const sensor2Value = document.getElementById("sn2-value");
-        const obstructed = document.getElementById("obstructed-status");
         const temperatureValue = document.getElementById("temperature-value");
         const humidityValue = document.getElementById("humidity-value");
         const wifiSignal = document.getElementById("wifi-signal");
@@ -190,7 +185,6 @@
             distance,
             readCount,
             sensor2Value,
-            obstructed,
             temperatureValue,
             humidityValue,
             wifiSignal,
@@ -324,7 +318,6 @@
             vehicle.innerText = vehicleStatusText;
             distance.innerText = data.dist + " (cm)";
             readCount.innerText = data.rcnt;
-            obstructed.innerText = data.obstruct;
 
             if (data.sn2 == undefined) {
                 sensor2Value.parentElement.classList.add("hidden");
