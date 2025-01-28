@@ -8,7 +8,7 @@
 <body>
     <div class="drawer">
         <input id="og-drawer" type="checkbox" class="drawer-toggle" />
-        <div class="drawer-content" id="drawer-content">
+        <div class="drawer-content max-h-screen flex flex-col" id="drawer-content">
             <dialog id="save-modal" class="modal">
                 <div class="modal-box">
                     <form method="dialog" class="flex flex-col gap-4">
@@ -22,131 +22,132 @@
                 </div>
             </dialog>
 
+            <div class="flex-1 overflow-auto flex flex-col gap-4">
+                <div role="tablist" class="tabs tabs-border">
+                    <input type="radio" name="settings_tab" role="tab" class="tab" aria-label="Basic" checked="checked" />
+                    <div class="tab-content border-base-300 bg-base-100 p-10">
+                        <div class="flex flex-col gap-4">
+                            <label class="floating-label">
+                                <span>Device Name</span>
+                                <input type="text" id="name-input" placeholder="Device Name"
+                                    class="input input-bordered w-full max-w-md" disabled />
+                            </label>
 
-            <div role="tablist" class="tabs tabs-border">
-                <input type="radio" name="settings_tab" role="tab" class="tab" aria-label="Basic" checked="checked" />
-                <div class="tab-content border-base-300 bg-base-100 p-10">
-                    <div class="flex flex-col gap-4">
-                        <label class="floating-label">
-                            <span>Device Name</span>
-                            <input type="text" id="name-input" placeholder="Device Name"
-                                class="input input-bordered w-full max-w-md" disabled />
-                        </label>
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Distance Sensor Mount</legend>
+                                <select class="select" id="sensor-mount" disabled>
+                                    <option value="0">Ceiling Mount</option>
+                                    <option value="1">Side Mount</option>
+                                </select>
+                            </fieldset>
 
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Distance Sensor Mount</legend>
-                            <select class="select" id="sensor-mount" disabled>
-                                <option value="0">Ceiling Mount</option>
-                                <option value="1">Side Mount</option>
-                            </select>
-                        </fieldset>
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Security Plus Version</legend>
+                                <select class="select" id="secplus-select" disabled>
+                                    <option value="0">None</option>
+                                    <option value="1">Security Plus 1.0 (Purple / Orange Learn Button)</option>
+                                    <option value="2">Security Plus 2.0 (Yellow Learn Button)</option>
+                                </select>
+                            </fieldset>
 
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Security Plus Version</legend>
-                            <select class="select" id="secplus-select" disabled>
-                                <option value="0">None</option>
-                                <option value="1">Security Plus 1.0 (Purple / Orange Learn Button)</option>
-                                <option value="2">Security Plus 2.0 (Yellow Learn Button)</option>
-                            </select>
-                        </fieldset>
+                            <label class="floating-label">
+                                <span>Door Threshold</span>
+                                <input type="text" id="door-threshold" placeholder="Door Threshold"
+                                    class="input input-bordered w-full max-w-md" disabled />
+                            </label>
 
-                        <label class="floating-label">
-                            <span>Door Threshold</span>
-                            <input type="text" id="door-threshold" placeholder="Door Threshold"
-                                class="input input-bordered w-full max-w-md" disabled />
-                        </label>
+                            <label class="floating-label">
+                                <span>Car Threshold</span>
+                                <input type="text" id="car-threshold" placeholder="Car Threshold"
+                                    class="input input-bordered w-full max-w-md" disabled />
+                            </label>
 
-                        <label class="floating-label">
-                            <span>Car Threshold</span>
-                            <input type="text" id="car-threshold" placeholder="Car Threshold"
-                                class="input input-bordered w-full max-w-md" disabled />
-                        </label>
+                            <label class="floating-label">
+                                <span>Status Check</span>
+                                <input type="text" id="status-check" placeholder="Status Check"
+                                    class="input input-bordered w-full max-w-md" disabled />
+                            </label>
 
-                        <label class="floating-label">
-                            <span>Status Check</span>
-                            <input type="text" id="status-check" placeholder="Status Check"
-                                class="input input-bordered w-full max-w-md" disabled />
-                        </label>
+                            <label class="floating-label">
+                                <span>Click Time</span>
+                                <input type="text" id="click-time" placeholder="Click Time"
+                                    class="input input-bordered w-full max-w-md" disabled />
+                            </label>
 
-                        <label class="floating-label">
-                            <span>Click Time</span>
-                            <input type="text" id="click-time" placeholder="Click Time"
-                                class="input input-bordered w-full max-w-md" disabled />
-                        </label>
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Switch Sensor</legend>
+                                <select class="select" id="switch-sensor" disabled>
+                                    <option value="0">None</option>
+                                    <option value="1">Normally Closed</option>
+                                    <option value="2">Normally Open</option>
+                                </select>
+                                <p class="fieldset-label">Sensor on G04 and GND</p>
+                            </fieldset>
 
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Switch Sensor</legend>
-                            <select class="select" id="switch-sensor" disabled>
-                                <option value="0">None</option>
-                                <option value="1">Normally Closed</option>
-                                <option value="2">Normally Open</option>
-                            </select>
-                            <p class="fieldset-label">Sensor on G04 and GND</p>
-                        </fieldset>
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Sensor Logic</legend>
+                                <select class="select" id="sensor-logic" disabled>
+                                    <option value="0">Distance Sensor Only</option>
+                                    <option value="1">Switch Sensor Only</option>
+                                    <option value="2">Distance AND Switch</option>
+                                    <option value="3">Distance OR Switch</option>
+                                </select>
+                            </fieldset>
 
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Sensor Logic</legend>
-                            <select class="select" id="sensor-logic" disabled>
-                                <option value="0">Distance Sensor Only</option>
-                                <option value="1">Switch Sensor Only</option>
-                                <option value="2">Distance AND Switch</option>
-                                <option value="3">Distance OR Switch</option>
-                            </select>
-                        </fieldset>
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Temperature and Humidity Sensor</legend>
+                                <select class="select" id="th-sensor" disabled>
+                                    <option value="0">None</option>
+                                    <option value="1">AM2320 (I2C)</option>
+                                    <option value="2">DHT11 on G16</option>
+                                    <option value="3">DHT22 on G16</option>
+                                    <option value="4">DS18B20 on G16</option>
+                                </select>
+                            </fieldset>
 
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Temperature and Humidity Sensor</legend>
-                            <select class="select" id="th-sensor" disabled>
-                                <option value="0">None</option>
-                                <option value="1">AM2320 (I2C)</option>
-                                <option value="2">DHT11 on G16</option>
-                                <option value="3">DHT22 on G16</option>
-                                <option value="4">DS18B20 on G16</option>
-                            </select>
-                        </fieldset>
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Sound Alarm</legend>
+                                <select class="select" id="alarm-time" disabled>
+                                    <option value="0">Disabled</option>
+                                    <option value="1">5 Seconds</option>
+                                    <option value="2">10 Seconds</option>
+                                </select>
+                            </fieldset>
 
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Sound Alarm</legend>
-                            <select class="select" id="alarm-time" disabled>
-                                <option value="0">Disabled</option>
-                                <option value="1">5 Seconds</option>
-                                <option value="2">10 Seconds</option>
-                            </select>
-                        </fieldset>
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Disable Alarm on Open</legend>
+                                <input type="checkbox" class="checkbox" id="alarm-open" disabled />
+                            </fieldset>
 
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Disable Alarm on Open</legend>
-                            <input type="checkbox" class="checkbox" id="alarm-open" disabled />
-                        </fieldset>
-
-                        <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Log Size</legend>
-                            <select class="select" id="log-size" disabled>
-                                <option value="0">20</option>
-                                <option value="1">50</option>
-                                <option value="2">100</option>
-                                <option value="3">200</option>
-                                <option value="4">400</option>
-                            </select>
-                        </fieldset>
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Log Size</legend>
+                                <select class="select" id="log-size" disabled>
+                                    <option value="0">20</option>
+                                    <option value="1">50</option>
+                                    <option value="2">100</option>
+                                    <option value="3">200</option>
+                                    <option value="4">400</option>
+                                </select>
+                            </fieldset>
+                        </div>
                     </div>
+
+                    <input type="radio" name="settings_tab" role="tab" class="tab" aria-label="Integration" />
+                    <div class="tab-content border-base-300 bg-base-100 p-10">Tab content 2</div>
+
+                    <input type="radio" name="settings_tab" role="tab" class="tab" aria-label="Advanced" />
+                    <div class="tab-content border-base-300 bg-base-100 p-10">Tab content 3</div>
                 </div>
 
-                <input type="radio" name="settings_tab" role="tab" class="tab" aria-label="Integration" />
-                <div class="tab-content border-base-300 bg-base-100 p-10">Tab content 2</div>
-
-                <input type="radio" name="settings_tab" role="tab" class="tab" aria-label="Advanced" />
-                <div class="tab-content border-base-300 bg-base-100 p-10">Tab content 3</div>
+                <label class="floating-label">
+                    <span>Device Key</span>
+                    <input type="password" id="key-input" placeholder="Device Key"
+                        class="input input-bordered w-full max-w-md" />
+                </label>
+                <button class="btn btn-wide btn-primary" onclick="document.getElementById('save-modal').showModal()">Save Changes</button>
             </div>
-
-            <label class="floating-label">
-                <span>Device Key</span>
-                <input type="password" id="key-input" placeholder="Device Key"
-                    class="input input-bordered w-full max-w-md" />
-            </label>
-            <button class="btn btn-wide btn-primary" onclick="document.getElementById('save-modal').showModal()">Save Changes</button>
         </div>
-        <div class="drawer-side">
+        <div class="drawer-side z-10">
             <label for="og-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
             <div class="flex flex-col min-h-full bg-base-200 z-10" id="drawer-inner">
             </div>

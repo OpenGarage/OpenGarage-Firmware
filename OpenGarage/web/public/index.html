@@ -9,7 +9,7 @@
 <body class="hidden">
     <div class="drawer">
         <input id="og-drawer" type="checkbox" class="drawer-toggle" />
-        <div class="drawer-content" id="drawer-content">
+        <div class="drawer-content max-h-screen flex flex-col" id="drawer-content">
             <dialog id="reboot-modal" class="modal">
                 <div class="modal-box">
                     <form method="dialog" class="flex flex-col gap-4">
@@ -49,7 +49,7 @@
                 </div>
             </dialog>
 
-            <div class="flex flex-col gap-4">
+            <div class="flex-1 overflow-auto flex flex-col gap-4">
                 <div class="flex flex-1 gap-4">
                     <table class="table shrink max-w-md">
                         <thead>
@@ -141,7 +141,7 @@
 
             </div>
         </div>
-        <div class="drawer-side">
+        <div class="drawer-side z-10">
             <label for="og-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
             <div class="flex flex-col min-h-full bg-base-200 z-10" id="drawer-inner">
             </div>

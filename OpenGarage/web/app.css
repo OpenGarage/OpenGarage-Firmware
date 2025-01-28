@@ -15,15 +15,3 @@
 .door-img[src=""] {
     display: none;
 }
-
-.drawer-toggle {
-    &:checked {
-        & ~ .drawer-content {
-            * & .floating-label {
-                & > span {
-                    opacity: 0;
-                }
-            }
-        }
-    }
-}
