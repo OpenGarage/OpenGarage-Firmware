@@ -31,6 +31,9 @@
 #include <OpenThingsFramework.h>
 #include <Request.h>
 #include <Response.h>
+#include <sstream>
+#include <vector>
+#include <string>
 
 #include "pitches.h"
 #include "OpenGarage.h"
@@ -1029,7 +1032,33 @@ void emailNotify(String s){
 		emailSend.setSMTPServer(email_host);
 		emailSend.setSMTPPort(email_port);
 		DEBUG_PRINTLN(GET_FREE_HEAP);
-		EMailSender::Response resp = emailSend.send(email_recip, email_message);
+
+		// Check for multiple recipients (comma-delimited)
+		std::string recipients(email_recip);
+    if (recipients.find(",") != std::string::npos) {
+      // Split the recipients string
+      std::vector<std::string> tokens;
+      std::stringstream ss(recipients);
+      std::string token;
+      while (std::getline(ss, token, ',')) {
+        tokens.push_back(token);
+      }
+      std::vector<std::string> recipientList = tokens;
+
+      // Convert to an array of const char*
+      const char* to[recipientList.size()];
+      for (size_t i = 0; i < recipientList.size(); ++i) {
+        to[i] = recipientList[i].c_str();
+      }
+      byte sizeOfTo = static_cast<byte>(recipientList.size());
+
+      // Call the send method for multiple recipients
+      EMailSender::Response resp = emailSend.send(to, sizeOfTo, email_message);
+    } else {
+      // Call the send method for a single recipient
+      EMailSender::Response resp = emailSend.send(email_recip, email_message);
+    }
+
 	}
 }
 
