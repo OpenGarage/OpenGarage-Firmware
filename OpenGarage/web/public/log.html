@@ -4,8 +4,8 @@
 <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     <meta content="utf-8" http-equiv="encoding">
-    <title>Open Garage</title>
-    <link href="/output.css" rel="stylesheet">
+    <title>Open Garage | Logs</title>
+    <link href="./output.css" rel="stylesheet">
 </head>
 
 <body class="hidden">
@@ -60,7 +60,9 @@
     </div>
 
     <script type="module">
-        import { loading, garageFetch, sendCommand, updateTitle, updateVersion } from "/common.js";
+        window.garageRoot = "../";
+        import { initalize, loading, garageFetch, sendCommand, updateTitle, updateVersion } from "./common.js";
+        initalize(new URL(location.href + "/..").href);
         const tableBody = document.getElementById("table-body");
         const sn2Head = document.getElementById("sn2-head");
 

@@ -4,8 +4,8 @@
 <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     <meta content="utf-8" http-equiv="encoding">
-    <title>Open Garage</title>
-    <link href="/output.css" rel="stylesheet">
+    <title>Open Garage | Options</title>
+    <link href="./output.css" rel="stylesheet">
 </head>
 
 <body>
@@ -70,10 +70,10 @@
                                 <span>Status Check</span>
                                 <label class="input">
                                     <input type="text" id="status-check" placeholder="Status Check"
-                                    class="input input-bordered w-full max-w-md" disabled />
+                                        class="input input-bordered w-full max-w-md" disabled />
                                     <span class="label">s</span>
                                 </label>
-                                
+
                             </label>
 
                             <label class="floating-label">
@@ -125,10 +125,10 @@
                                 </select>
                             </fieldset>
 
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Disable Alarm on Open</legend>
+                            <label class="label">
                                 <input type="checkbox" class="checkbox" id="alarm-open" disabled />
-                            </fieldset>
+                                <span>Alarm on Open</span>
+                            </label>
 
                             <fieldset class="fieldset">
                                 <legend class="fieldset-legend">Log Size</legend>
@@ -144,10 +144,302 @@
                     </div>
 
                     <input type="radio" name="settings_tab" role="tab" class="tab" aria-label="Integration" />
-                    <div class="tab-content border-base-300 bg-base-100 p-10">Tab content 2</div>
+                    <div class="tab-content border-base-300 bg-base-100 p-10">
+                        <div class="flex flex-col gap-4">
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Enable Cloud Connection</legend>
+                                <div class="flex flex-col gap-4">
+                                    <input type="checkbox" class="toggle peer" id="enable-cloud" disabled />
+
+                                    <label class="label hidden peer-checked:block">
+                                        <span>Cloud Type</span>
+                                        <div class="join join-vertical lg:join-horizontal">
+                                        <input type="radio" name="cloud-type" id="cloud-type-blynk" class="btn join-item" aria-label="Blynk" />
+                                        <input type="radio" name="cloud-type" id="cloud-type-otc" class="btn join-item" aria-label="OTC" checked="checked" />
+                                        </div>
+                                    </label>
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>Cloud Token</span>
+                                        <input type="text" id="cloud-token" placeholder="Cloud Token"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>Cloud Server</span>
+                                        <input type="text" id="cloud-server" placeholder="Cloud Server"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>Cloud Port</span>
+                                        <input type="text" id="cloud-port" placeholder="Cloud Port"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Enable MQTT</legend>
+                                <div class="flex flex-col gap-4">
+                                    <input type="checkbox" class="toggle peer" id="enable-mqtt" disabled />
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>MQTT Server</span>
+                                        <input type="text" id="mqtt-server" placeholder="MQTT Server"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>MQTT Port</span>
+                                        <input type="text" id="mqtt-port" placeholder="MQTT Port"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>MQTT Username</span>
+                                        <input type="text" id="mqtt-username" placeholder="MQTT Username (Optional)"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>MQTT Password</span>
+                                        <input type="text" id="mqtt-password"
+                                            placeholder="MQTT Password (Unchanged if blank)"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>MQTT Topic</span>
+                                        <input type="text" id="mqtt-topic" placeholder="MQTT Topic"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Enable Email Notifiations</legend>
+                                <div class="flex flex-col gap-4">
+                                    <input type="checkbox" class="toggle peer" id="enable-email" disabled />
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>SMTP Server</span>
+                                        <input type="text" id="smtp-server" placeholder="SMTP Server"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>SMTP Port</span>
+                                        <input type="text" id="smtp-port" placeholder="SMTP Port"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>Sender Email</span>
+                                        <input type="text" id="smtp-sender-email" placeholder="Sender Email"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>App Password</span>
+                                        <input type="text" id="smtp-password" placeholder="App Password"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>Recipient Email</span>
+                                        <input type="text" id="smtp-recipient-email" placeholder="Recipient Email"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+
+                                    <label class="label">
+                                        <input type="checkbox" id="notification-door-open" class="checkbox" disabled />
+                                        <span>Notify on Door Open</span>
+                                    </label>
+
+                                    <label class="label">
+                                        <input type="checkbox" id="notification-door-close" class="checkbox" disabled />
+                                        <span>Notify on Door Close</span>
+                                    </label>
+
+                                    <label class="floating-label">
+                                        <span>IFTTT Key</span>
+                                        <input type="text" id="ifttt-key" placeholder="IFTTT Key (Optional)"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Automation</legend>
+                                <div class="flex flex-col gap-4">
+                                    <div class="flex flex-col gap-4">
+                                        <label class="label">
+                                            <span>If open for longer than:</span>
+                                            <label class="input">
+                                                <input type="number" id="open-longer-time" placeholder=""
+                                                class="input input-bordered w-xs max-w-sm" disabled />
+                                                <span class="label">min</span>
+                                            </label>
+                                        </label>
+                                        <div class="flex gap-4">
+                                        <label class="label">
+                                            <input type="checkbox" id="open-longer-notification" class="checkbox"
+                                                disabled />
+                                            <span>Notify me</span>
+                                        </label>
+
+                                        <label class="label">
+                                            <input type="checkbox" id="open-longer-close" class="checkbox"
+                                                disabled />
+                                            <span>Auto-close</span>
+                                        </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-col gap-4">
+                                        <label class="label">
+                                            <span>If open after time (UTC 24h format):</span>
+                                            <label class="input">
+                                                <input type="number" id="open-after-time" placeholder=""
+                                                class="input input-bordered w-xs max-w-sm" disabled />
+                                                <span class="label">UTC</span>
+                                            </label>
+                                        </label>
+                                        <div class="flex gap-4">
+                                        <label class="label">
+                                            <input type="checkbox" id="open-after-notification" class="checkbox"
+                                                disabled />
+                                            <span>Notify me</span>
+                                        </label>
+
+                                        <label class="label">
+                                            <input type="checkbox" id="open-after-close" class="checkbox"
+                                                disabled />
+                                            <span>Auto-close</span>
+                                        </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </div>
 
                     <input type="radio" name="settings_tab" role="tab" class="tab" aria-label="Advanced" />
-                    <div class="tab-content border-base-300 bg-base-100 p-10">Tab content 3</div>
+                    <div class="tab-content border-base-300 bg-base-100 p-10">
+                        <div class="flex flex-col gap-4">
+                            <label class="floating-label">
+                                <span>Read Interval</span>
+                                <label class="input">
+                                    <input type="text" id="read-interval" placeholder="Read Interval"
+                                        class="input input-bordered w-full max-w-md" disabled />
+                                    <span class="label">ms</span>
+                                </label>
+                            </label>
+
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Sensor Filter</legend>
+                                <div class="flex flex-col gap-4">
+                                    <select class="select" id="sensor-filter" disabled>
+                                        <option value="0">Median</option>
+                                        <option value="1">Consensus</option>
+                                    </select>
+                                    <p class="fieldset-label">Noise filter method</p>
+
+                                    <label class="floating-label" id="consensus-margin-label">
+                                        <span>Consensus Margin</span>
+                                        <label class="input">
+                                            <input type="text" id="consensus-margin" placeholder="Consensus Margin"
+                                                class="input input-bordered w-full max-w-md" disabled />
+                                            <span class="label">cm</span>
+                                        </label>
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Distance Timeout</legend>
+                                <select class="select" id="distance-timeout" disabled>
+                                    <option value="0">Ignore</option>
+                                    <option value="1">Cap</option>
+                                </select>
+                                <p class="fieldset-label">Timeout handleing</p>
+                            </fieldset>
+
+                            <label class="floating-label">
+                                <span>HTTP Port</span>
+                                <input type="text" id="http-port" placeholder="HTTP Port"
+                                    class="input input-bordered w-full max-w-md" disabled />
+                            </label>
+
+                            <label class="floating-label">
+                                <span>Host Name</span>
+                                <input type="text" id="hostname" placeholder="Host Name"
+                                    class="input input-bordered w-full max-w-md" disabled />
+                            </label>
+
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Use Custom NTP Server</legend>
+                                <div class="flex flex-col gap-4">
+                                    <input type="checkbox" class="toggle peer" id="use-custom-ntp" disabled />
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>NTP Server</span>
+                                        <input type="text" id="ntp-server" placeholder="NTP Server"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Use Static IP</legend>
+                                <div class="flex flex-col gap-4">
+                                    <input type="checkbox" class="toggle peer" id="use-static-ip" disabled />
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>Device IP</span>
+                                        <input type="text" id="device-ip" placeholder="Device IP"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>Gateway IP</span>
+                                        <input type="text" id="gateway-ip" placeholder="Gateway IP"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>Subnet</span>
+                                        <input type="text" id="subnet" placeholder="Subnet"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>DNS</span>
+                                        <input type="text" id="dns" placeholder="DNS"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="fieldset">
+                                <legend class="fieldset-legend">Change Device Key</legend>
+                                <div class="flex flex-col gap-4">
+                                    <input type="checkbox" class="toggle peer" id="change-device-key" disabled />
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>New Key</span>
+                                        <input type="text" id="new-key" placeholder="New Key"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+
+                                    <label class="floating-label hidden peer-checked:block">
+                                        <span>Confirm New Key</span>
+                                        <input type="text" id="confirm-new-key" placeholder="Confirm New Key"
+                                            class="input input-bordered w-full max-w-md" disabled />
+                                    </label>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </div>
                 </div>
 
                 <label class="floating-label">
@@ -167,7 +459,63 @@
     </div>
 
     <script type="module">
-        import { garageFetch, sendCommand, updateTitle, updateVersion } from "/common.js";
+        // @ts-check
+        /**
+         * @typedef {Object} OpenGarageConfig
+        * @property {string} fwv - Firmware version (read-only)
+        * @property {0 | 1} sn1 - Sensor 1 mounting type (0: ceiling mount, 1: side mount)
+        * @property {0 | 1 | 2} sn2 - Sensor 2 type (0: none, 1: normally closed, 2: normally open)
+        * @property {0 | 1 | 2 | 3} sno - Sensor logic (0: sn1 only, 1: sn2 only, 2: both, 3: either)
+        * @property {number} dth - Door distance threshold in cm
+        * @property {number} vth - Vehicle distance threshold in cm
+        * @property {number} riv - Status report interval in seconds (default: 5)
+        * @property {0 | 1 | 2} alm - Alarm type (0: none, 1: 5s, 2: 10s)
+        * @property {0 | 1} aoo - Alarm on opening (0: no, 1: yes)
+        * @property {number} lsz - Log size (e.g. 50 records)
+        * @property {0 | 1 | 2 | 3 | 4} tsn - Temp/humidity sensor type (0: none, 1: AM2320, etc.)
+        * @property {number} htp - HTTP port (default: 80)
+        * @property {number} cdt - Click delay time in ms (default: 1000)
+        * @property {number} dri - Distance read interval in ms (default: 500)
+        * @property {0 | 1} sfi - Sensor filtering (0: median, 1: consensus)
+        * @property {number} cmr - Consensus margin in cm (default: 10)
+        * @property {0 | 1} sto - Sensor timeout (0: ignore, 1: cap to max)
+        * @property {number} ati - Automation A: open time limit in minutes
+        * @property {number} ato - Automation A: bit 0 notify, bit 1 auto-close
+        * @property {number} atib - Automation B: UTC hour
+        * @property {number} atob - Automation B: bit 0 notify, bit 1 auto-close
+        * @property {number} noto - Notification options (bit 0: open, bit 1: close)
+        * @property {0 | 1} usi - Use static IP (0: DHCP, 1: Static)
+        * @property {string} [dvip] - Device IP (if usi=1)
+        * @property {string} [gwip] - Gateway IP (if usi=1)
+        * @property {string} [subn] - Subnet mask (if usi=1)
+        * @property {string} [dns1] - DNS server IP (if usi=1)
+        * @property {0 | 1 | 2} cld - Cloud connection type (0: none, 1: Blynk, 2: OTC)
+        * @property {string} auth - Cloud auth token
+        * @property {string} bdmn - Cloud domain
+        * @property {number} bprt - Cloud port
+        * @property {string} name - Device name
+        * @property {string} iftt - IFTTT maker token
+        * @property {string} ssid - Connected WiFi SSID
+        * @property {0 | 1} mqen - MQTT enabled (1: yes)
+        * @property {string} mqtt - MQTT broker address
+        * @property {number} mqpt - MQTT port
+        * @property {string} [mqur] - MQTT username (optional)
+        * @property {string} [mqpw] - MQTT password (not sent over API)
+        * @property {string} [mqtp] - MQTT topic (default: device name)
+        * @property {boolean} emen - Email enabled
+        * @property {string} smtp - SMTP server
+        * @property {number} sprt - SMTP port
+        * @property {string} send - Email sender address
+        * @property {string} apwd - App password
+        * @property {string} recp - Email recipient
+        * @property {string} [ntp1] - NTP server (optional)
+        * @property {string} host - mDNS hostname (e.g. 'myog' = myog.local)
+         */
+
+        import { initalize, garageFetch, sendCommand, updateTitle, updateVersion } from "./common.js";
+        // TODO: fix
+        // initalize(new URL(location.href + "/..").href);
+        initalize(new URL("https://debug-cloud.openthings.io/forward/v1/OT82f7cc7ba8f99f961009470445b96a/").href);
         const nameInput = document.getElementById("name-input");
         const sensorMount = document.getElementById("sensor-mount");
         const secplusVersion = document.getElementById("secplus-select");
@@ -177,10 +525,64 @@
         const clickTime = document.getElementById("click-time");
         const switchSensor = document.getElementById("switch-sensor");
         const sensorLogic = document.getElementById("sensor-logic");
+        const thSensor = document.getElementById("th-sensor");
+        const soundAlarm = document.getElementById("alarm-time");
+        const openAlarm = document.getElementById("alarm-open");
+        const logSize = document.getElementById("log-size");
+        
+        const enableCloud = document.getElementById("enable-cloud");
+        const cloudTypeBlynk = document.getElementById("cloud-type-blynk");
+        const cloudTypeOTC = document.getElementById("cloud-type-otc");
+        const cloudToken = document.getElementById("cloud-token");
+        const cloudServer = document.getElementById("cloud-server");
+        const cloudPort = document.getElementById("cloud-port");
+        const enableMqtt = document.getElementById("enable-mqtt");
+        const mqttServer = document.getElementById("mqtt-server");
+        const mqttPort = document.getElementById("mqtt-port");
+        const mqttUsername = document.getElementById("mqtt-username");
+        const mqttPassword = document.getElementById("mqtt-password");
+        const mqttTopic = document.getElementById("mqtt-topic");
+        const enableEmail = document.getElementById("enable-email");
+        const smtpServer = document.getElementById("smtp-server");
+        const smtpPort = document.getElementById("smtp-port");
+        const smtpSender = document.getElementById("smtp-sender-email");
+        const smtpPassword = document.getElementById("smtp-password");
+        const smtpRecipient = document.getElementById("smtp-recipient-email");
+        const notifyOnDoorOpen = document.getElementById("notification-door-open");
+        const notifyOnDoorClose = document.getElementById("notification-door-close");
+        const iftttKey = document.getElementById("ifttt-key");
+        const openLongerTime = document.getElementById("open-longer-time");
+        const openLongerNotification = document.getElementById("open-longer-notification");
+        const openLongerClose = document.getElementById("open-longer-close");
+        const openAfterTime = document.getElementById("open-after-time");
+        const openAfterNotification = document.getElementById("open-after-notification");
+        const openAfterClose = document.getElementById("open-after-close");
+
+        const readInterval = document.getElementById("read-interval");
+        const sensorFilter = document.getElementById("sensor-filter");
+        const consensusMarginLabel = document.getElementById("consensus-margin-label");
+        const consensusMargin = document.getElementById("consensus-margin");
+        const distanceTimeout = document.getElementById("distance-timeout");
+        const httpPort = document.getElementById("http-port");
+        const hostname = document.getElementById("hostname");
+        const useCustomNTP = document.getElementById("use-custom-ntp");
+        const ntpServer = document.getElementById("ntp-server");
+        const useStaticIP = document.getElementById("use-static-ip");
+        const deviceIP = document.getElementById("device-ip");
+        const gatewayIP = document.getElementById("gateway-ip");
+        const subnet = document.getElementById("subnet");
+        const dns = document.getElementById("dns");
+        const changeDeviceKey = document.getElementById("change-device-key");
+        const newKey = document.getElementById("new-key");
+        const confirmNewKey = document.getElementById("confirm-new-key");
 
 
         switchSensor.addEventListener("input", (event) => {
             sensorLogic.disabled = switchSensor.value == 0;
+        });
+
+        sensorFilter.addEventListener("input", (event) => {
+            consensusMarginLabel.hidden = sensorFilter.value == 0;
         });
 
         const keyInput = document.getElementById("key-input");
@@ -195,7 +597,9 @@
 
         async function updateData() {
             const res = await garageFetch("jo");
+            /** @type {OpenGarageConfig} */
             const data = await res.json();
+            data.apwd
 
             updateTitle(data.name);
             updateVersion(data.fwv);
@@ -226,6 +630,152 @@
 
             sensorLogic.disabled = switchSensor.value == 0;
             sensorLogic.value = data.sno;
+
+            thSensor.disabled = false;
+            thSensor.value = data.tsn;
+
+            soundAlarm.disabled = false;
+            soundAlarm.value = data.alm;
+
+            openAlarm.disabled = false;
+            openAlarm.value = data.aoo;
+
+            logSize.disabled = false;
+            logSize.value = data.lsz;
+
+            enableCloud.disabled = false;
+            enableCloud.value = data.cld == 0;
+
+            cloudTypeBlynk.disabled = false;
+            cloudTypeBlynk.value = data.cld == 1;
+
+            cloudTypeOTC.disabled = false;
+            cloudTypeOTC.value = data.cld == 2;
+
+            cloudToken.disabled = false;
+            cloudToken.value = data.auth;
+
+            cloudServer.disabled = false;
+            cloudServer.value = data.bdmn;
+
+            cloudPort.disabled = false;
+            cloudPort.value = data.bprt;
+
+            enableMqtt.disabled = false;
+            enableMqtt.value = data.mqen;
+
+            mqttServer.disabled = false;
+            mqttServer.value = data.mqtt;
+
+            mqttPort.disabled = false;
+            mqttPort.value = data.mqpt;
+
+            mqttUsername.disabled = false;
+            mqttUsername.value = data.mqur || "";
+
+            mqttPassword.disabled = false;
+            mqttPassword.value = "";
+
+            mqttTopic.disabled = false;
+            mqttTopic.value = data.mqtp || "";
+
+            enableEmail.disabled = false;
+            enableEmail.value = data.emen;
+
+            smtpServer.disabled = false;
+            smtpServer.value = data.smtp;
+
+            smtpPort.disabled = false;
+            smtpPort.value = data.sprt;
+
+            smtpSender.disabled = false;
+            smtpSender.value = data.send;
+
+            smtpPassword.disabled = false;
+            smtpPassword.value = data.apwd;
+
+            smtpRecipient.disabled = false;
+            smtpRecipient.value = data.recp;
+
+            notifyOnDoorOpen.disabled = false;
+            notifyOnDoorOpen.value = (data.noto & 1) == 1;
+
+            notifyOnDoorClose.disabled = false;
+            notifyOnDoorClose.value = (data.noto & 2) == 1;
+
+            iftttKey.disabled = false;
+            iftttKey.value = data.iftt;
+
+            openLongerTime.disabled = false;
+            openLongerTime.value = data.ati;
+
+            openLongerNotification.disabled = false;
+            openLongerNotification.value = (data.ato & 1) == 1;
+
+            openLongerClose.disabled = false;
+            openLongerClose.value = (data.ato & 2) == 1;
+
+            openAfterTime.disabled = false;
+            openAfterTime.value = data.atib;
+
+            openAfterNotification.disabled = false;
+            openAfterNotification.value = (data.atob & 1) == 1;
+
+            openAfterClose.disabled = false;
+            openAfterClose.value = (data.atob & 2) == 1;
+
+            readInterval.disabled = false;
+            readInterval.value = data.dri;
+
+            sensorFilter.disabled = false;
+            sensorFilter.value = data.sfi;
+
+            consensusMarginLabel.hidden = sensorFilter.value == 0;
+
+            consensusMargin.disabled = false;
+            consensusMargin.value = data.cmr;
+
+            distanceTimeout.disabled = false;
+            distanceTimeout.value = data.sto;
+
+            httpPort.disabled = false;
+            httpPort.value = data.htp;
+
+            hostname.disabled = false;
+            hostname.value = data.host;
+
+            useCustomNTP.disabled = false;
+            useCustomNTP.value = data.ntp1 != "";
+
+            ntpServer.disabled = false;
+            ntpServer.value = data.ntp1;
+
+            useStaticIP.disabled = false;
+            useStaticIP.value = data.usi;
+
+            deviceIP.disabled = false;
+            deviceIP.value = data.dvip || "";
+
+            gatewayIP.disabled = false;
+            gatewayIP.value = data.gwip || "";
+
+            subnet.disabled = false;
+            subnet.value = data.subn || "";
+
+            subnet.disabled = false;
+            subnet.value = data.subn || "";
+
+            dns.disabled = false;
+            dns.value = data.dns1 || "";
+
+            changeDeviceKey.disabled = false;
+            changeDeviceKey.value = false;
+
+            newKey.disabled = false;
+            newKey.value = "";
+
+            confirmNewKey.disabled = false;
+            confirmNewKey.value = "";
         }
 
         updateData();

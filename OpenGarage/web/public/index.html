@@ -5,7 +5,7 @@
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     <meta content="utf-8" http-equiv="encoding">
     <title>Open Garage</title>
-    <link href="/output.css" rel="stylesheet">
+    <link href="./output.css" rel="stylesheet">
 </head>
 
 <body class="hidden">
@@ -147,8 +147,10 @@
     </div>
 
     <script type="module">
-        import { loading, garageFetch, sendCommand, updateTitle, updateVersion } from "/common.js";
-        import { partial_svg, open_svg, closed_svg, car_svg, arrow_up_svg, arrow_down_svg } from "/images.js";
+        window.garageRoot = "./";
+        import { initalize, loading, garageFetch, sendCommand, updateTitle, updateVersion } from "./common.js";
+        initalize(location.href);
+        import { partial_svg, open_svg, closed_svg, car_svg, arrow_up_svg, arrow_down_svg } from "./images.js";
         const door = document.getElementById("door-status");
         const doorActionText = document.getElementById("door-action-text");
 

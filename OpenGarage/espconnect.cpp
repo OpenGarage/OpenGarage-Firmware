@@ -78,6 +78,8 @@ void start_network_sta(const char *ssid, const char *pass, const char *hostname,
 		WiFi.hostname(hostname);
 	}
 	WiFi.begin(ssid, pass);
+    WiFi.setAutoReconnect(true);
+    WiFi.persistent(true);
 }
 
 void start_network_sta_with_ap(const char *ssid, const char *pass, const char *hostname) {
