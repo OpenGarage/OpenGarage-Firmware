@@ -34,7 +34,7 @@ export function loading(...elements) {
     });
 }
 
-export function initalize(root) {
+export function initalize(root, is_update) {
     garageRoot = root;
     const drawerContent = document.getElementById("drawer-content");
 
@@ -161,11 +161,17 @@ export function initalize(root) {
         link.innerText = name;
     }
 
-    createDrawerMenuItem("Home", garageRoot);
-    createDrawerMenuItem("Options", garageRoot + "vo");
-    createDrawerMenuItem("View Log", garageRoot + "vl");
-    createDrawerMenuItem("Firmware Update", garageRoot + "update");
-    createDrawerMenuItem("User Manual", "https://github.com/OpenGarage/OpenGarage-Firmware/tree/master/docs");
+    if (is_update) {
+        createDrawerMenuItem("Setup WiFi", garageRoot);
+        createDrawerMenuItem("Firmware Update", garageRoot + "update");
+        createDrawerMenuItem("User Manual", "https://github.com/OpenGarage/OpenGarage-Firmware/tree/master/docs");
+    } else {
+        createDrawerMenuItem("Home", garageRoot);
+        createDrawerMenuItem("Options", garageRoot + "vo");
+        createDrawerMenuItem("View Log", garageRoot + "vl");
+        createDrawerMenuItem("Firmware Update", garageRoot + "update");
+        createDrawerMenuItem("User Manual", "https://github.com/OpenGarage/OpenGarage-Firmware/tree/master/docs");
+    }
 
     document.body.classList.remove("hidden");
 }
