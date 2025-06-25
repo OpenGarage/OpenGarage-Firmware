@@ -21,7 +21,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <option value=0>Ceiling Mount</option>
 <option value=1>Side Mount</option>
 </select></td></tr>
-<tr><td><b>Security+ Version:</b><br><small>Learn button color</small></td><td>
+<tr id='secv'><td><b>Security+ Version:</b><br><small>Learn button color</small></td><td>
 <fieldset data-role='controlgroup' data-mini='true' data-type='horizontal'>
 <input type='radio' name='secv' id='secv2' value=2 class='yellow'><label for='secv2'>2.0</label>
 <input type='radio' name='secv' id='secv1' value=1 class='purple'><label for='secv1'>1.0</label>
@@ -48,10 +48,9 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <tr><td><b>T/H Sensor:</b></td><td>
 <select name='tsn' id='tsn' data-mini='true'>
 <option value=0>(none)</option>
-<option value=1>AM2320 (I2C)</option>
-<option value=2>DHT11 on G16</option>
-<option value=3>DHT22 on G16</option>
-<option value=4>DS18B20 on G16</option>
+<option value=2>DHT11 on G04</option>
+<option value=3>DHT22 on G04</option>
+<option value=4>DS18B20 on G04</option>
 </select></td></tr>
 <tr><td><b>Sound Alarm:</b></td><td>
 <select name='alm' id='alm' data-mini='true'>
@@ -265,6 +264,7 @@ setTimeout(goback, 4000);
 }
 });
 $(document).ready(function() {
+$('#secv').hide();
 $.getJSON('jo', function(jd){
 $('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 $('#alm').val(jd.alm).selectmenu('refresh');
@@ -282,9 +282,11 @@ $('#bas').val(jd.bas);
 $('#htp').val(jd.htp);
 $('#cdt').val(jd.cdt);
 $('#dri').val(jd.dri);
+if(jd.has_swrx){
+$('#secv').show();
 if(jd.secv==2) cbt('secv2');
 else if(jd.secv==1) cbt('secv1');
-else cbt('secv0');
+else cbt('secv0');}
 if(jd.sto) cbt('to_cap');
 else cbt('to_ignore');
 if(jd.sfi) cbt('sf_con');

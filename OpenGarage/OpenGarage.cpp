@@ -34,7 +34,6 @@ static const char* config_fname = CONFIG_FNAME;
 static const char* log_fname = LOG_FNAME;
 
 DallasTemperature* OpenGarage::ds18b20 = NULL;
-AM2320* OpenGarage::am2320 = NULL;
 DHTesp* OpenGarage::dht = NULL;
 extern OpenGarage og;
 /* Options name, default integer value, max value, default string value
@@ -142,9 +141,9 @@ IRAM_ATTR void ud_isr() {
 }
 
 void ud_ticker_cb() {
-  ud_start_trigger();
+	ud_start_trigger();
 }
-    
+
 void OpenGarage::begin() {
 	digitalWrite(PIN_BUZZER, LOW);
 	pinMode(PIN_BUZZER, OUTPUT);
@@ -155,7 +154,7 @@ void OpenGarage::begin() {
 	has_swrx = 0;
 	pinMode(PIN_SWRX_DETECT, INPUT_PULLUP);
 	if(digitalRead(PIN_SWRX_DETECT) == 0) {
-		digitalWrite(PIN_SW_RX, INPUT); // software rx exists
+		digitalWrite(PIN_SW_RX, INPUT); // software rx exists, set it up
 		has_swrx = 1;
 	}
 
@@ -337,10 +336,6 @@ void OpenGarage::init_sensors() {
 	attachInterrupt(PIN_ECHO, ud_isr, CHANGE);
 
 	switch(options[OPTION_TSN].ival) {
-	case OG_TSN_AM2320:
-		am2320 = new AM2320();
-		am2320->begin(PIN_SW_SDA, PIN_SW_SCL);
-		break;
 	case OG_TSN_DHT11:
 		dht = new DHTesp();
 		dht->setup(PIN_TH, DHTesp::DHT11);
@@ -361,16 +356,6 @@ void OpenGarage::init_sensors() {
 void OpenGarage::read_TH_sensor(float& C, float& H) {
 	float v;
 	switch(options[OPTION_TSN].ival) {
-	case OG_TSN_AM2320:
-		if(am2320) {
-			if(am2320->measure()) {
-				v = am2320->getTemperature();
-				if(!isnan(v)) C=v;
-				v = am2320->getHumidity();
-				if(!isnan(v)) H=v;
-			}
-		}
-		break;
 	case OG_TSN_DHT11:
 	case OG_TSN_DHT22:
 		if(dht) {

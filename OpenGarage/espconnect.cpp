@@ -22,8 +22,6 @@
  
 #include "espconnect.h"
 
-//const char html_ap_redirect[] PROGMEM = "<h3>WiFi config saved. Now switching to station mode.</h3>";
-
 String scan_network() {
 	DEBUG_PRINTLN(F("scan network"));
 	WiFi.mode(WIFI_STA);

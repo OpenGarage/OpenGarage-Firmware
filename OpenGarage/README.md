@@ -12,7 +12,6 @@ Follow https://github.com/plerup/makeEspArduino to install **ESP8266 core 3.1.2*
 
 * Blynk library for Arduino (https://github.com/blynkkk/blynk-library) (v1.0.1)
 * MQTT PubSUbClient https://github.com/knolleary/pubsubclient (v2.8)
-* AM2320 library: https://github.com/hibikiledo/AM2320/releases (v1.1.3)
 * OneWire library: https://www.pjrc.com/teensy/td_libs_OneWire.html
 * DallasTemperature library: https://github.com/milesburton/Arduino-Temperature-Control-Library/releases (v3.9.1)
 * DHTesp library: https://github.com/beegee-tokyo/DHTesp/releases (v1.18)

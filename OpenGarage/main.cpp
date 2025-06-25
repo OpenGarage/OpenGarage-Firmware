@@ -55,15 +55,6 @@ PubSubClient mqttclient(wificlient);
 String mqtt_topic;
 String mqtt_id;
 
-enum {
-    DOOR_STATUS_CLOSED = 0,
-    DOOR_STATUS_OPEN,
-    DOOR_STATUS_UNKNOWN,
-    DOOR_STATUS_STOPPED,
-    DOOR_STATUS_CLOSING,
-    DOOR_STATUS_OPENING,
-};
-
 static String scanned_ssids;
 static byte read_cnt = 0;
 static uint distance = 0;
@@ -302,10 +293,10 @@ void sta_controller_fill_json(String& json, bool fullversion=true) {
 		json += F(",\"cld\":");
 		byte cld = og.options[OPTION_CLD].ival;
 		json += cld;
-		if(cld>CLD_NONE) {
+		if(cld>CLOUD_NONE) {
 			json += F(",\"clds\":");
-			if(cld==CLD_BLYNK) json += (Blynk.connected()?1:0);
-			else if(cld==CLD_OTC) json += (otf->getCloudStatus());
+			if(cld==CLOUD_BLYNK) json += (Blynk.connected()?1:0);
+			else if(cld==CLOUD_OTC) json += (otf->getCloudStatus());
 			else json += "0";
 		}
 	}
@@ -750,7 +741,9 @@ void sta_options_fill_json(String& json) {
 			json += ",";
 		}
 	}
-	json.remove(json.length()-1); // remove the extra ,
+	// append has_swrx variable
+	json += F("\"has_swrx\":");
+	json += og.has_swrx;
 	json += F("}");
 }
 
@@ -1007,7 +1000,7 @@ void do_setup()
 	if(!otf) {
 		const String otfDeviceKey = og.options[OPTION_AUTH].sval;
 
-		if((og.options[OPTION_CLD].ival==CLD_OTC) && (otfDeviceKey.length() >= 32)) {
+		if((og.options[OPTION_CLD].ival==CLOUD_OTC) && (otfDeviceKey.length() >= 32)) {
 			// Initialize with remote connection if a device key was specified.
 			otf = new OTF::OpenThingsFramework(og.options[OPTION_HTP].ival, og.options[OPTION_BDMN].sval, og.options[OPTION_BPRT].ival, otfDeviceKey, false);
 			DEBUG_PRINTLN(F("Started OTF with remote connection"));
@@ -1276,7 +1269,7 @@ void perform_notify(String s) {
 	DEBUG_PRINT(F("Sending Notify to connected systems, value:"));
 	DEBUG_PRINTLN(s);
 
-	if(og.options[OPTION_CLD].ival==CLD_BLYNK && Blynk.connected()){
+	if(og.options[OPTION_CLD].ival==CLOUD_BLYNK && Blynk.connected()){
 		blynkNotify(s);
 	}
 
@@ -1529,7 +1522,7 @@ void check_status() {
 		
 		// Process dynamics: automation and notifications
 		// report status to Blynk
-		if(og.options[OPTION_CLD].ival==CLD_BLYNK && Blynk.connected()) {
+		if(og.options[OPTION_CLD].ival==CLOUD_BLYNK && Blynk.connected()) {
 			DEBUG_PRINTLN(F(" Update Blynk (State Refresh)"));
 			
 			static uint old_distance = 0;
@@ -1745,7 +1738,7 @@ void do_loop() {
 				//DEBUG_PRINTLN(og.options[OPTION_HTP].ival);
 			}
 
-			if(og.options[OPTION_CLD].ival==CLD_BLYNK) {
+			if(og.options[OPTION_CLD].ival==CLOUD_BLYNK) {
 				DEBUG_PRINTLN(F("Attempt to connect to Blynk:"));
 				DEBUG_PRINT(og.options[OPTION_BDMN].sval);
 				DEBUG_PRINT(":");
@@ -1807,7 +1800,7 @@ void do_loop() {
 				otf->loop();
 				updateServer->handleClient();
 
-				if(og.options[OPTION_CLD].ival==CLD_BLYNK) {
+				if(og.options[OPTION_CLD].ival==CLOUD_BLYNK) {
 					Blynk.run();
 				}
 
