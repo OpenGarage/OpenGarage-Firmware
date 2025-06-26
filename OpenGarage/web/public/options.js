@@ -51,8 +51,63 @@
 * @property {string} host - mDNS hostname (e.g. 'myog' = myog.local)
  */
 
+/**
+ * @typedef {Object} OpenGarageUpdate
+* @property {0 | 1} sn1 - Sensor 1 mounting type (0: ceiling mount, 1: side mount)
+* @property {0 | 1 | 2} sn2 - Sensor 2 type (0: none, 1: normally closed, 2: normally open)
+* @property {0 | 1 | 2 | 3} sno - Sensor logic (0: sn1 only, 1: sn2 only, 2: both, 3: either)
+* @property {number} dth - Door distance threshold in cm
+* @property {number} vth - Vehicle distance threshold in cm
+* @property {number} riv - Status report interval in seconds (default: 5)
+* @property {0 | 1 | 2} alm - Alarm type (0: none, 1: 5s, 2: 10s)
+* @property {0 | 1} aoo - Alarm on opening (0: no, 1: yes)
+* @property {number} lsz - Log size (e.g. 50 records)
+* @property {0 | 1 | 2 | 3 | 4} tsn - Temp/humidity sensor type (0: none, 1: AM2320, etc.)
+* @property {number} htp - HTTP port (default: 80)
+* @property {number} cdt - Click delay time in ms (default: 1000)
+* @property {number} dri - Distance read interval in ms (default: 500)
+* @property {0 | 1} sfi - Sensor filtering (0: median, 1: consensus)
+* @property {number} cmr - Consensus margin in cm (default: 10)
+* @property {0 | 1} sto - Sensor timeout (0: ignore, 1: cap to max)
+* @property {number} ati - Automation A: open time limit in minutes
+* @property {number} ato - Automation A: bit 0 notify, bit 1 auto-close
+* @property {number} atib - Automation B: UTC hour
+* @property {number} atob - Automation B: bit 0 notify, bit 1 auto-close
+* @property {number} noto - Notification options (bit 0: open, bit 1: close)
+* @property {0 | 1} usi - Use static IP (0: DHCP, 1: Static)
+* @property {string} [dvip] - Device IP (if usi=1)
+* @property {string} [gwip] - Gateway IP (if usi=1)
+* @property {string} [subn] - Subnet mask (if usi=1)
+* @property {string} [dns1] - DNS server IP (if usi=1)
+* @property {0 | 1 | 2} cld - Cloud connection type (0: none, 1: Blynk, 2: OTC)
+* @property {string} auth - Cloud auth token
+* @property {string} bdmn - Cloud domain
+* @property {number} bprt - Cloud port
+* @property {string} name - Device name
+* @property {string} iftt - IFTTT maker token
+* @property {string} ssid - Connected WiFi SSID
+* @property {0 | 1} mqen - MQTT enabled (1: yes)
+* @property {string} mqtt - MQTT broker address
+* @property {number} mqpt - MQTT port
+* @property {string} [mqur] - MQTT username (optional)
+* @property {string} [mqpw] - MQTT password (not sent over API)
+* @property {string} [mqtp] - MQTT topic (default: device name)
+* @property {boolean} emen - Email enabled
+* @property {string} smtp - SMTP server
+* @property {number} sprt - SMTP port
+* @property {string} send - Email sender address
+* @property {string} apwd - App password
+* @property {string} recp - Email recipient
+* @property {string} [ntp1] - NTP server (optional)
+* @property {string} host - mDNS hostname (e.g. 'myog' = myog.local)
+* @property {string} nkey - New device key
+* @property {string} ckey - Confirm new device key
+ */
+
 import { initalize, garageFetch, sendCommand, updateTitle, updateVersion } from "./common.js";
-initalize(new URL(location.href + "/..").href);
+// initalize(new URL(location.href + "/..").href);
+// TODO;
+initalize(new URL("http://192.168.12.130/vo" + "/..").href);
 const nameInput = document.getElementById("name-input");
 const sensorMount = document.getElementById("sensor-mount");
 const secplusVersion = document.getElementById("secplus-select");
@@ -114,11 +169,11 @@ const newKey = document.getElementById("new-key");
 const confirmNewKey = document.getElementById("confirm-new-key");
 
 
-switchSensor.addEventListener("input", (event) => {
+switchSensor.addEventListener("input", () => {
     sensorLogic.disabled = switchSensor.value == 0;
 });
 
-sensorFilter.addEventListener("input", (event) => {
+sensorFilter.addEventListener("input", () => {
     consensusMarginLabel.hidden = sensorFilter.value == 0;
 });
 
@@ -128,15 +183,10 @@ keyInput.addEventListener("input", () => {
     localStorage.setItem("keyInput", keyInput.value);
 });
 
-document.getElementById("save-button").addEventListener("click", () => {
-
-});
-
 async function updateData() {
     const res = await garageFetch("jo");
     /** @type {OpenGarageConfig} */
     const data = await res.json();
-    data.apwd
 
     updateTitle(data.name);
     updateVersion(data.fwv);
@@ -316,3 +366,99 @@ async function updateData() {
 }
 
 updateData();
+
+async function updateSettings() {
+    /** @type {OpenGarageUpdate} */
+    const data = {};
+    data.name = nameInput.value;
+    data.sn1 = sensorMount.value;
+    data.secv = secplusVersion.value;
+    data.dth = doorThreshold.value;
+    data.vth = carThreshold.value;
+    data.riv = statusCheck.value;
+    data.cdt = clickTime.value;
+    data.sn2 = switchSensor.value;
+    data.sno = sensorLogic.value;
+    data.tsn = thSensor.value;
+    data.alm = soundAlarm.value;
+    data.aoo = openAlarm.value;
+    data.lsz = logSize.value;
+    data.cld = enableCloud.checked ? 0 : cloudTypeBlynk.chcked ? 1 : 2;
+    data.auth = cloudToken.value;
+    data.bdmn = cloudServer.value;
+    data.bprt = cloudPort.value;
+    data.mqen = enableMqtt.value;
+    data.mqtt = mqttServer.value;
+    data.mqpt = mqttPort.value;
+    data.mqur = mqttUsername.value;
+    if (mqttPassword != "") {
+        data.mqpw = mqttPassword.value;
+    }
+    data.mqtp = mqttTopic.value;
+    data.emen = enableEmail.value;
+    data.smtp = smtpServer.value;
+    data.sprt = smtpPort.value;
+    data.send = smtpSender.value;
+    data.apwd = smtpPassword.value;
+    data.recp = smtpRecipient.value;
+    data.noto = notifyOnDoorClose.checked ? 0b10 : 0 | notifyOnDoorOpen.checked ? 0b1 : 0;
+    data.iftt = iftttKey.value;
+    data.ati = openLongerTime.value;
+    data.ato = openLongerClose.checked ? 0b10 : 0 | openLongerNotification.checked ? 0b1 : 0;
+    data.atib = openAfterTime.value;
+    data.ato = openAfterClose.checked ? 0b10 : 0 | openAfterNotification.checked ? 0b1 : 0;
+    data.dri = readInterval.value;
+    data.sfi = sensorFilter.value;
+    data.cmr = consensusMargin.value;
+    data.sto = distanceTimeout.value;
+    data.htp = httpPort.value;
+    data.host = hostname.value;
+    data.ntp1 = useCustomNTP.chcked ? ntpServer.value : "";
+    data.usi = useStaticIP.value;
+    data.dvip = deviceIP.value;
+    data.gwip = gatewayIP.value;
+    data.subn = subnet.value;
+    data.subn = subnet.value;
+    data.dns1 = dns.value;
+    if (changeDeviceKey.checked) {
+        data.nkey = newKey.value;
+        data.ckey = confirmNewKey.value;
+    }
+
+    const params = [];
+
+    for (const [key, value] of Object.entries(data)) {
+        params.push(`${key}=${encodeURIComponent(value)}`);
+    }
+
+    const res = await garageFetch("co", `dkey=${encodeURIComponent(keyInput.value)}`, ...params);
+    const resData = await res.json();
+    switch (resData.result) {
+        case 1:
+            successToast("Settings saved.");
+            updateData();
+            break;
+        case 2:
+            errorToast("Check device key and try again.");
+            break;
+        case 3:
+            errorToast("New device key doesn't match confirmation key.");
+            break;
+        case 16:
+            errorToast(`Missing data (${resData.item}).`);
+            break;
+        case 17:
+            errorToast(`Out of range (${resData.item}).`);
+            break;
+        case 18:
+            errorToast(`Format error (${resData.item}).`);
+            break;
+        default:
+            errorToast("Saving failed.");
+            break;
+    }
+}
+
+document.getElementById("save-button").addEventListener("click", () => {
+    updateSettings();
+});
