@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <title>Open Garage</title>
+    <link href="./output.css" rel="stylesheet">
+</head>
+
+<body class="hidden">
+    <div class="drawer">
+        <input id="og-drawer" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-content max-h-screen flex flex-col" id="drawer-content">
+            <dialog id="reboot-modal" class="modal">
+                <div class="modal-box">
+                    <form method="dialog" class="flex flex-col gap-4">
+                        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+                        <h3 class="text-lg font-bold">Reboot your device</h3>
+                        <div class="modal-action flex w-full gap-4">
+                            <button class="btn btn-outline flex-1">Cancel</button>
+                            <button class="btn btn-error flex-1" id="reboot-button">Reboot</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+
+            <dialog id="reset-wifi-modal" class="modal">
+                <div class="modal-box">
+                    <form method="dialog" class="flex flex-col gap-4">
+                        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+                        <h3 class="text-lg font-bold">Reset to AP Mode</h3>
+                        <div class="modal-action flex w-full gap-4">
+                            <button class="btn btn-outline flex-1">Cancel</button>
+                            <button class="btn btn-error flex-1" id="reset-wifi">Reset</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+
+            <dialog id="clear-log-modal" class="modal">
+                <div class="modal-box">
+                    <form method="dialog" class="flex flex-col gap-4">
+                        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+                        <h3 class="text-lg font-bold">Clear Logs on Device</h3>
+                        <div class="modal-action flex w-full gap-4">
+                            <button class="btn btn-outline flex-1">Cancel</button>
+                            <button class="btn btn-error flex-1" id="clear-log">Clear</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+
+            <div class="flex-1 overflow-auto flex flex-col gap-4 p-4">
+                <div class="flex flex-1 gap-4">
+                    <table class="table shrink max-w-md">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th>Door:</th>
+                                <td id="door-status"></td>
+                            </tr>
+                            <tr>
+                                <th>Vehicle:</th>
+                                <td id="vehicle-status"></td>
+                            </tr>
+                            <tr>
+                                <th>Distance:</th>
+                                <td id="distance-value"></td>
+                            </tr>
+                            <tr>
+                                <th>Read Count:</th>
+                                <td id="read-count"></td>
+                            </tr>
+                            <tr>
+                                <th>Sensor 2:</th>
+                                <td id="sn2-value"></td>
+                            </tr>
+                            <tr>
+                                <th>Temperature:</th>
+                                <td id="temperature-value"></td>
+                            </tr>
+                            <tr>
+                                <th>Humidity:</th>
+                                <td id="humidity-value"></td>
+                            </tr>
+                            <tr>
+                                <th>WiFi Signal:</th>
+                                <td id="wifi-signal"></td>
+                            </tr>
+                            <tr>
+                                <th class="">Cloud Status:</th>
+                                <td id="cloud-status"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="flex flex-col gap-4">
+                        <span>
+                            Status
+                        </span>
+                        <div class="shrink h-min p-2">
+                            <div class="shrink h-min p-4">
+                                <div class="w-30 grid place-items-center">
+                                    <div id='car-pic' src='' class='w-full h-auto col-start-1 row-start-1 hidden'></div>
+                                    <div id='door-pic' src='' class='w-full h-auto col-start-1 row-start-1 fill-base-content'></div>
+                                    <div id='arrow-pic' src='' class='w-full h-auto col-start-1 row-start-1 fill-base-100'></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <label class="floating-label">
+                    <span>Device Key</span>
+                    <input type="password" id="key-input" placeholder="Device Key"
+                        class="input input-bordered w-full max-w-md" />
+                </label>
+
+                <div id="light-lock" class="flex gap-2">
+                    <button class="btn btn-info" id="light-action"></button>
+                    <button class="btn btn-info" id="lock-action"></span></button>
+                </div>
+
+                <button class="btn btn-wide btn-primary" id="door-action"></span></button>
+                <div class="flex gap-2">
+                    <button class="btn btn-accent" onclick="document.getElementById('reboot-modal').showModal()">Reboot
+                        Device</button>
+                    <button class="btn btn-accent"
+                        onclick="document.getElementById('reset-wifi-modal').showModal()">Reset to AP</button>
+                    <button class="btn btn-accent"
+                        onclick="document.getElementById('clear-log-modal').showModal()">Clear Log</button>
+                </div>
+
+            </div>
+        </div>
+        <div class="drawer-side z-10">
+            <label for="og-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+            <div class="flex flex-col min-h-full bg-base-200 z-10" id="drawer-inner">
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./sta.js"></script>
+</body>
+
+</html>

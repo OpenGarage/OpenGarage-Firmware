@@ -44,8 +44,6 @@
 #include <time.h>
 #include "defines.h"
 #include "htmls.h"
-//TODO: This is temp until the rest of the html files are created
-#include "htmls2.h"
 
 String scan_network();
 void start_network_ap(const char *ssid, const char *pass);

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <title>Open Garage | Logs</title>
+    <link href="./output.css" rel="stylesheet">
+</head>
+
+<body class="hidden">
+    <div class="drawer">
+        <input id="og-drawer" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-content max-h-screen flex flex-col" id="drawer-content">
+            <div class="flex-1 overflow-auto flex flex-col gap-4 p-4">
+                <table class="table">
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <th>Last Update</th>
+                        <td id="current-time"></td>
+                    </tr>
+                    <tr>
+                        <th>Start Time</th>
+                        <td id="start-time"></td>
+                    </tr>
+                    <tr>
+                        <th>Uptime</th>
+                        <td id="uptime"></td>
+                    </tr>
+                    <tr>
+                        <th>Record Count</th>
+                        <td id="record-count"></td>
+                    </tr>
+                    </tbody>
+                </table>
+
+                <div class="flex flex-col flex-1 rounded-box border border-base-content/5 bg-base-100">
+                    <table class="table flex-1 table-pin-rows">
+                      <thead>
+                        <tr>
+                          <th></th>
+                          <th>Event</th>
+                          <th>Timestamp</th>
+                          <th>Distance</th>
+                          <th id="sn2-head" class="hidden">Sensor 2</th>
+                        </tr>
+                      </thead>
+                      <tbody id="table-body">
+                      </tbody>
+                    </table>
+                  </div>
+            </div>
+        </div>
+        <div class="drawer-side z-10">
+            <label for="og-drawer" aria-label="close sidebar" class="drawer-overlay"></label>
+            <div class="flex flex-col min-h-full bg-base-200 z-10" id="drawer-inner">
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./logs.js"></script>
+</body>
+
+</html>

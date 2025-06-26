@@ -107,6 +107,18 @@ void otf_send_html_P(OTF::Response& res, const __FlashStringHelper* content) {
     DEBUG_PRINTLN(F(" bytes sent."));
 }
 
+void otf_send_js_P(OTF::Response& res, const __FlashStringHelper* content) {
+    res.writeStatus(200, F("OK"));
+    res.writeHeader(F("Content-Type"), F("text/javascript"));
+    res.writeHeader(F("Access-Control-Allow-Origin"), F("*")); // from esp8266 2.4 this has to be sent explicitly
+    res.writeHeader(F("Content-Length"), strlen_P((char*)content));
+    res.writeHeader(F("Connection"), F("close"));
+    //res.writeBodyChunk((char *) "%s", content);
+    res.writeBodyData(content, strlen_P((char*)content));
+    DEBUG_PRINT(strlen_P((char*)content));
+    DEBUG_PRINTLN(F(" bytes sent."));
+}
+
 void otf_send_compressed_P(OTF::Response& res, const __FlashStringHelper* content, size_t len, const __FlashStringHelper* content_type) {
     res.writeStatus(200, F("OK"));
     res.writeHeader(F("Content-Type"), content_type);
@@ -211,13 +223,20 @@ void restart_in(uint32_t ms) {
     }
 }
 
-void on_home(const OTF::Request& req, OTF::Response& res) {
-    if (curr_mode == OG_MOD_AP) {
-        otf_send_html_P(res, (const __FlashStringHelper*)ap_home_html);
-    }
-    else {
-        otf_send_compressed_P(res, (const __FlashStringHelper*)index_html, index_html_size, F("text/html"));
-    }
+void on_ap_home(const OTF::Request& req, OTF::Response& res) {
+    otf_send_compressed_P(res, (const __FlashStringHelper*)ap_html, ap_html_size, F("text/html"));
+}
+
+void on_ap_home_js(const OTF::Request& req, OTF::Response& res) {
+    otf_send_compressed_P(res, (const __FlashStringHelper*)ap_js, ap_js_size, F("text/javascript"));
+}
+
+void on_sta_home(const OTF::Request& req, OTF::Response& res) {
+    otf_send_compressed_P(res, (const __FlashStringHelper*)sta_html, sta_html_size, F("text/html"));
+}
+
+void on_sta_home_js(const OTF::Request& req, OTF::Response& res) {
+    otf_send_compressed_P(res, (const __FlashStringHelper*)sta_js, sta_js_size, F("text/javascript"));
 }
 
 void on_output_css(const OTF::Request& req, OTF::Response& res) {
@@ -236,8 +255,16 @@ void on_sta_view_options(const OTF::Request& req, OTF::Response& res) {
     otf_send_compressed_P(res, (const __FlashStringHelper*)options_html, options_html_size, F("text/html"));
 }
 
+void on_sta_view_options_js(const OTF::Request& req, OTF::Response& res) {
+    otf_send_compressed_P(res, (const __FlashStringHelper*)options_js, options_js_size, F("text/javascript"));
+}
+
 void on_sta_view_logs(const OTF::Request& req, OTF::Response& res) {
-    otf_send_compressed_P(res, (const __FlashStringHelper*)log_html, log_html_size, F("text/html"));
+    otf_send_compressed_P(res, (const __FlashStringHelper*)logs_html, logs_html_size, F("text/html"));
+}
+
+void on_sta_view_logs_js(const OTF::Request& req, OTF::Response& res) {
+    otf_send_compressed_P(res, (const __FlashStringHelper*)logs_js, logs_js_size, F("text/javascript"));
 }
 
 char dec2hexchar(byte dec) {
@@ -1174,13 +1201,28 @@ byte check_door_status_hist() {
     return DOOR_STATUS_MIXED;
 }
 
-void on_sta_update(const OTF::Request& req, OTF::Response& res) {
-    if (req.isCloudRequest()) otf_send_result(res, HTML_NOT_PERMITTED, "fw update");
-    else otf_send_html_P(res, (const __FlashStringHelper*)sta_update_html);
+void on_update_html(const OTF::Request& req, OTF::Response& res) {
+    if (req.isCloudRequest()) {
+        otf_send_result(res, HTML_NOT_PERMITTED, "fw update");
+    } else {
+        otf_send_compressed_P(res, (const __FlashStringHelper*)update_html, update_html_size, F("text/html"));
+    }
 }
 
-void on_ap_update(const OTF::Request& req, OTF::Response& res) {
-    otf_send_html_P(res, (const __FlashStringHelper*)ap_update_html);
+void on_update_js(const OTF::Request& req, OTF::Response& res) {
+    otf_send_compressed_P(res, (const __FlashStringHelper*)update_js, update_js_size, F("text/javascript"));
+}
+
+const char ap_update_mode_js[] PROGMEM = "export const ap = true;";
+
+void on_ap_update_mode_js(const OTF::Request& req, OTF::Response& res) {
+    otf_send_js_P(res, (const __FlashStringHelper*)ap_update_mode_js);
+}
+
+const char sta_update_mode_js[] PROGMEM = "export const ap = false;";
+
+void on_sta_update_mode_js(const OTF::Request& req, OTF::Response& res) {
+    otf_send_js_P(res, (const __FlashStringHelper*)sta_update_mode_js);
 }
 
 void on_sta_upload_fin() {
@@ -1774,16 +1816,22 @@ void do_loop() {
             delay(500);
             dns->setErrorReplyCode(DNSReplyCode::NoError);
             dns->start(53, "*", WiFi.softAPIP());
-            otf->on("/", on_home);
+            otf->on("/", on_ap_home);
+            otf->on("/ap.js", on_ap_home_js);
+            otf->on("/common.js", on_common_js);
+            otf->on("/output.css", on_output_css);
             otf->on("/js", on_ap_scan);
             otf->on("/cc", on_ap_change_config);
             otf->on("/jt", on_ap_try_connect);
             otf->on("/db", on_ap_debug);
             // FIXME get update ap updates working.
-            otf->on("/update", on_ap_update, OTF::HTTP_GET);
+            otf->on("/update", on_update_html, OTF::HTTP_GET);
+            otf->on("/update.js", on_update_js, OTF::HTTP_GET);
+            otf->on("/mode.js", on_ap_update_mode_js);
             updateServer->on("/update", HTTP_POST, on_ap_upload_fin, on_ap_upload);
             otf->on("/resetall", on_reset_all);
-            otf->onMissingPage(on_home);
+            //TODO
+            // otf->onMissingPage();
             updateServer->begin();
             DEBUG_PRINTLN(F("Web Server endpoints (AP mode) registered"));
             og.state = OG_STATE_CONNECTED;
@@ -1825,7 +1873,8 @@ void do_loop() {
             DEBUG_PRINTLN(WiFi.localIP());
 
             time_keeping();
-            otf->on("/", on_home);
+            otf->on("/", on_sta_home);
+            otf->on("/sta.js", on_sta_home_js);
             otf->on("/output.css", on_output_css);
             otf->on("/common.js", on_common_js);
             otf->on("/images.js", on_images_js);
@@ -1833,16 +1882,16 @@ void do_loop() {
             otf->on("/jo", on_sta_options);
             otf->on("/jl", on_sta_logs);
             otf->on("/vo", on_sta_view_options);
-            otf->on("/vo/output.css", on_output_css);
-            otf->on("/vo/common.js", on_common_js);
+            otf->on("/options.js", on_sta_view_options_js);
             otf->on("/vl", on_sta_view_logs);
-            otf->on("/vl/output.css", on_output_css);
-            otf->on("/vl/common.js", on_common_js);
+            otf->on("/logs.js", on_sta_view_logs_js);
             otf->on("/cc", on_sta_change_controller);
             otf->on("/co", on_sta_change_options);
             otf->on("/db", on_sta_debug);
             // FIXME get sta updates working.
-            otf->on("/update", on_sta_update, OTF::HTTP_GET);
+            otf->on("/update", on_update_html, OTF::HTTP_GET);
+            otf->on("/update.js", on_update_js, OTF::HTTP_GET);
+            otf->on("/mode.js", on_sta_update_mode_js);
             updateServer->on("/update", HTTP_POST, on_sta_upload_fin, on_sta_upload);
             otf->on("/clearlog", on_clear_log);
             otf->on("/resetall", on_reset_all);

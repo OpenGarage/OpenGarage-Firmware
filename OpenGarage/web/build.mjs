@@ -15,34 +15,19 @@ function minifyCSS(code, filename) {
   const { code: out } = transformCSS({
     filename,
     code: Buffer.from(code),
-    minify: true,
+    minify: false,
   });
   return out.toString();
 }
 
 function processHTML(code, filename) {
-  const scriptRegex = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
-  const styleRegex = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
+  let out = transformHTML(code);
 
-  let html = code;
-
-  html = html.replace(scriptRegex, (match, content) => {
-    const minified = minifyJS(content, filename);
-    return `<script>${minified}</script>`;
-  });
-
-  html = html.replace(styleRegex, (match, content) => {
-    const minified = minifyCSS(content, filename);
-    return `<style>${minified}</style>`;
-  });
-
-  return transformHTML(html).code;
+  return out.code;
 }
 
-const files = await fg('public/*.{html,css,js}');
-
-//TODO: The name is temp until the rest of the html files are created
-const output = createWriteStream("../htmls2.h")
+const files = await fg('public/**/*.{html,css,js}');
+const output = createWriteStream("../htmls.h")
 
 output.write("#ifndef HTML_H\n#define HTML_H\n")
 for (const path of files) {
@@ -57,7 +42,7 @@ for (const path of files) {
     } else {
         throw Error("Bad file: " + path);
     }
-    const name = path.replace("public/", "").replace(".", "_");
+    const name = path.replace("public/", "").replace(".", "_").replace("/", "_");
     let compressed = gzip(minifiedContent);
     output.write(`const size_t ${name}_size = ${compressed.length};\n static const char ${name}[] PROGMEM = {`)
     compressed.forEach((byte, idx) => {

@@ -1,10 +1,5 @@
-@import "tailwindcss" source("./public/*.{html,js}");
+@import "tailwindcss" source("./public/");
 @plugin "daisyui";
 @plugin "@tailwindcss/typography";
 
 @variant dark (&:where([data-theme=dark], [data-theme=dark] *));
-
-.door-img {
-    width: inherit;
-    position: absolute;
-}

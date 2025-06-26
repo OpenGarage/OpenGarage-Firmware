@@ -12,8 +12,8 @@
     <div class="drawer">
         <input id="og-drawer" type="checkbox" class="drawer-toggle" />
         <div class="drawer-content max-h-screen flex flex-col" id="drawer-content">
-            <div class="flex-1 overflow-auto flex flex-col gap-4 p-4">
-                <div class="overflow-x-auto">
+            <div class="flex-1 flex-col overflow-auto flex gap-4 p-4">
+                <div class="min-h-xs flex-1">
                     <table class="table w-auto">
                         <thead>
                             <tr>
@@ -27,43 +27,68 @@
                         </tbody>
                     </table>
                 </div>
+                <form class="w-full max-w-xs flex-1 flex flex-col gap-4" id="form">
+                    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-xs border p-4">
+                        <legend class="fieldset-legend">WiFi Settings</legend>
 
-                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-xs border p-4">
-                    <legend class="fieldset-legend">WiFi Settings</legend>
+                        <div>
+                            <label class="label pb-2" for="wifi-name">WiFi SSID</label>
+                            <input type="text" class="input validator" id="wifi-name" placeholder="" required
+                                minlength="1" maxlength="32" />
+                            <span class="validator-hint">Please enter a valid SSID</span>
+                        </div>
 
-                    <label class="label">WiFi SSID</label>
-                    <input type="text" class="input" id="wifi-name" placeholder="" />
+                        <div>
+                            <label class="label pb-2" for="wifi-password">WiFi Password</label>
+                            <input type="password" class="input validator" id="wifi-password" placeholder=""
+                                minlength="0" maxlength="64" />
+                            <span class="validator-hint">Please enter a valid password</span>
+                        </div>
 
-                    <label class="label">WiFi Password</label>
-                    <input type="password" class="input" id="wifi-password" placeholder="" />
+                        <div>
+                            <label class="label pb-2" for="wifi-hostname">Hostname</label>
+                            <input type="text" class="input" id="wifi-hostname" placeholder="(Optional)" />
+                        </div>
+                    </fieldset>
 
-                    <label class="label">Hostname</label>
-                    <input type="text" class="input" id="wifi-hostname" placeholder="(Optional)" />
-                </fieldset>
+                    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-xs border p-4">
+                        <legend class="fieldset-legend">Enable Cloud Configuration</legend>
 
-                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-xs border p-4">
-                    <legend class="fieldset-legend">Enable Cloud Configuration</legend>
+                        <label class="label" for="cloud-none">No. I will configure this later.</label>
+                        <input type="radio" class="radio peer" id="cloud-none" name="cloud-type" checked />
 
-                    <label class="label">No. I will configure this later.</label>
-                    <input type="radio" class="radio peer" id="cloud-none" name="cloud-type" value="checked" />
+                        <label class="label" for="cloud-blynk">Use Blynk Token.</label>
+                        <input type="radio" class="radio" id="cloud-blynk" name="cloud-type" />
 
-                    <label class="label">Use Blynk Token.</label>
-                    <input type="radio" class="radio" id="cloud-blynk" name="cloud-type" value="checked" />
+                        <label class="label" for="cloud-otc">Use OpenThings Cloud (OTC) Token.</label>
+                        <input type="radio" class="radio" id="cloud-otc" name="cloud-type" />
 
-                    <label class="label">Use OpenThings Cloud (OTC) Token.</label>
-                    <input type="radio" class="radio" id="cloud-otc" name="cloud-type" value="checked" />
+                        <div class="block peer-checked:hidden">
+                            <label class="label pb-2" for="cloud-token">Cloud Token</label>
+                            <input type="text" class="input validator" id="cloud-token"
+                                placeholder="" required disabled />
+                            <span class="validator-hint">Please enter a valid token</span>
+                        </div>
 
-                    <label class="label block peer-checked:hidden">Cloud Token</label>
-                    <input type="text" class="input block peer-checked:hidden" id="cloud-token" placeholder="" />
+                        <div class="block peer-checked:hidden">
+                            <label class="label pb-2" for="cloud-server">Cloud Server</label>
+                            <input type="text" class="input validator" id="cloud-server"
+                                placeholder="" required minlength="1" disabled />
+                            <span class="validator-hint">Server can not be empty</span>
+                        </div>
 
-                    <label class="label block peer-checked:hidden">Cloud Server</label>
-                    <input type="text" class="input block peer-checked:hidden" id="cloud-server" placeholder="" />
+                        <div class="block peer-checked:hidden">
+                            <label class="label pb-2" for="cloud-port">Port</label>
+                            <input type="number" class="input validator" id="cloud-port"
+                                placeholder="" required min="1" max="25565" disabled />
+                            <span class="validator-hint">Please enter a valid port number</span>
+                        </div>
+                    </fieldset>
 
-                    <label class="label block peer-checked:hidden">Port</label>
-                    <input type="number" class="input block peer-checked:hidden" id="cloud-port" placeholder="" />
-                </fieldset>
+                    <button class="btn btn-wide btn-primary" type="submit" id="submit-button">Submit</button>
+                </form>
 
-                <button class="btn btn-wide btn-primary" id="submit-button">Submit</button>
+                <a class="btn btn-wide btn-primary content-center hidden" id="go-to-button"></a>
             </div>
         </div>
         <div class="drawer-side z-10">
@@ -73,85 +98,7 @@
         </div>
     </div>
 
-    <script type="module">
-        window.garageRoot = "./";
-        import { initalize, loading, garageFetch, sendCommand, updateTitle, updateVersion } from "./common.js";
-        // initalize(location.href, true);
-        initalize("http://192.168.4.1/", true);
-        updateTitle("Open Garage");
-
-        const table = document.getElementById("wifi-table");
-        const wifiName = document.getElementById("wifi-name");
-        const wifiPassword = document.getElementById("wifi-password");
-        const wifiHostname = document.getElementById("wifi-hostname");
-
-        const cloudSelectNone = document.getElementById("cloud-none");
-        const cloudSelectBlynk = document.getElementById("cloud-blynk");
-        const cloudSelectOTC = document.getElementById("cloud-otc");
-
-        const cloudToken = document.getElementById("cloud-token");
-        const cloudServer = document.getElementById("cloud-server");
-        const cloudPort = document.getElementById("cloud-port");
-
-
-        cloudSelectBlynk.addEventListener("input", () => {
-            cloudServer.value = "blynk.openthings.io";
-            cloudPort.value = 8080;
-        })
-
-        cloudSelectOTC.addEventListener("input", () => {
-            cloudServer.value = "ws.cloud.openthings.io";
-            cloudPort.value = 80;
-        })
-
-        function createRow(ssid, rssi) {
-            const row = document.createElement("tr");
-
-            const radioColumn = document.createElement("th");
-            const radioButton = document.createElement("input");
-            radioButton.type = "radio";
-            radioButton.name = "wifi-radio";
-            radioButton.class = "radio";
-            radioButton.addEventListener("input", () => {
-                wifiName.value = ssid;
-            });
-
-            radioColumn.append(radioButton)
-            row.appendChild(radioColumn);
-
-            const ssidColumn = document.createElement("td");
-            ssidColumn.innerText = ssid;
-            row.appendChild(ssidColumn);
-
-            const strengthColumn = document.createElement("td");
-            strengthColumn.innerText = rssi > -71 ? "Ok" : rssi > -81 ? "Weak" : "Poor";
-            row.appendChild(strengthColumn);
-
-            const powerColumn = document.createElement("td");
-            powerColumn.innerText = `(${rssi} dBm)`;
-            row.appendChild(powerColumn);
-
-            table.appendChild(row);
-        }
-
-        async function getFirmware() {
-            const res = await garageFetch("db");
-            const data = await res.json();
-            updateVersion(data.fwv);
-        }
-
-        getFirmware();
-
-        async function updateData() {
-            const res = await garageFetch("js");
-            const data = await res.json();
-            data.ssids.forEach((ssid, i) => {
-                createRow(ssid, data.rssis[i]);
-            })
-        }
-
-        updateData();
-    </script>
+    <script type="module" src="./ap.js"></script>
 </body>
 
 </html>
