@@ -13,20 +13,22 @@
         <input id="og-drawer" type="checkbox" class="drawer-toggle" />
         <div class="drawer-content max-h-screen flex flex-col" id="drawer-content">
             <form id="update-form" class="flex-1 overflow-auto flex flex-col gap-4 p-4" method="POST" enctype="multipart/form-data">
-                <fieldset class="fieldset">
-                            <legend class="fieldset-legend">Firmware File</legend>
-                            <input type="file" name="file" accept=".bin" class="file-input" />
-                            </fieldset>
+                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-xs border p-4">
+                    <legend class="fieldset-legend">Firmware</legend>
 
-                            <label class="floating-label">
-                    <span>Device Key</span>
-                    <input type="password" id="key-input" name="d-key" placeholder="Device Key"
-                        class="input input-bordered w-full max-w-md" />
-                </label>
-                <button class="btn btn-wide btn-primary" type="submit">Upload Firmware</button>
+                    <div>
+                        <label class="label pb-2" for="firmware-file">Firmware File</label>
+                        <input id="firmware-file" type="file" name="file" accept=".bin" class="file-input validator" required />
+                        <span class="validator-hint">Firmware file is required</span>
+                    </div>
+
+                    <div>
+                        <label class="label pb-2" for="device-key">Device Key</label>
+                        <input type="password" name="dkey" class="input" id="device-key" placeholder="" />
+                    </div>
+                </fieldset>
+                <button class="btn btn-wide btn-primary" id="submit-button" type="submit">Upload Firmware</button>
             </form>
-
-            Uploading
         </div>
         <div class="drawer-side z-10">
             <label for="og-drawer" aria-label="close sidebar" class="drawer-overlay"></label>

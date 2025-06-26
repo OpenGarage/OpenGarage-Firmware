@@ -34,7 +34,7 @@ export function loading(...elements) {
     });
 }
 
-export function initalize(root, is_update) {
+export function initalize(root, is_ap) {
     garageRoot = root;
     const drawerContent = document.getElementById("drawer-content");
 
@@ -161,7 +161,7 @@ export function initalize(root, is_update) {
         link.innerText = name;
     }
 
-    if (is_update) {
+    if (is_ap) {
         createDrawerMenuItem("Setup WiFi", garageRoot);
         createDrawerMenuItem("Firmware Update", garageRoot + "update");
         createDrawerMenuItem("User Manual", "https://github.com/OpenGarage/OpenGarage-Firmware/tree/master/docs");
