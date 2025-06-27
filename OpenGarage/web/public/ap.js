@@ -94,13 +94,13 @@ form.addEventListener("submit", (e) => {
 });
 
 
-cloudSelectNone.addEventListener("change", () => {
+cloudSelectNone.addEventListener("input", () => {
     cloudToken.disabled = true;
     cloudServer.disabled = true;
     cloudPort.disabled = true;
 });
 
-cloudSelectBlynk.addEventListener("change", () => {
+cloudSelectBlynk.addEventListener("input", () => {
     cloudToken.disabled = false;
     cloudServer.disabled = false;
     cloudPort.disabled = false;
@@ -108,7 +108,7 @@ cloudSelectBlynk.addEventListener("change", () => {
     cloudPort.value = 8080;
 });
 
-cloudSelectOTC.addEventListener("change", () => {
+cloudSelectOTC.addEventListener("input", () => {
     cloudToken.disabled = false;
     cloudServer.disabled = false;
     cloudPort.disabled = false;
@@ -129,7 +129,7 @@ function createRow(ssid, rssi) {
     radioButton.type = "radio";
     radioButton.name = "wifi-radio";
     radioButton.className = "radio";
-    radioButton.addEventListener("change", () => {
+    radioButton.addEventListener("input", () => {
         wifiName.value = ssid;
     });
 

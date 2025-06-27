@@ -27,8 +27,8 @@
                         </tbody>
                     </table>
                 </div>
-                <form class="w-full max-w-xs flex-1 flex flex-col gap-4" id="form">
-                    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-xs border p-4">
+                <form class="w-full max-w-sm flex-1 flex flex-col gap-4" id="form">
+                    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-sm border p-4">
                         <legend class="fieldset-legend">WiFi Settings</legend>
 
                         <div>
@@ -46,12 +46,12 @@
                         </div>
 
                         <div>
-                            <label class="label pb-2" for="wifi-hostname">Hostname</label>
+                            <label class="label pb-2" for="wifi-hostname">Hostname (Optional)</label>
                             <input type="text" class="input" id="wifi-hostname" placeholder="(Optional)" />
                         </div>
                     </fieldset>
 
-                    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-xs border p-4">
+                    <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-sm border p-4">
                         <legend class="fieldset-legend">Enable Cloud Configuration</legend>
 
                         <label class="label" for="cloud-none">No. I will configure this later.</label>
@@ -80,7 +80,7 @@
                         <div class="block peer-checked:hidden">
                             <label class="label pb-2" for="cloud-port">Port</label>
                             <input type="number" class="input validator" id="cloud-port"
-                                placeholder="" required min="1" max="25565" disabled />
+                                placeholder="" required min="1" max="25565" step="1" disabled />
                             <span class="validator-hint">Please enter a valid port number</span>
                         </div>
                     </fieldset>

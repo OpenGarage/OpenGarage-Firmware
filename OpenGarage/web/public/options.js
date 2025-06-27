@@ -105,9 +105,7 @@
  */
 
 import { initalize, garageFetch, sendCommand, updateTitle, updateVersion } from "./common.js";
-// initalize(new URL(location.href + "/..").href);
-// TODO;
-initalize(new URL("http://192.168.12.130/vo" + "/..").href);
+initalize(new URL(location.href + "/..").href);
 const nameInput = document.getElementById("name-input");
 const sensorMount = document.getElementById("sensor-mount");
 const secplusVersion = document.getElementById("secplus-select");
@@ -122,7 +120,7 @@ const soundAlarm = document.getElementById("alarm-time");
 const openAlarm = document.getElementById("alarm-open");
 const logSize = document.getElementById("log-size");
 
-const enableCloud = document.getElementById("enable-cloud");
+const cloudTypeNone = document.getElementById("cloud-type-none");
 const cloudTypeBlynk = document.getElementById("cloud-type-blynk");
 const cloudTypeOTC = document.getElementById("cloud-type-otc");
 const cloudToken = document.getElementById("cloud-token");
@@ -152,7 +150,6 @@ const openAfterClose = document.getElementById("open-after-close");
 
 const readInterval = document.getElementById("read-interval");
 const sensorFilter = document.getElementById("sensor-filter");
-const consensusMarginLabel = document.getElementById("consensus-margin-label");
 const consensusMargin = document.getElementById("consensus-margin");
 const distanceTimeout = document.getElementById("distance-timeout");
 const httpPort = document.getElementById("http-port");
@@ -168,20 +165,90 @@ const changeDeviceKey = document.getElementById("change-device-key");
 const newKey = document.getElementById("new-key");
 const confirmNewKey = document.getElementById("confirm-new-key");
 
+const form = document.getElementById("form");
 
 switchSensor.addEventListener("input", () => {
     sensorLogic.disabled = switchSensor.value == 0;
 });
 
 sensorFilter.addEventListener("input", () => {
-    consensusMarginLabel.hidden = sensorFilter.value == 0;
+    consensusMargin.parentElement.hidden = sensorFilter.value == 0;
 });
 
-const keyInput = document.getElementById("key-input");
-keyInput.value = localStorage.getItem("keyInput");
-keyInput.addEventListener("input", () => {
-    localStorage.setItem("keyInput", keyInput.value);
+const deviceKey = document.getElementById("device-key");
+deviceKey.value = localStorage.getItem("deviceKey");
+deviceKey.addEventListener("input", () => {
+    localStorage.setItem("deviceKey", deviceKey.value);
 });
+
+function checkKeyMatch() {
+    if (newKey.value != confirmNewKey.value) {
+        confirmNewKey.setCustomValidity("Keys must match");
+    } else {
+        confirmNewKey.setCustomValidity("");
+    }
+}
+
+newKey.addEventListener("change", checkKeyMatch);
+confirmNewKey.addEventListener("change", checkKeyMatch);
+
+cloudTypeNone.addEventListener("input", () => {
+    cloudToken.disabled = true;
+    cloudServer.disabled = true;
+    cloudPort.disabled = true;
+
+    cloudToken.parentElement.hidden = true;
+    cloudServer.parentElement.hidden = true;
+    cloudPort.parentElement.hidden = true;
+});
+
+cloudTypeBlynk.addEventListener("input", () => {
+    cloudToken.disabled = false;
+    cloudServer.disabled = false;
+    cloudPort.disabled = false;
+
+    cloudToken.parentElement.hidden = false;
+    cloudServer.parentElement.hidden = false;
+    cloudPort.parentElement.hidden = false;
+
+    cloudServer.value = "blynk.openthings.io";
+    cloudPort.value = 8080;
+});
+
+cloudTypeOTC.addEventListener("input", () => {
+    cloudToken.disabled = false;
+    cloudServer.disabled = false;
+    cloudPort.disabled = false;
+
+    cloudToken.parentElement.hidden = false;
+    cloudServer.parentElement.hidden = false;
+    cloudPort.parentElement.hidden = false;
+
+    cloudServer.value = "ws.cloud.openthings.io";
+    cloudPort.value = 80;
+});
+
+/**
+ * Makes the toggle element disable hidden form elements
+ * @param {HTMLInputElement} toggle 
+ * @param  {HTMLInputElement[]} elements 
+ */
+function toggleDisable(toggle, elements) {
+    toggle.addEventListener("input", () => {
+        const v = !toggle.checked;
+        elements.forEach((e) => {
+            e.disabled = v;
+        });
+    });
+}
+
+toggleDisable(enableMqtt, [mqttServer, mqttPort, mqttUsername, mqttPassword, mqttTopic])
+toggleDisable(enableEmail, [smtpServer, smtpPort, smtpSender, smtpPassword, smtpRecipient])
+toggleDisable(useCustomNTP, [ntpServer])
+toggleDisable(useStaticIP, [deviceIP, gatewayIP, subnet, dns])
+toggleDisable(changeDeviceKey, [newKey, confirmNewKey])
+
+
 
 async function updateData() {
     const res = await garageFetch("jo");
@@ -230,58 +297,64 @@ async function updateData() {
     logSize.disabled = false;
     logSize.value = data.lsz;
 
-    enableCloud.disabled = false;
-    enableCloud.value = data.cld == 0;
+    cloudTypeNone.disabled = false;
+    cloudTypeNone.checked = data.cld != 0;
 
     cloudTypeBlynk.disabled = false;
-    cloudTypeBlynk.value = data.cld == 1;
+    cloudTypeBlynk.checked = data.cld == 1;
 
     cloudTypeOTC.disabled = false;
-    cloudTypeOTC.value = data.cld == 2;
+    cloudTypeOTC.checked = data.cld == 2;
 
-    cloudToken.disabled = false;
+    const cloudDisable = data.cld == 0;
+
+    cloudToken.disabled = cloudDisable;
     cloudToken.value = data.auth;
 
-    cloudServer.disabled = false;
+    cloudServer.disabled = cloudDisable;
     cloudServer.value = data.bdmn;
 
-    cloudPort.disabled = false;
+    cloudPort.disabled = cloudDisable;
     cloudPort.value = data.bprt;
 
     enableMqtt.disabled = false;
     enableMqtt.value = data.mqen;
 
-    mqttServer.disabled = false;
+    const mqttDisable = !data.mqen;
+
+    mqttServer.disabled = mqttDisable;
     mqttServer.value = data.mqtt;
 
-    mqttPort.disabled = false;
+    mqttPort.disabled = mqttDisable;
     mqttPort.value = data.mqpt;
 
-    mqttUsername.disabled = false;
+    mqttUsername.disabled = mqttDisable;
     mqttUsername.value = data.mqur || "";
 
-    mqttPassword.disabled = false;
+    mqttPassword.disabled = mqttDisable;
     mqttPassword.value = "";
 
-    mqttTopic.disabled = false;
+    mqttTopic.disabled = mqttDisable;
     mqttTopic.value = data.mqtp || "";
 
     enableEmail.disabled = false;
     enableEmail.value = data.emen;
 
-    smtpServer.disabled = false;
+    const emailDisable = !data.emen;
+
+    smtpServer.disabled = emailDisable;
     smtpServer.value = data.smtp;
 
-    smtpPort.disabled = false;
+    smtpPort.disabled = emailDisable;
     smtpPort.value = data.sprt;
 
-    smtpSender.disabled = false;
+    smtpSender.disabled = emailDisable;
     smtpSender.value = data.send;
 
-    smtpPassword.disabled = false;
+    smtpPassword.disabled = emailDisable;
     smtpPassword.value = data.apwd;
 
-    smtpRecipient.disabled = false;
+    smtpRecipient.disabled = emailDisable;
     smtpRecipient.value = data.recp;
 
     notifyOnDoorOpen.disabled = false;
@@ -317,7 +390,7 @@ async function updateData() {
     sensorFilter.disabled = false;
     sensorFilter.value = data.sfi;
 
-    consensusMarginLabel.hidden = sensorFilter.value == 0;
+    consensusMargin.parentElement.hidden = sensorFilter.value == 0;
 
     consensusMargin.disabled = false;
     consensusMargin.value = data.cmr;
@@ -383,7 +456,7 @@ async function updateSettings() {
     data.alm = soundAlarm.value;
     data.aoo = openAlarm.value;
     data.lsz = logSize.value;
-    data.cld = enableCloud.checked ? 0 : cloudTypeBlynk.chcked ? 1 : 2;
+    data.cld = cloudTypeNone.checked ? 0 : cloudTypeBlynk.chcked ? 1 : 2;
     data.auth = cloudToken.value;
     data.bdmn = cloudServer.value;
     data.bprt = cloudPort.value;
@@ -431,7 +504,7 @@ async function updateSettings() {
         params.push(`${key}=${encodeURIComponent(value)}`);
     }
 
-    const res = await garageFetch("co", `dkey=${encodeURIComponent(keyInput.value)}`, ...params);
+    const res = await garageFetch("co", `dkey=${encodeURIComponent(deviceKey.value)}`, ...params);
     const resData = await res.json();
     switch (resData.result) {
         case 1:
@@ -459,6 +532,12 @@ async function updateSettings() {
     }
 }
 
-document.getElementById("save-button").addEventListener("click", () => {
-    updateSettings();
+form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    checkKeyMatch()
+    if (!form.checkValidity()) {
+        return false;
+    } else {
+        updateSettings();
+    }
 });

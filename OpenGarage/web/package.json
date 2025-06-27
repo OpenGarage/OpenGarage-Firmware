@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "build": "node build.mjs",
     "build:css": "postcss app.css -o public/output.css",
     "watch:css": "postcss app.css -o public/output.css --watch"
   },

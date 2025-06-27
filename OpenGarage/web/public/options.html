@@ -12,443 +12,432 @@
     <div class="drawer">
         <input id="og-drawer" type="checkbox" class="drawer-toggle" />
         <div class="drawer-content max-h-screen flex flex-col" id="drawer-content">
-            <dialog id="save-modal" class="modal">
-                <div class="modal-box">
-                    <form method="dialog" class="flex flex-col gap-4">
-                        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
-                        <h3 class="text-lg font-bold">Save Changes</h3>
-                        <div class="modal-action flex w-full gap-4">
-                            <button class="btn btn-outline flex-1">Cancel</button>
-                            <button class="btn btn-error flex-1" id="save-button">Save</button>
-                        </div>
-                    </form>
-                </div>
-            </dialog>
-
             <div class="flex-1 overflow-auto flex flex-col gap-4 p-4">
-                <div role="tablist" class="tabs tabs-border">
-                    <input type="radio" name="settings_tab" role="tab" class="tab" aria-label="Basic"
-                        checked="checked" />
-                    <div class="tab-content border-base-300 bg-base-100 p-10">
-                        <div class="flex flex-col gap-4">
-                            <label class="floating-label">
-                                <span>Device Name</span>
-                                <input type="text" id="name-input" placeholder="Device Name"
-                                    class="input input-bordered w-full max-w-md" disabled />
-                            </label>
+                <form class="w-full max-w-sm flex-1 flex flex-col gap-4" id="form">
+                    <div role="tablist" class="tabs tabs-border">
+                        <input type="radio" name="settings_tab" role="tab" class="tab" aria-label="Basic"
+                            checked="checked" />
+                        <div class="tab-content border-base-300 bg-base-100 p-4">
+                            <div class="flex flex-col gap-4">
+                                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-sm border p-4">
+                                    <legend class="fieldset-legend">Device</legend>
 
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Distance Sensor Mount</legend>
-                                <select class="select" id="sensor-mount" disabled>
-                                    <option value="0">Ceiling Mount</option>
-                                    <option value="1">Side Mount</option>
-                                </select>
-                            </fieldset>
+                                    <div>
+                                        <label class="label pb-2" for="name-input">Device Name</label>
+                                        <input type="text" class="input validator" id="name-input" placeholder=""
+                                            required minlength="1" />
+                                        <span class="validator-hint">Name can not be empty</span>
+                                    </div>
 
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Security Plus Version</legend>
-                                <select class="select" id="secplus-select" disabled>
-                                    <option value="0">None</option>
-                                    <option value="1">Security Plus 1.0 (Purple / Orange Learn Button)</option>
-                                    <option value="2">Security Plus 2.0 (Yellow Learn Button)</option>
-                                </select>
-                            </fieldset>
+                                    <div>
+                                        <label class="label pb-2" for="secplus-select">Security Plus Version</label>
+                                        <select class="select validator" id="secplus-select" required disabled>
+                                            <option value="0">None</option>
+                                            <option value="1">Security Plus 1.0 (Purple / Orange Learn Button)</option>
+                                            <option value="2">Security Plus 2.0 (Yellow Learn Button)</option>
+                                        </select>
+                                        <span class="validator-hint">Select a security plus version</span>
+                                    </div>
 
-                            <label class="floating-label">
-                                <span>Door Threshold</span>
-                                <input type="text" id="door-threshold" placeholder="Door Threshold"
-                                    class="input input-bordered w-full max-w-md" disabled />
-                            </label>
+                                    <div>
+                                        <label class="label pb-2" for="status-check">Status Check (s)</label>
+                                        <input type="number" class="input validator" id="status-check" placeholder=""
+                                            required min="5" max="300" step="1" />
+                                        <span class="validator-hint">Enter a whole number between 5 and 300</span>
+                                    </div>
 
-                            <label class="floating-label">
-                                <span>Car Threshold</span>
-                                <input type="text" id="car-threshold" placeholder="Car Threshold"
-                                    class="input input-bordered w-full max-w-md" disabled />
-                            </label>
+                                    <div>
+                                        <label class="label pb-2" for="click-time">Click Time (ms)</label>
+                                        <input type="number" class="input validator" id="click-time" placeholder=""
+                                            required min="50" max="5000" step="1" />
+                                        <span class="validator-hint">Enter a whole number between 50 and 5000</span>
+                                    </div>
 
-                            <label class="floating-label">
-                                <span>Status Check</span>
-                                <label class="input">
-                                    <input type="text" id="status-check" placeholder="Status Check"
-                                        class="input input-bordered w-full max-w-md" disabled />
-                                    <span class="label">s</span>
-                                </label>
 
-                            </label>
+                                    <div>
+                                        <label class="label pb-2" for="log-size">Log Size</label>
+                                        <input type="number" class="input validator" id="log-size" placeholder=""
+                                            required min="20" max="400" step="1" />
+                                        <span class="validator-hint">Enter a whole number between 20 and 400</span>
+                                    </div>
+                                </fieldset>
 
-                            <label class="floating-label">
-                                <span>Click Time</span>
-                                <label class="input">
-                                    <input type="text" id="click-time" placeholder="Click Time"
-                                        class="input input-bordered w-full max-w-md" disabled />
-                                    <span class="label">ms</span>
-                                </label>
-                            </label>
+                                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-sm border p-4">
+                                    <legend class="fieldset-legend">Distance Sensor</legend>
 
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Switch Sensor</legend>
-                                <select class="select" id="switch-sensor" disabled>
-                                    <option value="0">None</option>
-                                    <option value="1">Normally Closed</option>
-                                    <option value="2">Normally Open</option>
-                                </select>
-                                <p class="fieldset-label">Sensor on G04 and GND</p>
-                            </fieldset>
+                                    <div>
+                                        <label class="label pb-2" for="sensor-mount">Distance Sensor Mount</label>
+                                        <select class="select validator" id="sensor-mount" required disabled>
+                                            <option value="0">Ceiling Mount</option>
+                                            <option value="1">Side Mount</option>
+                                        </select>
+                                        <span class="validator-hint">Select a mount option</span>
+                                    </div>
 
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Sensor Logic</legend>
-                                <select class="select" id="sensor-logic" disabled>
-                                    <option value="0">Distance Sensor Only</option>
-                                    <option value="1">Switch Sensor Only</option>
-                                    <option value="2">Distance AND Switch</option>
-                                    <option value="3">Distance OR Switch</option>
-                                </select>
-                            </fieldset>
+                                    <div>
+                                        <label class="label pb-2" for="door-threshold">Door Threshold (cm)</label>
+                                        <input type="number" class="input validator" id="door-threshold" placeholder=""
+                                            required min="2" max="400" step="1" />
+                                        <span class="validator-hint">Enter a whole number between 2 and 400</span>
+                                    </div>
 
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Temperature and Humidity Sensor</legend>
-                                <select class="select" id="th-sensor" disabled>
-                                    <option value="0">None</option>
-                                    <option value="1">AM2320 (I2C)</option>
-                                    <option value="2">DHT11 on G16</option>
-                                    <option value="3">DHT22 on G16</option>
-                                    <option value="4">DS18B20 on G16</option>
-                                </select>
-                            </fieldset>
+                                    <div>
+                                        <label class="label pb-2" for="car-threshold">Car Threshold (cm)</label>
+                                        <input type="number" class="input validator" id="car-threshold" placeholder=""
+                                            required min="2" max="400" step="1" />
+                                        <span class="validator-hint">Enter a whole number between 2 and 400</span>
+                                    </div>
+                                </fieldset>
 
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Sound Alarm</legend>
-                                <select class="select" id="alarm-time" disabled>
-                                    <option value="0">Disabled</option>
-                                    <option value="1">5 Seconds</option>
-                                    <option value="2">10 Seconds</option>
-                                </select>
-                            </fieldset>
+                                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-sm border p-4">
+                                    <legend class="fieldset-legend">Other Sensors</legend>
 
-                            <label class="label">
-                                <input type="checkbox" class="checkbox" id="alarm-open" disabled />
-                                <span>Alarm on Open</span>
-                            </label>
+                                    <div>
+                                        <label class="label pb-2" for="switch-sensor">Switch Sensor</label>
+                                        <select class="select validator" id="switch-sensor" required disabled>
+                                            <option value="0">None</option>
+                                            <option value="1">Normally Closed</option>
+                                            <option value="2">Normally Open</option>
+                                        </select>
+                                        <label class="label" for="switch-sensor">Sensor on G04 and GND</label>
+                                        <span class="validator-hint">Select a switch sensor option</span>
+                                    </div>
 
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Log Size</legend>
-                                <select class="select" id="log-size" disabled>
-                                    <option value="20">20</option>
-                                    <option value="50">50</option>
-                                    <option value="100">100</option>
-                                    <option value="200">200</option>
-                                    <option value="400">400</option>
-                                </select>
-                            </fieldset>
+                                    <div>
+                                        <label class="label pb-2" for="sensor-logic">Sensor Logic</label>
+                                        <select class="select validator" id="sensor-logic" required disabled>
+                                            <option value="0">Distance Sensor Only</option>
+                                            <option value="1">Switch Sensor Only</option>
+                                            <option value="2">Distance AND Switch</option>
+                                            <option value="3">Distance OR Switch</option>
+                                        </select>
+                                        <span class="validator-hint">Select a sensor logic option</span>
+                                    </div>
+
+                                    <div>
+                                        <label class="label pb-2" for="th-sensor">Temperature and Humidity Sensor</label>
+                                        <select class="select validator" id="th-sensor" required disabled>
+                                            <option value="0">None</option>
+                                            <option value="1">AM2320 (I2C)</option>
+                                            <option value="2">DHT11 on G16</option>
+                                            <option value="3">DHT22 on G16</option>
+                                            <option value="4">DS18B20 on G16</option>
+                                        </select>
+                                        <span class="validator-hint">Select a temperature and humidity sensor</span>
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-sm border p-4">
+                                    <legend class="fieldset-legend">Alarm</legend>
+
+                                    <div>
+                                        <label class="label pb-2" for="alarm-time">Sound Alarm</label>
+                                        <select class="select validator" id="alarm-time" required disabled>
+                                            <option value="0">Disabled</option>
+                                            <option value="1">5 Seconds</option>
+                                            <option value="2">10 Seconds</option>
+                                        </select>
+                                        <span class="validator-hint">Select an alarm time</span>
+                                    </div>
+
+                                    <div class="flex gap-2">
+                                        <input type="checkbox" class="checkbox" id="alarm-open" disabled />
+                                        <label class="label" for="alarm-open">Alarm on Open</label>
+                                    </div>
+                                </fieldset>
+                            </div>
                         </div>
-                    </div>
 
-                    <input type="radio" name="settings_tab" role="tab" class="tab" aria-label="Integration" />
-                    <div class="tab-content border-base-300 bg-base-100 p-10">
-                        <div class="flex flex-col gap-4">
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Enable Cloud Connection</legend>
-                                <div class="flex flex-col gap-4">
-                                    <input type="checkbox" class="toggle peer" id="enable-cloud" disabled />
+                        <input type="radio" name="settings_tab" role="tab" class="tab" aria-label="Integration" />
+                        <div class="tab-content border-base-300 bg-base-100 p-4">
+                            <div class="flex flex-col gap-4">
+                                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-sm border p-4">
+                                    <legend class="fieldset-legend">Cloud Connection</legend>
+                                    <fieldset>
+                                        <legend>Cloud Type</legend>
 
-                                    <label class="label hidden peer-checked:block">
-                                        <span>Cloud Type</span>
                                         <div class="join join-vertical lg:join-horizontal">
-                                        <input type="radio" name="cloud-type" id="cloud-type-blynk" class="btn join-item" aria-label="Blynk" />
-                                        <input type="radio" name="cloud-type" id="cloud-type-otc" class="btn join-item" aria-label="OTC" checked="checked" />
+                                            <input type="radio" name="cloud-type" id="cloud-type-none"
+                                                class="btn join-item peer/none" aria-label="None" disabled />
+                                            <input type="radio" name="cloud-type" id="cloud-type-blynk"
+                                                class="btn join-item" aria-label="Blynk" disabled />
+                                            <input type="radio" name="cloud-type" id="cloud-type-otc"
+                                                class="btn join-item" aria-label="OTC" checked="checked" disabled />
                                         </div>
-                                    </label>
+                                    </fieldset>
 
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>Cloud Token</span>
-                                        <input type="text" id="cloud-token" placeholder="Cloud Token"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
+                                    <div>
+                                        <label class="label pb-2" for="cloud-token">Cloud Token</label>
+                                        <input type="text" class="input validator" id="cloud-token"
+                                            placeholder="" required disabled />
+                                        <span class="validator-hint">Please enter a valid token</span>
+                                    </div>
+                                    <div>
+                                        <label class="label pb-2" for="cloud-server">Cloud Server</label>
+                                        <input type="text" class="input validator" id="cloud-server"
+                                            placeholder="" required minlength="1" disabled />
+                                        <span class="validator-hint">Server can not be empty</span>
+                                    </div>
+                                    <div>
+                                        <label class="label pb-2" for="cloud-port">Cloud Port</label>
+                                        <input type="number" class="input validator" id="cloud-port"
+                                            placeholder="" required min="1" max="25565" step="1" disabled />
+                                        <span class="validator-hint">Please enter a valid port number</span>
+                                    </div>
+                                </fieldset>
 
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>Cloud Server</span>
-                                        <input type="text" id="cloud-server" placeholder="Cloud Server"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
+                                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-sm border p-4">
+                                    <legend class="fieldset-legend">MQTT</legend>
+                                    <label class="label" for="enable-mqtt">Enable MQTT</label>
+                                    <input type="checkbox" class="peer checkbox" id="enable-mqtt" disabled />
 
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>Cloud Port</span>
-                                        <input type="text" id="cloud-port" placeholder="Cloud Port"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-                                </div>
-                            </fieldset>
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="mqtt-server">MQTT Server</label>
+                                        <input type="text" class="input validator" id="mqtt-server"
+                                            placeholder="" required minlength="1" disabled />
+                                        <span class="validator-hint">Server can not be empty</span>
+                                    </div>
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="mqtt-port">MQTT Port</label>
+                                        <input type="number" class="input validator" id="mqtt-port"
+                                            placeholder="" required min="1" max="25565" step="1" disabled />
+                                        <span class="validator-hint">Please enter a valid port number</span>
+                                    </div>
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="mqtt-username">MQTT Username (Optional)</label>
+                                        <input type="text" class="input" id="mqtt-username"
+                                            placeholder="(Optional)" disabled />
+                                    </div>
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="mqtt-password">MQTT Password (Unchanged if Blank)</label>
+                                        <input type="password" class="input" id="mqtt-password"
+                                            placeholder="(Unchanged if Blank)" disabled />
+                                    </div>
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="mqtt-topic">MQTT Topic</label>
+                                        <input type="text" class="input" id="mqtt-topic"
+                                            placeholder="" required minlength="1" disabled />
+                                        <span class="validator-hint">Topic can not be empty</span>
+                                    </div>
+                                </fieldset>
 
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Enable MQTT</legend>
-                                <div class="flex flex-col gap-4">
-                                    <input type="checkbox" class="toggle peer" id="enable-mqtt" disabled />
+                                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-sm border p-4">
+                                    <legend class="fieldset-legend">Email</legend>
+                                    <label class="label" for="enable-email">Enable Email Notifications</label>
+                                    <input type="checkbox" class="peer checkbox" id="enable-email" disabled />
 
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>MQTT Server</span>
-                                        <input type="text" id="mqtt-server" placeholder="MQTT Server"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="smtp-server">SMTP Server</label>
+                                        <input type="text" class="input validator" id="smtp-server"
+                                            placeholder="" required minlength="1" disabled />
+                                        <span class="validator-hint">Server can not be empty</span>
+                                    </div>
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="smtp-port">SMTP Port</label>
+                                        <input type="number" class="input validator" id="smtp-port"
+                                            placeholder="" required min="1" max="25565" step="1" disabled />
+                                        <span class="validator-hint">Please enter a valid port number</span>
+                                    </div>
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="smtp-sender-email">Sender Email</label>
+                                        <input type="email" class="input" id="smtp-sender-email"
+                                            placeholder="" required disabled />
+                                        <span class="validator-hint">Enter a valid email</span>
+                                    </div>
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="smtp-password">App Password</label>
+                                        <input type="password" class="input" id="smtp-password"
+                                            placeholder="" required minlength="1" disabled />
+                                        <span class="validator-hint">Password can not be empty</span>
+                                    </div>
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="smtp-recipient-email">Recipient Email</label>
+                                        <input type="email" class="input" id="smtp-recipient-email"
+                                            placeholder="" required disabled />
+                                        <span class="validator-hint">Enter a valid email</span>
+                                    </div>
+                                </fieldset>
 
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>MQTT Port</span>
-                                        <input type="text" id="mqtt-port" placeholder="MQTT Port"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
+                                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-sm border p-4">
+                                    <legend class="fieldset-legend">Notifications</legend>
+                                    <div class="flex gap-2">
+                                        <input type="checkbox" class="checkbox" id="notification-door-open" disabled />
+                                        <label class="label" for="notification-door-open">Notify on Door Open</label>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <input type="checkbox" class="checkbox" id="notification-door-close" disabled />
+                                        <label class="label" for="notification-door-close">Notify on Door Close</label>
+                                    </div>
+                                    <div>
+                                        <label class="label pb-2" for="ifttt-key">IFTTT Key (Optional)</label>
+                                        <input type="text" class="input validator" id="ifttt-key"
+                                            placeholder="(Optional)" disabled />
+                                    </div>
+                                </fieldset>
 
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>MQTT Username</span>
-                                        <input type="text" id="mqtt-username" placeholder="MQTT Username (Optional)"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>MQTT Password</span>
-                                        <input type="text" id="mqtt-password"
-                                            placeholder="MQTT Password (Unchanged if blank)"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>MQTT Topic</span>
-                                        <input type="text" id="mqtt-topic" placeholder="MQTT Topic"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-                                </div>
-                            </fieldset>
-
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Enable Email Notifiations</legend>
-                                <div class="flex flex-col gap-4">
-                                    <input type="checkbox" class="toggle peer" id="enable-email" disabled />
-
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>SMTP Server</span>
-                                        <input type="text" id="smtp-server" placeholder="SMTP Server"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>SMTP Port</span>
-                                        <input type="text" id="smtp-port" placeholder="SMTP Port"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>Sender Email</span>
-                                        <input type="text" id="smtp-sender-email" placeholder="Sender Email"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>App Password</span>
-                                        <input type="text" id="smtp-password" placeholder="App Password"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>Recipient Email</span>
-                                        <input type="text" id="smtp-recipient-email" placeholder="Recipient Email"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-
-                                    <label class="label">
-                                        <input type="checkbox" id="notification-door-open" class="checkbox" disabled />
-                                        <span>Notify on Door Open</span>
-                                    </label>
-
-                                    <label class="label">
-                                        <input type="checkbox" id="notification-door-close" class="checkbox" disabled />
-                                        <span>Notify on Door Close</span>
-                                    </label>
-
-                                    <label class="floating-label">
-                                        <span>IFTTT Key</span>
-                                        <input type="text" id="ifttt-key" placeholder="IFTTT Key (Optional)"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-                                </div>
-                            </fieldset>
-
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Automation</legend>
-                                <div class="flex flex-col gap-4">
-                                    <div class="flex flex-col gap-4">
-                                        <label class="label">
-                                            <span>If open for longer than:</span>
-                                            <label class="input">
-                                                <input type="number" id="open-longer-time" placeholder=""
-                                                class="input input-bordered w-xs max-w-sm" disabled />
-                                                <span class="label">min</span>
-                                            </label>
-                                        </label>
-                                        <div class="flex gap-4">
-                                        <label class="label">
-                                            <input type="checkbox" id="open-longer-notification" class="checkbox"
-                                                disabled />
-                                            <span>Notify me</span>
-                                        </label>
-
-                                        <label class="label">
-                                            <input type="checkbox" id="open-longer-close" class="checkbox"
-                                                disabled />
-                                            <span>Auto-close</span>
-                                        </label>
-                                        </div>
+                                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-sm border p-4">
+                                    <legend class="fieldset-legend">Automation</legend>
+                                    <div>
+                                        <label class="label pb-2" for="open-longer-time">If open longer than (min):</label>
+                                        <input type="number" class="input validator" id="open-longer-time"
+                                            placeholder="" rqeuired min="1" max="720" step="1" disabled />
+                                            <span class="validator-hint">Enter a whole number between 1 and 720</span>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <input type="checkbox" class="checkbox" id="open-longer-notification" disabled />
+                                        <label class="label" for="open-longer-notification">Notify me</label>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <input type="checkbox" class="checkbox" id="open-longer-close" disabled />
+                                        <label class="label" for="open-longer-close">Auto-close</label>
                                     </div>
 
-                                    <div class="flex flex-col gap-4">
-                                        <label class="label">
-                                            <span>If open after time (UTC 24h format):</span>
-                                            <label class="input">
-                                                <input type="number" id="open-after-time" placeholder=""
-                                                class="input input-bordered w-xs max-w-sm" disabled />
-                                                <span class="label">UTC</span>
-                                            </label>
-                                        </label>
-                                        <div class="flex gap-4">
-                                        <label class="label">
-                                            <input type="checkbox" id="open-after-notification" class="checkbox"
-                                                disabled />
-                                            <span>Notify me</span>
-                                        </label>
-
-                                        <label class="label">
-                                            <input type="checkbox" id="open-after-close" class="checkbox"
-                                                disabled />
-                                            <span>Auto-close</span>
-                                        </label>
-                                        </div>
+                                    <div>
+                                        <label class="label pb-2" for="open-after-time">If open after time (UTC 24h format):</label>
+                                        <input type="number" class="input validator" id="open-after-time"
+                                            placeholder="" rqeuired min="0" max="24" step="1" disabled />
+                                            <span class="validator-hint">Enter a whole number between 0 and 23</span>
                                     </div>
-                                </div>
-                            </fieldset>
+                                    <div class="flex gap-2">
+                                        <input type="checkbox" class="checkbox" id="open-after-notification" disabled />
+                                        <label class="label" for="open-after-notification">Notify me</label>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <input type="checkbox" class="checkbox" id="open-after-close" disabled />
+                                        <label class="label" for="open-after-close">Auto-close</label>
+                                    </div>
+                                </fieldset>
+                            </div>
+                        </div>
+
+                        <input type="radio" name="settings_tab" role="tab" class="tab" aria-label="Advanced" />
+                        <div class="tab-content border-base-300 bg-base-100 p-4">
+                            <div class="flex flex-col gap-4">
+                                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-sm border p-4">
+                                    <legend class="fieldset-legend">Distance Sensor</legend>
+
+                                    <div>
+                                        <label class="label pb-2" for="read-interval">Read Interval (ms)</label>
+                                        <input type="number" class="input validator" id="read-interval"
+                                            placeholder="" rqeuired min="50" max="3000" step="1" disabled />
+                                            <span class="validator-hint">Enter a whole number between 50 and 3000</span>
+                                    </div>
+
+                                    <div>
+                                        <label class="label pb-2" for="sensor-filter">Noise Filter Method</label>
+                                        <select class="select validator" id="sensor-filter" required disabled>
+                                            <option value="0">Median</option>
+                                            <option value="1">Consensus</option>
+                                        </select>
+                                        <span class="validator-hint">Select an filter method</span>
+                                    </div>
+
+                                    <div>
+                                        <label class="label pb-2" for="consensus-margin">Consensus Margin (cm)</label>
+                                        <input type="number" class="input validator" id="consensus-margin"
+                                            placeholder="" rqeuired min="1" max="100" step="1" disabled />
+                                            <span class="validator-hint">Enter a whole number between 1 and 100</span>
+                                    </div>
+
+                                    <div>
+                                        <label class="label pb-2" for="distance-timeout">Timeout Handling</label>
+                                        <select class="select validator" id="distance-timeout" required disabled>
+                                            <option value="0">Ignore</option>
+                                            <option value="1">Cap</option>
+                                        </select>
+                                        <span class="validator-hint">Select an timeout method</span>
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-sm border p-4">
+                                    <legend class="fieldset-legend">Network</legend>
+
+                                    <div>
+                                        <label class="label pb-2" for="http-port">HTTP Port</label>
+                                        <input type="number" class="input validator" id="http-port"
+                                            placeholder="80" required min="1" max="25565" step="1" disabled />
+                                        <span class="validator-hint">Please enter a valid port number</span>
+                                    </div>
+
+                                    <div>
+                                        <label class="label pb-2" for="hostname">Hostname (Optional)</label>
+                                        <input type="text" class="input" id="hostname" placeholder="(Optional)" disabled />
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-sm border p-4">
+                                    <legend class="fieldset-legend">Custom NTP</legend>
+                                    <label class="label" for="use-custom-ntp">Use Custom NTP</label>
+                                    <input type="checkbox" class="peer checkbox" id="use-custom-ntp" disabled />
+
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="ntp-server">NTP Server</label>
+                                        <input type="text" class="input validator" id="ntp-server"
+                                            placeholder="" required minlength="1" disabled />
+                                        <span class="validator-hint">Server can not be empty</span>
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-sm border p-4">
+                                    <legend class="fieldset-legend">Static IP</legend>
+                                    <label class="label" for="use-custom-ntp">Use Static IP</label>
+                                    <input type="checkbox" class="peer checkbox" id="use-static-ip" disabled />
+
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="device-ip">Device IP</label>
+                                        <input type="text" class="input validator" id="device-ip"
+                                            placeholder="" required pattern="^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$" disabled />
+                                        <span class="validator-hint">Enter a valid IP address</span>
+                                    </div>
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="gateway-ip">Gateway IP</label>
+                                        <input type="text" class="input validator" id="gateway-ip"
+                                            placeholder="" required pattern="^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$" disabled />
+                                        <span class="validator-hint">Enter a valid IP address</span>
+                                    </div>
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="subnet">Subnet Mask</label>
+                                        <input type="text" class="input validator" id="subnet"
+                                            placeholder="" required pattern="^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$" disabled />
+                                        <span class="validator-hint">Enter a valid subnet mask</span>
+                                    </div>
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="dns">DNS Server</label>
+                                        <input type="text" class="input validator" id="dns"
+                                            placeholder="" required minlength="1" disabled />
+                                        <span class="validator-hint">DNS can not be empty</span>
+                                    </div>
+                                </fieldset>
+
+                                <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-sm border p-4">
+                                    <legend class="fieldset-legend">New Device Key</legend>
+                                    <label class="label" for="change-device-key">Change Device Key</label>
+                                    <input type="checkbox" class="peer checkbox" id="change-device-key" disabled />
+
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="new-key">New Key</label>
+                                        <input type="text" class="input" id="new-key"
+                                            placeholder="" disabled />
+                                    </div>
+
+                                    <div class="hidden peer-checked:block">
+                                        <label class="label pb-2" for="confirm-new-key">Confirm New Key</label>
+                                        <input type="text" class="input validator" id="confirm-new-key"
+                                            placeholder="" disabled />
+                                        <span class="validator-hint">Keys do not match</span>
+                                    </div>
+                                </fieldset>
+                            </div>
                         </div>
                     </div>
 
-                    <input type="radio" name="settings_tab" role="tab" class="tab" aria-label="Advanced" />
-                    <div class="tab-content border-base-300 bg-base-100 p-10">
-                        <div class="flex flex-col gap-4">
-                            <label class="floating-label">
-                                <span>Read Interval</span>
-                                <label class="input">
-                                    <input type="text" id="read-interval" placeholder="Read Interval"
-                                        class="input input-bordered w-full max-w-md" disabled />
-                                    <span class="label">ms</span>
-                                </label>
-                            </label>
-
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Sensor Filter</legend>
-                                <div class="flex flex-col gap-4">
-                                    <select class="select" id="sensor-filter" disabled>
-                                        <option value="0">Median</option>
-                                        <option value="1">Consensus</option>
-                                    </select>
-                                    <p class="fieldset-label">Noise filter method</p>
-
-                                    <label class="floating-label" id="consensus-margin-label">
-                                        <span>Consensus Margin</span>
-                                        <label class="input">
-                                            <input type="text" id="consensus-margin" placeholder="Consensus Margin"
-                                                class="input input-bordered w-full max-w-md" disabled />
-                                            <span class="label">cm</span>
-                                        </label>
-                                    </label>
-                                </div>
-                            </fieldset>
-
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Distance Timeout</legend>
-                                <select class="select" id="distance-timeout" disabled>
-                                    <option value="0">Ignore</option>
-                                    <option value="1">Cap</option>
-                                </select>
-                                <p class="fieldset-label">Timeout handleing</p>
-                            </fieldset>
-
-                            <label class="floating-label">
-                                <span>HTTP Port</span>
-                                <input type="text" id="http-port" placeholder="HTTP Port"
-                                    class="input input-bordered w-full max-w-md" disabled />
-                            </label>
-
-                            <label class="floating-label">
-                                <span>Host Name</span>
-                                <input type="text" id="hostname" placeholder="Host Name"
-                                    class="input input-bordered w-full max-w-md" disabled />
-                            </label>
-
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Use Custom NTP Server</legend>
-                                <div class="flex flex-col gap-4">
-                                    <input type="checkbox" class="toggle peer" id="use-custom-ntp" disabled />
-
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>NTP Server</span>
-                                        <input type="text" id="ntp-server" placeholder="NTP Server"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-                                </div>
-                            </fieldset>
-
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Use Static IP</legend>
-                                <div class="flex flex-col gap-4">
-                                    <input type="checkbox" class="toggle peer" id="use-static-ip" disabled />
-
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>Device IP</span>
-                                        <input type="text" id="device-ip" placeholder="Device IP"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>Gateway IP</span>
-                                        <input type="text" id="gateway-ip" placeholder="Gateway IP"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>Subnet</span>
-                                        <input type="text" id="subnet" placeholder="Subnet"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>DNS</span>
-                                        <input type="text" id="dns" placeholder="DNS"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-                                </div>
-                            </fieldset>
-
-                            <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Change Device Key</legend>
-                                <div class="flex flex-col gap-4">
-                                    <input type="checkbox" class="toggle peer" id="change-device-key" disabled />
-
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>New Key</span>
-                                        <input type="password" id="new-key" placeholder="New Key"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-
-                                    <label class="floating-label hidden peer-checked:block">
-                                        <span>Confirm New Key</span>
-                                        <input type="password" id="confirm-new-key" placeholder="Confirm New Key"
-                                            class="input input-bordered w-full max-w-md" disabled />
-                                    </label>
-                                </div>
-                            </fieldset>
-                        </div>
+                    <div class="flex flex-col">
+                        <label class="label pb-2" for="device-key">Device Key</label>
+                        <input type="password" name="dkey" class="input w-full max-w-md" id="device-key"
+                            placeholder="" />
                     </div>
-                </div>
-
-                <label class="floating-label">
-                    <span>Device Key</span>
-                    <input type="password" id="key-input" placeholder="Device Key"
-                        class="input input-bordered w-full max-w-md" />
-                </label>
-                <button class="btn btn-wide btn-primary"
-                    onclick="document.getElementById('save-modal').showModal()">Save Changes</button>
+                    <button class="btn btn-wide btn-primary" type="submit">Save Changes</button>
+                </form>
             </div>
         </div>
         <div class="drawer-side z-10">

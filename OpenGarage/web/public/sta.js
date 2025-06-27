@@ -21,10 +21,10 @@ const doorImg = document.getElementById("door-pic");
 const arrowImg = document.getElementById("arrow-pic");
 const carImg = document.getElementById("car-pic");
 
-const keyInput = document.getElementById("key-input");
-keyInput.value = localStorage.getItem("keyInput");
-keyInput.addEventListener("input", () => {
-    localStorage.setItem("keyInput", keyInput.value);
+const deviceKey = document.getElementById("device-key");
+deviceKey.value = localStorage.getItem("deviceKey");
+deviceKey.addEventListener("input", () => {
+    localStorage.setItem("deviceKey", deviceKey.value);
 });
 
 lightLock.classList.add("hidden");
@@ -43,29 +43,29 @@ loading(door,
     cloudStatus);
 
 document.getElementById("reboot-button").addEventListener("click", () => {
-    sendCommand("cc", keyInput.value, "reboot=1");
+    sendCommand("cc", deviceKey.value, "reboot=1");
 });
 
 document.getElementById("reset-wifi").addEventListener("click", () => {
-    sendCommand("cc", keyInput.value, "apmode=1");
+    sendCommand("cc", deviceKey.value, "apmode=1");
 });
 
 document.getElementById("clear-log").addEventListener("click", () => {
-    sendCommand("clearlog", keyInput.value);
+    sendCommand("clearlog", deviceKey.value);
 });
 
 document.getElementById("door-action").addEventListener("click", () => {
-    sendCommand("cc", keyInput.value, "click=1");
+    sendCommand("cc", deviceKey.value, "click=1");
     setTimeout(updateData, 500);
 });
 
 document.getElementById("light-action").addEventListener("click", () => {
-    sendCommand("cc", keyInput.value, "light=toggle");
+    sendCommand("cc", deviceKey.value, "light=toggle");
     setTimeout(updateData, 100);
 });
 
 document.getElementById("lock-action").addEventListener("click", () => {
-    sendCommand("cc", keyInput.value, "lock=toggle");
+    sendCommand("cc", deviceKey.value, "lock=toggle");
     setTimeout(updateData, 100);
 });
 
