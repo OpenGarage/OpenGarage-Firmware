@@ -9,7 +9,6 @@
  * @typedef {Object} ApSSID
 * @property {string[]} ssids - Avaible SSIDs
 * @property {string[]} rssis - Corresponding RSSI values
-* @property {string[]} bssids - Corresponding BSSID values
 */
 
 /**
@@ -160,38 +159,20 @@ async function getFirmware() {
 
 getFirmware();
 
-/**
- * @type {Map<string, (input: string) => [HTMLTableRowElement, number]>}
- */
-let networkMap = new Map();
-
 async function updateData() {
     const res = await garageFetch("js");
     /** @type {ApSSID} */
     const data = await res.json();
 
-    let newNetworkMap = new Map();
-    
-    data.ssids.forEach((ssid, i) => {
+    let values = data.ssids.map((ssid, i) => {
         const rssi = Number.parseInt(data.rssis[i]);
-        const bssid = Number.parseInt(data.bssids[i]);
-        const key = `${ssid}/${bssid}`;
 
-        if (networkMap.has(key)) {
-            newNetworkMap.set(key, [networkMap.get(key)[0], rssi]);
-            networkMap.delete(key);
-        } else {
-            newNetworkMap.set(key, [createRow(ssid, rssi), rssi]);
-        }
+        return [createRow(ssid, rssi), rssi];
     });
 
-    for (const value of networkMap.values()) {
-        value[0].remove();
-    }
+    table.innerHTML = "";
 
-    networkMap = newNetworkMap;
-
-    Array.from(networkMap.values()).sort(
+    values.sort(
         (a, b) => b[1] - a[1]
     ).forEach((e) => {
         table.appendChild(e[0]);

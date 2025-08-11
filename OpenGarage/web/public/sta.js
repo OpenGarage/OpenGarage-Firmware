@@ -211,4 +211,4 @@ async function updateData() {
 
 updateData();
 
-// setInterval(updateData, 1000);
+setInterval(updateData, 1000);
