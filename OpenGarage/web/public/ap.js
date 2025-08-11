@@ -9,6 +9,7 @@
  * @typedef {Object} ApSSID
 * @property {string[]} ssids - Avaible SSIDs
 * @property {string[]} rssis - Corresponding RSSI values
+* @property {string[]} bssids - Corresponding BSSID values
 */
 
 /**
@@ -38,7 +39,6 @@ const form = document.getElementById("form");
 const submitButton = document.getElementById("submit-button");
 const goToButton = document.getElementById("go-to-button");
 
-let wifiInterval = -1;
 let tryConnectInterval = -1;
 
 async function tryConnect() {
@@ -77,7 +77,6 @@ async function submit() {
     let data = await res.json();
     
     if (data.result == 1) {
-        clearInterval(wifiInterval);
         submitButton.disabled = true;
         wifiName.disabled = true;
         submitButton.innerText = "Connecting...";
@@ -120,6 +119,7 @@ cloudSelectOTC.addEventListener("input", () => {
  * Adds row to WiFi network table
  * @param {string} ssid SSID for network
  * @param {number} rssi RSSI value
+ * @returns {HTMLTableRowElement}
  */
 function createRow(ssid, rssi) {
     const row = document.createElement("tr");
@@ -148,7 +148,7 @@ function createRow(ssid, rssi) {
     powerColumn.innerText = `(${rssi} dBm)`;
     row.appendChild(powerColumn);
 
-    table.appendChild(row);
+    return row;
 }
 
 async function getFirmware() {
@@ -160,14 +160,43 @@ async function getFirmware() {
 
 getFirmware();
 
+/**
+ * @type {Map<string, (input: string) => [HTMLTableRowElement, number]>}
+ */
+let networkMap = new Map();
+
 async function updateData() {
     const res = await garageFetch("js");
     /** @type {ApSSID} */
     const data = await res.json();
-    table.innerHTML = "";
+
+    let newNetworkMap = new Map();
+    
     data.ssids.forEach((ssid, i) => {
-        createRow(ssid, Number.parseInt(data.rssis[i]));
-    })
+        const rssi = Number.parseInt(data.rssis[i]);
+        const bssid = Number.parseInt(data.bssids[i]);
+        const key = `${ssid}/${bssid}`;
+
+        if (networkMap.has(key)) {
+            newNetworkMap.set(key, [networkMap.get(key)[0], rssi]);
+            networkMap.delete(key);
+        } else {
+            newNetworkMap.set(key, [createRow(ssid, rssi), rssi]);
+        }
+    });
+
+    for (const value of networkMap.values()) {
+        value[0].remove();
+    }
+
+    networkMap = newNetworkMap;
+
+    Array.from(networkMap.values()).sort(
+        (a, b) => b[1] - a[1]
+    ).forEach((e) => {
+        table.appendChild(e[0]);
+    });
+
 }
 
-wifiInterval = setInterval(updateData, 1000);
+updateData();
