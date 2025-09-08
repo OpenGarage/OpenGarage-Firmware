@@ -5,6 +5,7 @@ import { createWriteStream } from 'fs';
 import { transform as transformCSS } from 'lightningcss';
 import { minifySync as transformHTML } from '@swc/html';
 import { minify as transformJS } from 'oxc-minify';
+import { generateImg } from './generate_img.mjs';
 
 function minifyJS(code, filename) {
   const { code: out } = transformJS(filename, code, { minify: true });
@@ -25,6 +26,8 @@ function processHTML(code, filename) {
 
   return out.code;
 }
+
+await generateImg();
 
 const files = await fg('public/**/*.{html,css,js}');
 const output = createWriteStream("../htmls.h")
