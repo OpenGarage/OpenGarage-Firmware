@@ -60,7 +60,7 @@ void html2raw(const char *hfname, const char *hsname, FILE *hp) {
   int size;
   char c;
   int i;
-  fprintf(hp, "const char %s[] PROGMEM = R\"(", hsname);
+  fprintf(hp, "const char %s[] PROGMEM = R\"OG(", hsname);
   while(!feof(fp)) {
     in[0]=0;
   	fgets(in, sizeof(in), fp);
@@ -97,6 +97,8 @@ void html2raw(const char *hfname, const char *hsname, FILE *hp) {
   }
   char *outp = out;
   *outp++ = ')';
+  *outp++ = 'O';
+  *outp++ = 'G';
   *outp++ = '\"';
   *outp++ = ';';
 	*outp++ = '\r';

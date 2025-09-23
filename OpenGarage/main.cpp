@@ -793,6 +793,13 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 				return;
 			}
 		}
+		// if secplus is provided
+		char *secplus = req.getQueryParameter("secplus");
+		if(og.has_swrx && secplus != NULL && strlen(secplus)!=0) {
+			uint8_t v = String(secplus).toInt();
+			if(v>2) v=2;
+			og.options[OPTION_SECV].ival=v;
+		}
 		otf_send_result(res, HTML_SUCCESS, nullptr);
 		og.state = OG_STATE_TRY_CONNECT;
 	} else {
@@ -1654,6 +1661,9 @@ void do_loop() {
 	case OG_STATE_INITIAL:
 		if(curr_mode == OG_MOD_AP) {
 			scanned_ssids = scan_network();
+			scanned_ssids += F("\"has_swrx\":");
+			scanned_ssids += og.has_swrx;
+			scanned_ssids += F("}");
 			String ap_ssid = get_ap_ssid();
 			start_network_ap(ap_ssid.c_str(), NULL);
 			delay(500);
@@ -1753,8 +1763,8 @@ void do_loop() {
 			connecting_timeout = 0;
 		} else {
 			if(millis() > connecting_timeout) {
-			  DEBUG_PRINTLN(F("Wifi Connecting timeout, restart"));
-			  og.restart();
+				DEBUG_PRINTLN(F("Wifi Connecting timeout, restart"));
+				og.restart();
 			}
 		}
 		break;
@@ -1813,32 +1823,25 @@ void do_loop() {
 						mqttclient.setServer(og.options[OPTION_MQTT].sval.c_str(), og.options[OPTION_MQPT].ival);
 						mqttclient.setCallback(mqtt_callback); 		
 						mqtt_connect_subscribe();
-						}
-						else {mqttclient.loop();} //Processes MQTT Pings/keep alives
 					}
-					connecting_timeout = 0;
-				} else {
-					//og.state = OG_STATE_INITIAL;
-					if(!connecting_timeout) {
-						DEBUG_PRINTLN(F("State is CONNECTED but WiFi is disconnected, start timeout counter."));
-						connecting_timeout = millis()+60000;
-					}
-					else if(millis() > connecting_timeout) {
-						DEBUG_PRINTLN(F("timeout reached, reboot"));
-						og.restart();
-					}
+					else {mqttclient.loop();} //Processes MQTT Pings/keep alives
 				}
+				connecting_timeout = 0;
+			} else {
+				//og.state = OG_STATE_INITIAL;
+				DEBUG_PRINTLN(F("WiFi connection lost."));
 			}
-            switch (og.options[OPTION_SECV].ival) {
-            case 1: // SecPlus 1
-                secplus1_garage.loop();
-                break;
-            case 2: // SecPlus 2
-                secplus2_garage.loop();
-                break;
-            default: // No secplus
-                break;
-        }
+		}
+		switch (og.options[OPTION_SECV].ival) {
+			case 1: // SecPlus 1
+				secplus1_garage.loop();
+				break;
+			case 2: // SecPlus 2
+				secplus2_garage.loop();
+				break;
+			default: // No secplus
+				break;
+		}
 		break;
 	}
 
@@ -1855,33 +1858,33 @@ BLYNK_WRITE(BLYNK_PIN_RELAY) {
 	if(!og.options[OPTION_ALM].ival) {
 		// if alarm is disabled, trigger right away
 		if(param.asInt()) {
-            switch (og.options[OPTION_SECV].ival) {
-                case 1: // SecPlus 1
-                    if (!last_blink_button_state) {
-                        secplus1_garage.toggle_door();
-                    }
-                    break;
-                case 2: // SecPlus 2
-                    if (!last_blink_button_state) {
-                        secplus2_garage.toggle_door();
-                    }
-                    break;
-                default: // No secplus
-                    og.set_relay(HIGH);
-                    break;
-            }
-          last_blink_button_state = 1;
+			switch (og.options[OPTION_SECV].ival) {
+				case 1: // SecPlus 1
+					if (!last_blink_button_state) {
+						secplus1_garage.toggle_door();
+					}
+					break;
+				case 2: // SecPlus 2
+					if (!last_blink_button_state) {
+						secplus2_garage.toggle_door();
+					}
+					break;
+				default: // No secplus
+					og.set_relay(HIGH);
+					break;
+			}
+			last_blink_button_state = 1;
 		} else {
-            switch (og.options[OPTION_SECV].ival) {
-                case 1: // SecPlus 1
-                    break;
-                case 2: // SecPlus 2
-                    break;
-                default: // No secplus
-                    og.set_relay(LOW);
-                    break;
-            }
-          last_blink_button_state = 0;
+			switch (og.options[OPTION_SECV].ival) {
+				case 1: // SecPlus 1
+					break;
+				case 2: // SecPlus 2
+					break;
+				default: // No secplus
+					og.set_relay(LOW);
+					break;
+			}
+			last_blink_button_state = 0;
 		}
 	} else {
 		// otherwise, set alarm
@@ -1890,16 +1893,16 @@ BLYNK_WRITE(BLYNK_PIN_RELAY) {
 				og.set_alarm(OG_ALM_5);
 			} else if(og.options[OPTION_AOO].ival && (door_status == DOOR_STATUS_CLOSED)) {
 				switch (og.options[OPTION_SECV].ival) {
-                    case 1: // SecPlus 1
-                        secplus1_garage.toggle_door();
-                        break;
-                    case 2: // SecPlus 2
-                        secplus2_garage.toggle_door();
-                        break;
-                    default: // No secplus
-                        og.click_relay();
-                        break;
-                }
+					case 1: // SecPlus 1
+						secplus1_garage.toggle_door();
+						break;
+					case 2: // SecPlus 2
+						secplus2_garage.toggle_door();
+						break;
+					default: // No secplus
+					og.click_relay();
+						break;
+				}
 			} else {
 				og.set_alarm();
 			}

@@ -1,54 +1,229 @@
-const char ap_home_html[] PROGMEM = R"(<head>
-<title>OpenGarage</title>
-<meta name='viewport' content='width=device-width, initial-scale=1'>
+const char ap_home_html[] PROGMEM = R"OG(<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OpenGarage • Wi-Fi Setup</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+--bg: #f6f7fb; --fg: #0f172a; --muted: #586380;
+--card: #ffffff; --border: #e2e8f0;
+--accent: #2563eb; --accent-weak:#3b82f6;
+--success:#0f9d58; --warn:#d97706; --error:#d14343;
+--shadow: 0 8px 30px rgba(2,8,23,.12);
+--radius: 16px; --radius-sm: 10px;
+}
+@media (prefers-color-scheme: dark){
+:root{
+--bg:#0b1220; --fg:#e6eaff; --muted:#a3acc7;
+--card:#0f172a; --border:#1e293b;
+--accent:#60a5fa; --accent-weak:#93c5fd;
+--success:#34d399; --warn:#fbbf24; --error:#f87171;
+--shadow: 0 8px 30px rgba(0,0,0,.45);
+}
+}
+*{box-sizing:border-box}
+html,body{margin:0; padding:0; background:var(--bg); color:var(--fg); font:16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji"}
+a{color:var(--accent)}
+.wrap{min-height:100dvh; display:grid; place-items:center; padding:24px}
+.card{width:100%; max-width:740px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden}
+.card-header{padding:20px 22px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px}
+h1{font-size:20px; margin:0}
+.card-body{padding:18px 22px 22px}
+.grid{display:grid; gap:14px}
+.two-col{display:grid; gap:10px; grid-template-columns:180px 1fr}
+@media (max-width:560px){ .two-col{grid-template-columns:1fr} }
+label{font-weight:600}
+input[type=text], input[type=password]{
+width:100%; height:42px; border:1px solid var(--border); border-radius:10px; padding:0 12px;
+background:transparent; color:inherit; font-size:15px; outline:none;
+}
+input[type=text]:focus, input[type=password]:focus{border-color:var(--accent); box-shadow:0 0 0 4px color-mix(in oklab, var(--accent) 20%, transparent)}
+.hint{color:var(--muted); font-size:13px}
+.section{padding:14px 0; border-top:1px dashed var(--border)}
+.section:first-of-type{border-top:none}
+fieldset{border:none; padding:0; margin:0}
+legend{font-weight:700; margin-bottom:8px}
+.radio-row{display:grid; gap:10px}
+.radio{display:flex; gap:10px; align-items:center}
+input[type=radio]{inline-size:18px; block-size:18px}
+/* Table */
+.table-wrap{border:1px solid var(--border); border-radius:var(--radius-sm); overflow:auto}
+table{width:100%; border-collapse:collapse; font-size:15px}
+thead th{position:sticky; top:0; background:color-mix(in oklab, var(--card) 85%, var(--bg)); text-align:left; padding:10px 12px; border-bottom:1px solid var(--border)}
+tbody td{padding:10px 12px; border-bottom:1px solid var(--border)}
+tbody tr:nth-child(even){background:color-mix(in oklab, var(--card) 96%, var(--bg))}
+tbody tr:hover{background:color-mix(in oklab, var(--card) 90%, var(--bg))}
+.num{font-variant-numeric:tabular-nums; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
+.clickable{cursor:pointer}
+/* Actions */
+.actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+button{
+appearance:none; border:1px solid var(--accent); background:var(--accent); color:white;
+padding:10px 16px; border-radius:12px; font-weight:700; font-size:15px; cursor:pointer; transition:transform .02s ease, filter .15s ease
+}
+button[disabled]{opacity:.6; cursor:not-allowed; filter:grayscale(.2)}
+button:active{transform:translateY(1px)}
+.msg{min-height:24px; font-weight:600}
+.msg.success{color:var(--success)}
+.msg.warn{color:var(--warn)}
+.msg.error{color:var(--error)}
+.msg.neutral{color:var(--muted)}
+/* Reveal animation for cloud block */
+#tb_cld_wrap{display:grid; grid-template-rows:0fr; transition:grid-template-rows .25s ease}
+#tb_cld_wrap.open{grid-template-rows:1fr}
+#tb_cld{overflow:hidden}
+/* Tiny spinner */
+.spinner{inline-size:14px; block-size:14px; border:2px solid color-mix(in oklab, var(--accent) 20%, transparent); border-top-color:var(--accent); border-radius:50%; display:inline-block; animation:spin 1s linear infinite; vertical-align:-2px}
+@keyframes spin{to{transform:rotate(1turn)}}
+/* Focus visible */
+:focus-visible{outline:3px solid color-mix(in oklab, var(--accent) 45%, transparent); outline-offset:3px; border-radius:8px}
+/* Security+ radio chips */
+.secplus-group{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top: 8px;}
+.secplus-option{position:relative; display:inline-block}
+.secplus-option input{position:absolute; opacity:0; pointer-events:none}
+/* Base chip look */
+.secplus-option label {
+display:inline-flex; align-items:center; gap:8px;
+padding:8px 14px; border-radius:9999px;
+font-weight:700; cursor:pointer;
+border:2px solid var(--border);
+background:var(--card); color:var(--fg);
+transition:background .15s ease, color .15s ease, border-color .15s ease;
+}
+/* Focus ring */
+.secplus-option input:focus + label {
+outline:3px solid color-mix(in oklab, var(--accent) 45%, transparent);
+outline-offset:2px;
+}
+/* Hover previews */
+.secplus-option label.bg-yellow:hover {
+background:color-mix(in oklab, #eeee15 20%, var(--card));
+}
+.secplus-option label.bg-purple:hover {
+background:color-mix(in oklab, #a855f7 20%, var(--card));
+color:#4b5563; /* gray-600 so text stays readable on light tint */
+}
+.secplus-option label.bg-green:hover {
+background:color-mix(in oklab, #22c55e 20%, var(--card));
+color:#14532d; /* dark green for contrast */
+}
+/* Checked states */
+.secplus-option input:checked + label.bg-yellow {
+background:#eeee15; color:#111827; border-color:#d97706;
+}
+.secplus-option input:checked + label.bg-purple {
+background:#a855f7; color:#ffffff; border-color:#6b21a8;
+}
+.secplus-option input:checked + label.bg-green {
+background:#22c55e; color:#ffffff; border-color:#166534;
+}
+</style>
 </head>
 <body>
-<style>
-table, th, td {border: 0px solid black; border-collapse: collapse;}
-table#rd th {border: 1px solid black;}
-table#rd td {border: 1px solid black; border-collapse: collapse;}
-th, td {padding: 2px;}
-input[type=text] {font-size: 12pt; height:28px;}
-input[type=password] {font-size: 12pt; height:28px;}
-</style>
-<caption><b>OpenGarage WiFi Config</b></caption><br><br>
-<table id='rd'>
-<tr><td>SSID</td><td>Strength</td><td>Power Level</td></tr>
-<tr><td>(Scanning...)</td></tr>
-</table><br><br>
-<div id='div_input'>
-<table>
-<tr><td><b>WiFi SSID</b>:</td><td><input type='text' id='ssid'></td></tr>
-<tr><td><b>WiFi Password</b>:</td><td><input type='password' id='pass'></td></tr>
-<tr><td><b>Host Name:</b></td><td><input type='text' size=15 maxlength=32 id='host' data-mini='true' placeholder='(optional)'></td></tr>
-</table>
-<br>
-<b>Enable Cloud Connection</b>?<br>
-<table>
-<tr><td><input type='radio' id='none' name='token' onclick='toggle_cld()' checked><label for='none'>No. I will configure this later.</label></td></tr>
-<tr><td><input type='radio' id='blynk' name='token' onclick='toggle_cld()'><label for='blynk'>Use Blynk Token.</label></td></tr>
-<tr><td><input type='radio' id='otc' name='token' onclick='toggle_cld()'><label for='otc'>Use OpenThings Cloud (OTC) Token.</label></td></tr>
-</table>
-<table id='tb_cld' hidden>
-<tr><td></td><td>Token:</td><td><input type='text' id='auth'></td></tr>
-<tr><td></td><td>Server:</td><td><input type='text' id='bdmn'></td></tr>
-<tr><td></td><td>Port:</td><td><input type='text' id='bprt'></td></tr>
+<div class="wrap">
+<div class="card" role="region" aria-labelledby="title">
+<div class="card-header">
+<h1 id="title">OpenGarage Wi-Fi Config</h1>
+</div>
+<div class="card-body">
+<div class="section">
+<div class="hint">Select your network below or enter it manually.</div>
+<div class="table-wrap" aria-live="polite">
+<table id="rd">
+<thead>
+<tr><th>SSID</th><th>Strength</th><th>Power</th></tr>
+</thead>
+<tbody>
+<tr><td colspan="3"><span class="spinner"></span> Scanning Wi-Fi…</td></tr>
+</tbody>
 </table>
 </div>
-<p id='msg'></p>
-<button type='button' id='butt' onclick='sf()' style='height:36px;width:180px'>Submit</button>
+</div>
+<div class="section">
+<div class="grid two-col">
+<label for="ssid">Wi-Fi SSID</label>
+<input type="text" id="ssid" autocomplete="off">
+<label for="pass">Wi-Fi Password</label>
+<input type="password" id="pass" autocomplete="off">
+<label for="host">Host Name <span class="hint">(optional)</span></label>
+<input type="text" id="host" maxlength="32" placeholder="e.g., opengarage">
+</div>
+</div>
+<!-- Security+ section (hidden by default; shown when has_swrx==1) -->
+<div class="section" id="secplus_section" hidden>
+<fieldset>
+<legend>Security+ version</legend>
+<div class="hint">Choose the version based on your Learn button color.</div>
+<div class="secplus-group" role="radiogroup" aria-label="Security+ version">
+<div class="secplus-option">
+<input type="radio" name="secplus" id="secplus_20" value="2">
+<label for="secplus_20" class="bg-yellow">2.0</label>
+</div>
+<div class="secplus-option">
+<input type="radio" name="secplus" id="secplus_10" value="1">
+<label for="secplus_10" class="bg-purple">1.0</label>
+</div>
+<div class="secplus-option">
+<input type="radio" name="secplus" id="secplus_none" value="0" checked>
+<label for="secplus_none" class="bg-green">None</label>
+</div>
+</div>
+</fieldset>
+</div>
+<div class="section">
+<fieldset>
+<legend>Enable Cloud Connection?</legend>
+<div class="radio-row">
+<label class="radio">
+<input type="radio" id="none" name="token" checked onclick="toggle_cld()">
+No, I’ll configure this later.
+</label>
+<label class="radio">
+<input type="radio" id="blynk" name="token" onclick="toggle_cld()">
+Use Blynk Token
+</label>
+<label class="radio">
+<input type="radio" id="otc" name="token" onclick="toggle_cld()">
+Use OpenThings Cloud (OTC) Token
+</label>
+</div>
+</fieldset>
+<div id="tb_cld_wrap" class="">
+<div id="tb_cld">
+<div class="grid two-col" style="margin-top:10px">
+<div></div><div class="hint">Enter your cloud credentials</div>
+<label for="auth">Token</label>
+<input type="text" id="auth">
+<label for="bdmn">Server</label>
+<input type="text" id="bdmn">
+<label for="bprt">Port</label>
+<input type="text" id="bprt">
+</div>
+</div>
+</div>
+</div>
+<div class="section actions">
+<p id="msg" class="msg neutral" role="status" aria-live="polite"></p>
+<button type="button" id="butt" onclick="sf()">Submit</button>
+</div>
+</div>
+</div>
+</div>
 <script>
 function id(s){return document.getElementById(s);}
 function sel(i){id('ssid').value=id('rd'+i).value;}
 function eval_cb(n){return id(n).checked;}
-function dis_config(x){let a = document.querySelectorAll('#div_input input');for(let e of a){e.disabled = x;}}
-function show_msg(s,c){id('msg').innerHTML='<font color='+c+'>'+s+'</font>';}
-var tci;
+function dis_config(x){let a = document.querySelectorAll('#host, #ssid, #pass, #tb_cld input');for(let e of a){e.disabled = x;}}
+function show_msg(s, level){ const msg = id('msg'); msg.textContent = s || ''; msg.className = 'msg ' + (level || 'neutral'); }
+/* Cloud block open/close + defaults */
 function toggle_cld(){
-id('tb_cld').hidden=true;
-if(eval_cb('blynk')) {id('tb_cld').hidden=false;id('bdmn').value='blynk.openthings.io';id('bprt').value='8080';}
-if(eval_cb('otc')) {id('tb_cld').hidden=false;id('bdmn').value='ws.cloud.openthings.io';id('bprt').value='80';}
+const wrap = id('tb_cld_wrap');
+wrap.classList.remove('open');
+if(eval_cb('blynk')) { wrap.classList.add('open'); id('bdmn').value='blynk.openthings.io'; id('bprt').value='8080'; }
+if(eval_cb('otc'))   { wrap.classList.add('open'); id('bdmn').value='ws.cloud.openthings.io'; id('bprt').value='80'; }
 }
+var tci;
 function tryConnect(){
 var xhr=new XMLHttpRequest();
 xhr.onreadystatechange=function() {
@@ -56,31 +231,42 @@ if(xhr.readyState==4 && xhr.status==200) {
 var jd=JSON.parse(xhr.responseText);
 if(jd.ip==0) return;
 var ip=''+(jd.ip%256)+'.'+((jd.ip/256>>0)%256)+'.'+(((jd.ip/256>>0)/256>>0)%256)+'.'+(((jd.ip/256>>0)/256>>0)/256>>0);
-show_msg('Connected! Device IP: '+ip+'</font></b><br>Device is rebooting. Switch back to<br>the above WiFi network, and then<br>click the button below to redirect.', 'green');
-id('butt').innerHTML='Go to '+ip;
-id('butt').disabled=false;
-id('butt').onclick=function rd(){window.open('http://'+ip);}
+show_msg('Connected! Device IP: '+ip+' — rebooting… Switch back to the above WiFi, then tap the button below to redirect.', 'success');
+var b=id('butt'); b.innerHTML='Go to '+ip; b.disabled=false;
+b.onclick=function rd(){window.open('http://'+ip, '_self');}
 clearInterval(tci);
 }
 }
-xhr.open('GET', 'jt', true); xhr.send();
+xhr.open('GET', 'jt', true);
+xhr.send();
 }
 function sf(){
-show_msg('','black');
-if(!id('ssid').value) {show_msg('WiFi SSID cannot be empty!','red');return;}
+show_msg('', 'neutral');
+if(!id('ssid').value) {show_msg('Wi-Fi SSID cannot be empty!', 'error');return;}
 var xhr=new XMLHttpRequest();
 xhr.onreadystatechange=function() {
 if(xhr.readyState==4 && xhr.status==200) {
 var jd=JSON.parse(xhr.responseText);
-if(jd.result==1) { id('butt').innerHTML='Connecting...'; show_msg('Connecting, please wait...','gray'); tci=setInterval(tryConnect, 2000); return;}
-show_msg('Error code: '+jd.result+', item: '+jd.item,'red');
+if(jd.result==1) {
+id('butt').innerHTML='<span class="spinner"></span> Connecting…';
+show_msg('Connecting, please wait…', 'neutral');
+tci=setInterval(tryConnect, 2000);
+return;
+}
+show_msg('Error code: '+jd.result+', item: '+jd.item, 'error');
 id('butt').innerHTML='Submit';
 dis_config(false);
 }
 };
-var comm='cc?ssid='+encodeURIComponent(id('ssid').value)+'&pass='+encodeURIComponent(id('pass').value)+'&host='+encodeURIComponent(id('host').value);
+// Read Security+ selection (default 0 if none selected/section hidden)
+var secplusSel = document.querySelector('input[name="secplus"]:checked');
+var secplusVal = secplusSel ? secplusSel.value : '0';
+var comm='cc?ssid='+encodeURIComponent(id('ssid').value)
++'&pass='+encodeURIComponent(id('pass').value)
++'&host='+encodeURIComponent(id('host').value)
++'&secplus='+encodeURIComponent(secplusVal);
 if(eval_cb('otc')||eval_cb('blynk')){
-if(id('auth').value.length<32) {show_msg('Cloud token is too short!','red');return;}
+if(id('auth').value.length<32) {show_msg('Cloud token is too short!', 'error');return;}
 comm+='&cld='+(eval_cb('blynk')?'blynk':'otc');
 comm+='&auth='+encodeURIComponent(id('auth').value);
 comm+='&bdmn='+id('bdmn').value;
@@ -91,83 +277,186 @@ xhr.send();
 id('butt').disabled=true;
 dis_config(true);
 }
+/* Load SSIDs once and detect has_swrx for Security+ UI */
 function loadSSIDs(){
+const tbody = document.querySelector('#rd tbody');
+if(!tbody) return;
+tbody.innerHTML = '<tr><td colspan="3"><span class="spinner"></span> Scanning Wi-Fi…</td></tr>';
 var xhr=new XMLHttpRequest();
 xhr.onreadystatechange=function() {
 if(xhr.readyState==4 && xhr.status==200) {
-id('rd').deleteRow(1);
-var i, jd=JSON.parse(xhr.responseText);
-for(i=0;i<jd.ssids.length;i++) {
-var signalstrength=jd.rssis[i]>-71?'Ok':(jd.rssis[i]>-81?'Weak':'Poor');
-var row=id('rd').insertRow(-1);
-row.innerHTML ="<tr><td><input name='ssids' id='rd"+i+"' onclick='sel("+i+")' type='radio' value='"+jd.ssids[i]+"'>"+jd.ssids[i]+"</td>"+"<td align='center'>"+signalstrength+"</td>"+"<td align='center'>("+jd.rssis[i]+" dbm)</td>"+"</tr>";
+const jd=JSON.parse(xhr.responseText);
+// Show/hide Security+ group based on has_swrx
+if (typeof jd.has_swrx !== 'undefined' && Number(jd.has_swrx) === 1) {
+id('secplus_section').hidden = false;
+} else {
+id('secplus_section').hidden = true;
 }
-};
+// Render SSIDs
+tbody.innerHTML = '';
+for(let i=0;i<jd.ssids.length;i++) {
+const s = jd.ssids[i], rssi = jd.rssis[i];
+const strength = rssi>-71?'OK':(rssi>-81?'Weak':'Poor');
+const tr = document.createElement('tr');
+tr.className = 'clickable';
+tr.innerHTML = `
+<td>
+<label style="display:flex; gap:8px; align-items:center; cursor:pointer">
+<input name="ssids" id="rd${i}" type="radio" value="${s}">
+<span>${s}</span>
+</label>
+</td>
+<td>${strength}</td>
+<td class="num">(${rssi} dBm)</td>
+`;
+tr.addEventListener('click', ()=>{ id('rd'+i).checked=true; sel(i); });
+tbody.appendChild(tr);
+}
+if(!jd.ssids.length){
+tbody.innerHTML = '<tr><td colspan="3">No networks found.</td></tr>';
+}
+}
 }
 xhr.open('GET','js',true);
 xhr.send();
 }
-setTimeout(loadSSIDs, 1000);
+/* Kick off an initial scan a moment after load */
+setTimeout(loadSSIDs, 400);
 </script>
 </body>
-)";
-const char ap_update_html[] PROGMEM = R"(<head>
-<title>OpenGarage</title>
-<meta name='viewport' content='width=device-width, initial-scale=1'>
+</html>
+)OG";
+const char ap_update_html[] PROGMEM = R"OG(<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OpenGarage • Firmware Update</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+--bg:#f6f7fb; --fg:#0f172a; --muted:#586380;
+--card:#fff; --border:#e2e8f0;
+--accent:#2563eb; --accent-weak:#3b82f6;
+--success:#0f9d58; --warn:#d97706; --error:#d14343;
+--shadow:0 8px 30px rgba(2,8,23,.12);
+--radius:16px; --radius-sm:10px;
+}
+@media (prefers-color-scheme: dark){
+:root{
+--bg:#0b1220; --fg:#e6eaff; --muted:#a3acc7;
+--card:#0f172a; --border:#1e293b;
+--accent:#60a5fa; --accent-weak:#93c5fd;
+--success:#34d399; --warn:#fbbf24; --error:#f87171;
+--shadow:0 8px 30px rgba(0,0,0,.45);
+}
+}
+*{box-sizing:border-box}
+body{
+margin:0; padding:0; background:var(--bg); color:var(--fg);
+font:16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
+}
+.wrap{min-height:100dvh; display:grid; place-items:center; padding:24px}
+.card{
+width:100%; max-width:740px; background:var(--card);
+border:1px solid var(--border); border-radius:var(--radius);
+box-shadow:var(--shadow); overflow:hidden;
+}
+.card-header{padding:20px 22px; border-bottom:1px solid var(--border)}
+.card-header h1{font-size:20px; margin:0}
+.card-body{padding:18px 22px 22px}
+.section{padding:14px 0; border-top:1px dashed var(--border)}
+.section:first-of-type{border-top:none}
+.actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+input[type=file]{
+font-size:15px; border:1px solid var(--border);
+padding:6px; border-radius:10px; background:transparent; color:inherit;
+}
+button{
+appearance:none; border:1px solid var(--accent); background:var(--accent); color:white;
+padding:10px 16px; border-radius:12px; font-weight:700; font-size:15px;
+cursor:pointer; transition:transform .02s ease, filter .15s ease;
+}
+button[disabled]{opacity:.6; cursor:not-allowed; filter:grayscale(.2)}
+button:active{transform:translateY(1px)}
+.msg{min-height:24px; font-weight:600}
+.msg.success{color:var(--success)}
+.msg.error{color:var(--error)}
+.msg.neutral{color:var(--muted)}
+.spinner{
+inline-size:14px; block-size:14px;
+border:2px solid color-mix(in oklab,var(--accent) 20%, transparent);
+border-top-color:var(--accent);
+border-radius:50%; display:inline-block;
+animation:spin 1s linear infinite; vertical-align:-2px;
+}
+@keyframes spin{to{transform:rotate(1turn)}}
+</style>
 </head>
 <body>
-<div id='page_update'>
-<div><h3>OpenGarage AP-mode Firmware Update</h3></div>
-<div>
-<form method='POST' action='/update' id='fm' enctype='multipart/form-data'>
-<table cellspacing=4>
-<tr><td><input type='file' name='file' accept='.bin' id='file'></td></tr>
-<tr><td><b>Device key: </b><input type='password' name='dkey' size=16 maxlength=64 id='dkey'></td></tr>
-<tr><td><label id='msg'></label></td></tr>
-</table>
-<button id='btn_submit' style='height:48px;'>Submit</a>
+<div class="wrap">
+<div class="card" role="region" aria-labelledby="title">
+<div class="card-header">
+<h1 id="title">Firmware Update</h1>
+</div>
+<div class="card-body">
+<form id="updateForm" enctype="multipart/form-data" method="post">
+<div class="section">
+<label for="file">Choose firmware (.bin) file:</label><br>
+<input type="file" id="file" name="file" accept=".bin">
+</div>
+<div class="section actions">
+<p id="msg" class="msg neutral" role="status" aria-live="polite"></p>
+<button type="submit" id="btn">Upload</button>
+</div>
 </form>
 </div>
 </div>
+</div>
 <script>
-function id(s) {return document.getElementById(s);}
-function clear_msg() {id('msg').innerHTML='';}
-function show_msg(s,t,c) {
-id('msg').innerHTML=s.fontcolor(c);
-if(t>0) setTimeout(clear_msg, t);
+const form = document.getElementById('updateForm');
+const msg  = document.getElementById('msg');
+const btn  = document.getElementById('btn');
+function showMsg(text, level="neutral"){
+msg.textContent = text || "";
+msg.className = "msg " + level;
 }
-id('btn_submit').addEventListener('click', function(e){
+form.addEventListener('submit', e=>{
 e.preventDefault();
-var files= id('file').files;
-if(files.length==0) {show_msg('Please select a file.',2000,'red'); return;}
-if(id('dkey').value=='') {
-if(!confirm('You did not input a device key. Are you sure?')) return;
-}
-show_msg('Uploading. Please wait...',10000,'green');
-var fd = new FormData();
-var file = files[0];
-fd.append('file', file, file.name);
-fd.append('dkey', id('dkey').value);
-var xhr = new XMLHttpRequest();
-xhr.onreadystatechange = function() {
-if(xhr.readyState==4 && xhr.status==200) {
-var jd=JSON.parse(xhr.responseText);
-if(jd.result==1) {
-show_msg('Update is successful. Rebooting. Please wait...',0,'green');
-} else if (jd.result==2) {
-show_msg('Check device key and try again.', 10000, 'red');
-} else {
-show_msg('Update failed.',0,'red');
-}
+const file = document.getElementById('file').files[0];
+if(!file){ showMsg("Please choose a .bin file first","error"); return; }
+btn.disabled = true;
+btn.innerHTML = '<span class="spinner"></span> Uploading…';
+showMsg("Uploading firmware, please wait…","neutral");
+const xhr = new XMLHttpRequest();
+xhr.open("POST", "/update", true);
+xhr.upload.onprogress = evt=>{
+if(evt.lengthComputable){
+const pct = Math.round((evt.loaded/evt.total)*100);
+showMsg("Uploading: "+pct+"%","neutral");
 }
 };
-xhr.open('POST', '//' + window.location.hostname + ':8080' + window.location.pathname, true);
-xhr.send(fd);
+xhr.onload = ()=>{
+if(xhr.status===200){
+showMsg("Update successful! Rebooting…","success");
+btn.innerHTML="Done";
+} else {
+showMsg("Update failed (status "+xhr.status+")","error");
+btn.innerHTML="Upload"; btn.disabled=false;
+}
+};
+xhr.onerror = ()=>{
+showMsg("Upload error","error");
+btn.innerHTML="Upload"; btn.disabled=false;
+};
+const formData = new FormData();
+formData.append("file", file);
+xhr.send(formData);
 });
 </script>
 </body>
-)";
-const char sta_home_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='https://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'><script src='https://code.jquery.com/jquery-1.9.1.min.js' type='text/javascript'></script><script src='https://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js' type='text/javascript'></script></head>
+</html>
+)OG";
+const char sta_home_html[] PROGMEM = R"OG(<head><title>OpenGarage</title><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='https://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'><script src='https://code.jquery.com/jquery-1.9.1.min.js' type='text/javascript'></script><script src='https://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js' type='text/javascript'></script></head>
 <body>
 <style> table, th, td {border: 0px solid black;padding: 6px; border-collapse: collapse; } .img {width: inherit; height: inherit; position: absolute; top: inherit; left: inherit;} .img[src=""] {display:none;} 
 .lightlock-ctrl div.ui-slider-switch {width:160px;}
@@ -376,8 +665,8 @@ $('#lbl_cld').text('disconnected');
 }
 </script>
 </body>
-)";
-const char sta_logs_html[] PROGMEM = R"(<head>
+)OG";
+const char sta_logs_html[] PROGMEM = R"OG(<head>
 <title>OpenGarage</title>
 <meta name='viewport' content='width=device-width, initial-scale=1'>
 <link rel='stylesheet' href='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'>
@@ -463,8 +752,8 @@ setTimeout(show_log, 10000);
 }
 </script>
 </body>
-)";
-const char sta_options_html[] PROGMEM = R"(<head><title>OpenGarage</title><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'><script src='//code.jquery.com/jquery-1.9.1.min.js' type='text/javascript'></script><script src='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js' type='text/javascript'></script></head>
+)OG";
+const char sta_options_html[] PROGMEM = R"OG(<head><title>OpenGarage</title><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'><script src='//code.jquery.com/jquery-1.9.1.min.js' type='text/javascript'></script><script src='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js' type='text/javascript'></script></head>
 <body>
 <style> table, th, td { border: 0px solid black; padding: 1px; border-collapse: collapse; } .ui-select{width:160px;}
 input[type="radio"].yellow:checked + label span{ background-color:#C0C000; }
@@ -799,8 +1088,8 @@ if(jd.host) $('#host').val(jd.host);
 update_ckey();
 </script>
 </body>
-)";
-const char sta_update_html[] PROGMEM = R"(<head>
+)OG";
+const char sta_update_html[] PROGMEM = R"OG(<head>
 <title>OpenGarage</title>
 <meta name='viewport' content='width=device-width, initial-scale=1'>
 <link rel='stylesheet' href='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'>
@@ -866,4 +1155,4 @@ xhr.send(fd);
 });
 </script>
 </body>
-)";
+)OG";

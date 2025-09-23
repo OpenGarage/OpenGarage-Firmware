@@ -45,7 +45,7 @@ String scan_network() {
 		wirelessinfo += "\"";
 		if(i<n-1) wirelessinfo += ",\r\n";
 	}
-	wirelessinfo += "]}";
+	wirelessinfo += "],";
 	return wirelessinfo;
 }
 
@@ -76,6 +76,9 @@ void start_network_sta(const char *ssid, const char *pass, const char *hostname,
 		WiFi.hostname(hostname);
 	}
 	WiFi.begin(ssid, pass);
+	WiFi.setSleep(false); // work-around for ARP issue: disable sleep mode
+	WiFi.setOutputPower(20.5);
+	WiFi.setAutoReconnect(true); // enable auto reconnect
 }
 
 void start_network_sta_with_ap(const char *ssid, const char *pass, const char *hostname) {
