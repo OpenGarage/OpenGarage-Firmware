@@ -1,298 +1,327 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>OpenGarage • Wi-Fi Setup</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    :root{
-      --bg: #f6f7fb; --fg: #0f172a; --muted: #586380;
-      --card: #ffffff; --border: #e2e8f0;
-      --accent: #2563eb; --accent-weak:#3b82f6;
-      --success:#0f9d58; --warn:#d97706; --error:#d14343;
-      --shadow: 0 8px 30px rgba(2,8,23,.12);
-      --radius: 16px; --radius-sm: 10px;
-    }
-    @media (prefers-color-scheme: dark){
-      :root{
-        --bg:#0b1220; --fg:#e6eaff; --muted:#a3acc7;
-        --card:#0f172a; --border:#1e293b;
-        --accent:#60a5fa; --accent-weak:#93c5fd;
-        --success:#34d399; --warn:#fbbf24; --error:#f87171;
-        --shadow: 0 8px 30px rgba(0,0,0,.45);
-      }
-    }
+    <title>OpenGarage Setup</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <style>
+        :root{
+          --bg:#f6f7fb; --fg:#0f172a; --muted:#586380;
+          --card:#fff; --border:#e2e8f0;
+          --accent:#2563eb;
+        }
+        @media (prefers-color-scheme: dark){
+          :root{
+            --bg:#0b1220; --fg:#e6eaff; --muted:#a3acc7;
+            --card:#0f172a; --border:#1e293b;
+            --accent:#60a5fa;
+          }
+        }
+        /* --- General Body & Typography --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            color: var(--fg);
+        }
 
-    *{box-sizing:border-box}
-    html,body{margin:0; padding:0; background:var(--bg); color:var(--fg); font:16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji"}
-    a{color:var(--accent)}
-    .wrap{min-height:100dvh; display:grid; place-items:center; padding:24px}
-    .card{width:100%; max-width:740px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden}
-    .card-header{padding:20px 22px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px}
-    h1{font-size:20px; margin:0}
-    .card-body{padding:18px 22px 22px}
-    .grid{display:grid; gap:14px}
-    .two-col{display:grid; gap:10px; grid-template-columns:180px 1fr}
-    @media (max-width:560px){ .two-col{grid-template-columns:1fr} }
-    label{font-weight:600}
-    input[type=text], input[type=password]{
-      width:100%; height:42px; border:1px solid var(--border); border-radius:10px; padding:0 12px;
-      background:transparent; color:inherit; font-size:15px; outline:none;
-    }
-    input[type=text]:focus, input[type=password]:focus{border-color:var(--accent); box-shadow:0 0 0 4px color-mix(in oklab, var(--accent) 20%, transparent)}
-    .hint{color:var(--muted); font-size:13px}
-    .section{padding:14px 0; border-top:1px dashed var(--border)}
-    .section:first-of-type{border-top:none}
-    fieldset{border:none; padding:0; margin:0}
-    legend{font-weight:700; margin-bottom:8px}
-    .radio-row{display:grid; gap:10px}
-    .radio{display:flex; gap:10px; align-items:center}
-    input[type=radio]{inline-size:18px; block-size:18px}
+        /* --- Main Content Container --- */
+        main {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: var(--card);
+            padding: 25px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
 
-    /* Table */
-    .table-wrap{border:1px solid var(--border); border-radius:var(--radius-sm); overflow:auto}
-    table{width:100%; border-collapse:collapse; font-size:15px}
-    thead th{position:sticky; top:0; background:color-mix(in oklab, var(--card) 85%, var(--bg)); text-align:left; padding:10px 12px; border-bottom:1px solid var(--border)}
-    tbody td{padding:10px 12px; border-bottom:1px solid var(--border)}
-    tbody tr:nth-child(even){background:color-mix(in oklab, var(--card) 96%, var(--bg))}
-    tbody tr:hover{background:color-mix(in oklab, var(--card) 90%, var(--bg))}
-    .num{font-variant-numeric:tabular-nums; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
-    .clickable{cursor:pointer}
+        h1 {
+            text-align: center;
+            color: var(--fg);
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
 
-    /* Actions */
-    .actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-    button{
-      appearance:none; border:1px solid var(--accent); background:var(--accent); color:white;
-      padding:10px 16px; border-radius:12px; font-weight:700; font-size:15px; cursor:pointer; transition:transform .02s ease, filter .15s ease
-    }
-    button[disabled]{opacity:.6; cursor:not-allowed; filter:grayscale(.2)}
-    button:active{transform:translateY(1px)}
-    .msg{min-height:24px; font-weight:600}
-    .msg.success{color:var(--success)}
-    .msg.warn{color:var(--warn)}
-    .msg.error{color:var(--error)}
-    .msg.neutral{color:var(--muted)}
+        /* --- Form Elements & Inputs --- */
+        .form-group {
+            margin-bottom: 18px;
+        }
 
-    /* Reveal animation for cloud block */
-    #tb_cld_wrap{display:grid; grid-template-rows:0fr; transition:grid-template-rows .25s ease}
-    #tb_cld_wrap.open{grid-template-rows:1fr}
-    #tb_cld{overflow:hidden}
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
 
-    /* Tiny spinner */
-    .spinner{inline-size:14px; block-size:14px; border:2px solid color-mix(in oklab, var(--accent) 20%, transparent); border-top-color:var(--accent); border-radius:50%; display:inline-block; animation:spin 1s linear infinite; vertical-align:-2px}
-    @keyframes spin{to{transform:rotate(1turn)}}
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            box-sizing: border-box;
+            background-color: transparent;
+            color: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
 
-    /* Focus visible */
-    :focus-visible{outline:3px solid color-mix(in oklab, var(--accent) 45%, transparent); outline-offset:3px; border-radius:8px}
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent);
+            outline: none;
+        }
+        
+        /* --- Buttons --- */
+        button {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            background-color: var(--accent);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
 
-    /* Security+ radio chips */
-    .secplus-group{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top: 8px;}
-    .secplus-option{position:relative; display:inline-block}
-    .secplus-option input{position:absolute; opacity:0; pointer-events:none}
-/* Base chip look */
-.secplus-option label {
-  display:inline-flex; align-items:center; gap:8px;
-  padding:8px 14px; border-radius:9999px;
-  font-weight:700; cursor:pointer;
-  border:2px solid var(--border);
-  background:var(--card); color:var(--fg);
-  transition:background .15s ease, color .15s ease, border-color .15s ease;
-}
+        /* --- Responsive Table Container --- */
+        .table-container {
+            overflow-x: auto; /* Makes the container scrollable horizontally */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+        
+        /* --- WiFi Network List Table --- */
+        #rd {
+            width: 100%;
+            border-collapse: collapse;
+        }
 
-/* Focus ring */
-.secplus-option input:focus + label {
-  outline:3px solid color-mix(in oklab, var(--accent) 45%, transparent);
-  outline-offset:2px;
-}
+        #rd th, #rd td {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap; /* Prevents columns from wrapping */
+        }
+        
+        #rd tr:last-child td {
+            border-bottom: none; /* remove border from the last row */
+        }
 
-/* Hover previews */
-.secplus-option label.bg-yellow:hover {
-  background:color-mix(in oklab, #eeee15 20%, var(--card));
-}
-.secplus-option label.bg-purple:hover {
-  background:color-mix(in oklab, #a855f7 20%, var(--card));
-  color:#4b5563; /* gray-600 so text stays readable on light tint */
-}
-.secplus-option label.bg-green:hover {
-  background:color-mix(in oklab, #22c55e 20%, var(--card));
-  color:#14532d; /* dark green for contrast */
-}
+        #rd th {
+            font-weight: 600;
+            color: var(--muted);
+            background-color: color-mix(in oklab, var(--border) 20%, transparent);
+        }
 
-/* Checked states */
-.secplus-option input:checked + label.bg-yellow {
-  background:#eeee15; color:#111827; border-color:#d97706;
-}
-.secplus-option input:checked + label.bg-purple {
-  background:#a855f7; color:#ffffff; border-color:#6b21a8;
-}
-.secplus-option input:checked + label.bg-green {
-  background:#22c55e; color:#ffffff; border-color:#166534;
-}
+        /* --- Radio Button Styling --- */
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            font-weight: normal;
+            margin-bottom: 8px;
+        }
 
-  </style>
+        .radio-group input[type="radio"] {
+            margin-right: 10px;
+        }
+        
+        /* --- Security+ Radio Button Styling --- */
+        .sec-radio-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .sec-radio-group input[type="radio"] {
+            display: none;
+        }
+
+        .sec-radio-label {
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            text-align: center;
+            flex-grow: 1;
+            border: 2px solid var(--border);
+            background-color: color-mix(in oklab, var(--border) 40%, transparent);
+            color: var(--muted);
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .sec-radio-group input[type="radio"]:not(:checked) + .sec-radio-label:hover {
+            border-color: var(--muted);
+        }
+
+        /* MODIFIED: Changed yellow color */
+        .sec-radio-group input[type="radio"]:checked + .sec-yellow {
+            background-color: #eeee00;
+            color: #111;
+            border-color: #e6e600;
+        }
+        
+        /* MODIFIED: Reverted to solid purple color */
+        .sec-radio-group input[type="radio"]:checked + .sec-purple {
+            background-color: #6f42c1;
+            color: white;
+            border-color: #59359a;
+        }
+
+        .sec-radio-group input[type="radio"]:checked + .sec-green {
+            background-color: #28a745; color: white; border-color: #208637;
+        }
+
+        /* --- Hidden Cloud Section --- */
+        #tb_cld {
+            padding-left: 24px;
+            border-left: 3px solid var(--accent);
+            margin-top: 10px;
+        }
+        
+        /* --- Message Area --- */
+        #msg {
+            text-align: center;
+            font-weight: 600;
+            margin: 20px 0;
+            min-height: 20px;
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card" role="region" aria-labelledby="title">
-      <div class="card-header">
-        <h1 id="title">OpenGarage Wi-Fi Config</h1>
-      </div>
 
-      <div class="card-body">
-        <div class="section">
-          <div class="hint">Select your network below or enter it manually.</div>
-          <div class="table-wrap" aria-live="polite">
-            <table id="rd">
-              <thead>
-                <tr><th>SSID</th><th>Strength</th><th>Power</th></tr>
-              </thead>
-              <tbody>
-                <tr><td colspan="3"><span class="spinner"></span> Scanning Wi-Fi…</td></tr>
-              </tbody>
+<main>
+    <h1>OpenGarage WiFi Setup</h1>
+
+    <div class="form-group">
+        <label>Available Networks</label>
+        <div class="table-container">
+            <table id='rd'>
+                <thead>
+                    <tr>
+                        <th>SSID</th>
+                        <th>Strength</th>
+                        <th>Power Level</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="3">(Scanning...)</td>
+                    </tr>
+                </tbody>
             </table>
-          </div>
         </div>
-
-        <div class="section">
-          <div class="grid two-col">
-            <label for="ssid">Wi-Fi SSID</label>
-            <input type="text" id="ssid" autocomplete="off">
-
-            <label for="pass">Wi-Fi Password</label>
-            <input type="password" id="pass" autocomplete="off">
-
-            <label for="host">Host Name <span class="hint">(optional)</span></label>
-            <input type="text" id="host" maxlength="32" placeholder="e.g., opengarage">
-          </div>
-        </div>
-
-        <!-- Security+ section (hidden by default; shown when has_swrx==1) -->
-        <div class="section" id="secplus_section" hidden>
-          <fieldset>
-            <legend>Security+ version</legend>
-            <div class="hint">Choose the version based on your Learn button color.</div>
-            <div class="secplus-group" role="radiogroup" aria-label="Security+ version">
-              <div class="secplus-option">
-                <input type="radio" name="secplus" id="secplus_20" value="2">
-                <label for="secplus_20" class="bg-yellow">2.0</label>
-              </div>
-              <div class="secplus-option">
-                <input type="radio" name="secplus" id="secplus_10" value="1">
-                <label for="secplus_10" class="bg-purple">1.0</label>
-              </div>
-              <div class="secplus-option">
-                <input type="radio" name="secplus" id="secplus_none" value="0" checked>
-                <label for="secplus_none" class="bg-green">None</label>
-              </div>
-            </div>
-          </fieldset>
-        </div>
-
-        <div class="section">
-          <fieldset>
-            <legend>Enable Cloud Connection?</legend>
-            <div class="radio-row">
-              <label class="radio">
-                <input type="radio" id="none" name="token" checked onclick="toggle_cld()">
-                No, I’ll configure this later.
-              </label>
-              <label class="radio">
-                <input type="radio" id="blynk" name="token" onclick="toggle_cld()">
-                Use Blynk Token
-              </label>
-              <label class="radio">
-                <input type="radio" id="otc" name="token" onclick="toggle_cld()">
-                Use OpenThings Cloud (OTC) Token
-              </label>
-            </div>
-          </fieldset>
-
-          <div id="tb_cld_wrap" class="">
-            <div id="tb_cld">
-              <div class="grid two-col" style="margin-top:10px">
-                <div></div><div class="hint">Enter your cloud credentials</div>
-                <label for="auth">Token</label>
-                <input type="text" id="auth">
-                <label for="bdmn">Server</label>
-                <input type="text" id="bdmn">
-                <label for="bprt">Port</label>
-                <input type="text" id="bprt">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section actions">
-          <p id="msg" class="msg neutral" role="status" aria-live="polite"></p>
-          <button type="button" id="butt" onclick="sf()">Submit</button>
-        </div>
-      </div>
     </div>
-  </div>
+
+    <div id='div_input'>
+        <div class="form-group">
+            <label for="ssid">WiFi SSID</label>
+            <input type='text' id='ssid'>
+        </div>
+        <div class="form-group">
+            <label for="pass">WiFi Password</label>
+            <input type='password' id='pass'>
+        </div>
+        <div class="form-group">
+            <label for="host">Host Name (Optional)</label>
+            <input type='text' id='host' placeholder='e.g., my-garage'>
+        </div>
+        
+        <div id="secv_section" class="form-group" hidden>
+            <label>Security+ Version</label>
+            <div class="sec-radio-group">
+                <input type="radio" id="secv2" name="secv" value="2">
+                <label for="secv2" class="sec-radio-label sec-yellow">2.0</label>
+                <input type="radio" id="secv1" name="secv" value="1">
+                <label for="secv1" class="sec-radio-label sec-purple">1.0</label>
+                <input type="radio" id="secv0" name="secv" value="0" checked>
+                <label for="secv0" class="sec-radio-label sec-green">None</label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Cloud Connection</label>
+            <div class="radio-group">
+                <label><input type='radio' id='none' name='token' onclick='toggle_cld()' checked>No, configure later.</label>
+                <label><input type='radio' id='blynk' name='token' onclick='toggle_cld()'>Use Blynk Token.</label>
+                <label><input type='radio' id='otc' name='token' onclick='toggle_cld()'>Use OpenThings Cloud (OTC) Token.</label>
+            </div>
+        </div>
+        
+        <div id='tb_cld' hidden>
+            <div class="form-group">
+                <label for="auth">Token</label>
+                <input type='text' id='auth'>
+            </div>
+            <div class="form-group">
+                <label for="bdmn">Server</label>
+                <input type='text' id='bdmn'>
+            </div>
+            <div class="form-group">
+                <label for="bprt">Port</label>
+                <input type='text' id='bprt'>
+            </div>
+        </div>
+    </div>
+    
+    <p id='msg'></p>
+    <button type='button' id='butt' onclick='sf()'>Submit</button>
+</main>
 
 <script>
 function id(s){return document.getElementById(s);}
-function sel(i){id('ssid').value=id('rd'+i).value;}
+function sel(i){id('ssid').value=document.querySelector('input[name="ssids"][id="rd'+i+'"]').value;}
 function eval_cb(n){return id(n).checked;}
-function dis_config(x){let a = document.querySelectorAll('#host, #ssid, #pass, #tb_cld input');for(let e of a){e.disabled = x;}}
-function show_msg(s, level){ const msg = id('msg'); msg.textContent = s || ''; msg.className = 'msg ' + (level || 'neutral'); }
-
-/* Cloud block open/close + defaults */
-function toggle_cld(){
-  const wrap = id('tb_cld_wrap');
-  wrap.classList.remove('open');
-  if(eval_cb('blynk')) { wrap.classList.add('open'); id('bdmn').value='blynk.openthings.io'; id('bprt').value='8080'; }
-  if(eval_cb('otc'))   { wrap.classList.add('open'); id('bdmn').value='ws.cloud.openthings.io'; id('bprt').value='80'; }
-}
-
+function dis_config(x){let a = document.querySelectorAll('#div_input input');for(let e of a){e.disabled = x;}}
+function show_msg(s,c){id('msg').innerHTML='<font color='+c+'>'+s+'</font>';}
 var tci;
+function toggle_cld(){
+  id('tb_cld').hidden=true;
+  if(eval_cb('blynk')) {id('tb_cld').hidden=false;id('bdmn').value='blynk.openthings.io';id('bprt').value='8080';}
+  if(eval_cb('otc')) {id('tb_cld').hidden=false;id('bdmn').value='ws.cloud.openthings.io';id('bprt').value='80';}
+}
 function tryConnect(){
   var xhr=new XMLHttpRequest();
   xhr.onreadystatechange=function() {
     if(xhr.readyState==4 && xhr.status==200) {
-      var jd=JSON.parse(xhr.responseText);
-      if(jd.ip==0) return;
-      var ip=''+(jd.ip%256)+'.'+((jd.ip/256>>0)%256)+'.'+(((jd.ip/256>>0)/256>>0)%256)+'.'+(((jd.ip/256>>0)/256>>0)/256>>0);
-      show_msg('Connected! Device IP: '+ip+' — rebooting… Switch back to the above WiFi, then tap the button below to redirect.', 'success');
-      var b=id('butt'); b.innerHTML='Go to '+ip; b.disabled=false;
-      b.onclick=function rd(){window.open('http://'+ip, '_self');}
-      clearInterval(tci);
+    var jd=JSON.parse(xhr.responseText);
+    if(jd.ip==0) return;
+    var ip=''+(jd.ip%256)+'.'+((jd.ip/256>>0)%256)+'.'+(((jd.ip/256>>0)/256>>0)%256)+'.'+(((jd.ip/256>>0)/256>>0)/256>>0);
+    show_msg('<b>Connected! Device IP: '+ip+'</b><br>Device is rebooting. Switch back to your<br>regular WiFi and click the button to connect.', 'green');
+    id('butt').innerHTML='Go to '+ip;
+    id('butt').disabled=false;
+    id('butt').onclick=function rd(){window.open('http://'+ip);}
+    clearInterval(tci);
     }
   }
-  xhr.open('GET', 'jt', true);
-  xhr.send();
+  xhr.open('GET', 'jt', true); xhr.send();
 }
-
 function sf(){
-  show_msg('', 'neutral');
-  if(!id('ssid').value) {show_msg('Wi-Fi SSID cannot be empty!', 'error');return;}
+  show_msg('','black');
+  if(!id('ssid').value) {show_msg('WiFi SSID cannot be empty!','red');return;}
   var xhr=new XMLHttpRequest();
   xhr.onreadystatechange=function() {
     if(xhr.readyState==4 && xhr.status==200) {
       var jd=JSON.parse(xhr.responseText);
-      if(jd.result==1) {
-        id('butt').innerHTML='<span class="spinner"></span> Connecting…';
-        show_msg('Connecting, please wait…', 'neutral');
-        tci=setInterval(tryConnect, 2000);
-        return;
-      }
-      show_msg('Error code: '+jd.result+', item: '+jd.item, 'error');
+      if(jd.result==1) { id('butt').innerHTML='Connecting...'; show_msg('Connecting, please wait...','gray'); tci=setInterval(tryConnect, 2000); return;}
+      show_msg('Error code: '+jd.result+', item: '+jd.item,'red');
       id('butt').innerHTML='Submit';
       dis_config(false);
     }
   };
-
-  // Read Security+ selection (default 0 if none selected/section hidden)
-  var secplusSel = document.querySelector('input[name="secplus"]:checked');
-  var secplusVal = secplusSel ? secplusSel.value : '0';
-
-  var comm='cc?ssid='+encodeURIComponent(id('ssid').value)
-    +'&pass='+encodeURIComponent(id('pass').value)
-    +'&host='+encodeURIComponent(id('host').value)
-    +'&secplus='+encodeURIComponent(secplusVal);
-
+    var secv_val = document.querySelector('input[name="secv"]:checked').value;
+  var comm='cc?ssid='+encodeURIComponent(id('ssid').value)+'&pass='+encodeURIComponent(id('pass').value)+'&host='+encodeURIComponent(id('host').value)+'&secv='+secv_val;
   if(eval_cb('otc')||eval_cb('blynk')){
-    if(id('auth').value.length<32) {show_msg('Cloud token is too short!', 'error');return;}
+    if(id('auth').value.length<32) {show_msg('Cloud token is too short!','red');return;}
     comm+='&cld='+(eval_cb('blynk')?'blynk':'otc');
     comm+='&auth='+encodeURIComponent(id('auth').value);
     comm+='&bdmn='+id('bdmn').value;
@@ -303,55 +332,47 @@ function sf(){
   id('butt').disabled=true;
   dis_config(true);
 }
-
-/* Load SSIDs once and detect has_swrx for Security+ UI */
 function loadSSIDs(){
-  const tbody = document.querySelector('#rd tbody');
-  if(!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="3"><span class="spinner"></span> Scanning Wi-Fi…</td></tr>';
-
-  var xhr=new XMLHttpRequest();
+    var xhr=new XMLHttpRequest();
   xhr.onreadystatechange=function() {
     if(xhr.readyState==4 && xhr.status==200) {
-      const jd=JSON.parse(xhr.responseText);
-      // Show/hide Security+ group based on has_swrx
-      if (typeof jd.has_swrx !== 'undefined' && Number(jd.has_swrx) === 1) {
-        id('secplus_section').hidden = false;
-      } else {
-        id('secplus_section').hidden = true;
-      }
-
-      // Render SSIDs
-      tbody.innerHTML = '';
-      for(let i=0;i<jd.ssids.length;i++) {
-        const s = jd.ssids[i], rssi = jd.rssis[i];
-        const strength = rssi>-71?'OK':(rssi>-81?'Weak':'Poor');
-        const tr = document.createElement('tr');
-        tr.className = 'clickable';
-        tr.innerHTML = `
-          <td>
-            <label style="display:flex; gap:8px; align-items:center; cursor:pointer">
-              <input name="ssids" id="rd${i}" type="radio" value="${s}">
-              <span>${s}</span>
-            </label>
-          </td>
-          <td>${strength}</td>
-          <td class="num">(${rssi} dBm)</td>
-        `;
-        tr.addEventListener('click', ()=>{ id('rd'+i).checked=true; sel(i); });
-        tbody.appendChild(tr);
-      }
-      if(!jd.ssids.length){
-        tbody.innerHTML = '<tr><td colspan="3">No networks found.</td></tr>';
-      }
-    }
+            var jd=JSON.parse(xhr.responseText);
+            if (jd.has_swrx && jd.has_swrx == 1) {
+                id('secv_section').hidden = false;
+                if (typeof jd.secv !== 'undefined') {
+                    id('secv0').checked = false;
+                    if (jd.secv == 2) {
+                        id('secv2').checked = true;
+                    } else if (jd.secv == 1) {
+                        id('secv1').checked = true;
+                    } else {
+                        id('secv0').checked = true;
+                    }
+                }
+            }
+            var tableBody = document.querySelector("#rd tbody");
+            tableBody.innerHTML = '';
+            if (!jd || !jd.ssids || jd.ssids.length === 0) {
+                tableBody.innerHTML = "<tr><td colspan='3'>No networks found.</td></tr>";
+                return;
+            }
+            for(var i=0; i<jd.ssids.length; i++) {
+                var signalstrength = jd.rssis[i] > -71 ? 'Ok' : (jd.rssis[i] > -81 ? 'Weak' : 'Poor');
+                var row = tableBody.insertRow(-1);
+                var cell1 = row.insertCell(0);
+                var cell2 = row.insertCell(1);
+                var cell3 = row.insertCell(2);
+                cell1.innerHTML = "<label style='display:flex; align-items:center; font-weight:normal; margin:0;'><input name='ssids' id='rd"+i+"' onclick='sel("+i+")' type='radio' value='"+jd.ssids[i]+"' style='margin-right: 8px;'>" + jd.ssids[i] + "</label>";
+                cell2.innerHTML = signalstrength;
+                cell3.innerHTML = "(" + jd.rssis[i] + " dBm)";
+            }
+    };
   }
   xhr.open('GET','js',true);
   xhr.send();
 }
-
-/* Kick off an initial scan a moment after load */
-setTimeout(loadSSIDs, 400);
+setTimeout(loadSSIDs, 500);
 </script>
+
 </body>
 </html>

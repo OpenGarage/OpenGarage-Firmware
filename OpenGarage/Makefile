@@ -9,7 +9,6 @@ $(ESP_LIBS)/Ticker \
 $(ESP_LIBS)/Hash \
 $(HOME)/Arduino/libraries/Blynk \
 $(HOME)/Arduino/libraries/pubsubclient \
-$(HOME)/Arduino/libraries/AM2320 \
 $(HOME)/Arduino/libraries/OneWire \
 $(HOME)/Arduino/libraries/DHTesp \
 $(HOME)/Arduino/libraries/DallasTemperature \

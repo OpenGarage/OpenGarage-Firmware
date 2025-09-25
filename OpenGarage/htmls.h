@@ -1,229 +1,273 @@
-const char ap_home_html[] PROGMEM = R"OG(<!doctype html>
+const char ap_home_html[] PROGMEM = R"OG(<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>OpenGarage • Wi-Fi Setup</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenGarage Setup</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
 <style>
 :root{
---bg: #f6f7fb; --fg: #0f172a; --muted: #586380;
---card: #ffffff; --border: #e2e8f0;
---accent: #2563eb; --accent-weak:#3b82f6;
---success:#0f9d58; --warn:#d97706; --error:#d14343;
---shadow: 0 8px 30px rgba(2,8,23,.12);
---radius: 16px; --radius-sm: 10px;
+--bg:#f6f7fb; --fg:#0f172a; --muted:#586380;
+--card:#fff; --border:#e2e8f0;
+--accent:#2563eb;
 }
 @media (prefers-color-scheme: dark){
 :root{
 --bg:#0b1220; --fg:#e6eaff; --muted:#a3acc7;
 --card:#0f172a; --border:#1e293b;
---accent:#60a5fa; --accent-weak:#93c5fd;
---success:#34d399; --warn:#fbbf24; --error:#f87171;
---shadow: 0 8px 30px rgba(0,0,0,.45);
+--accent:#60a5fa;
 }
 }
-*{box-sizing:border-box}
-html,body{margin:0; padding:0; background:var(--bg); color:var(--fg); font:16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji"}
-a{color:var(--accent)}
-.wrap{min-height:100dvh; display:grid; place-items:center; padding:24px}
-.card{width:100%; max-width:740px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden}
-.card-header{padding:20px 22px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px}
-h1{font-size:20px; margin:0}
-.card-body{padding:18px 22px 22px}
-.grid{display:grid; gap:14px}
-.two-col{display:grid; gap:10px; grid-template-columns:180px 1fr}
-@media (max-width:560px){ .two-col{grid-template-columns:1fr} }
-label{font-weight:600}
-input[type=text], input[type=password]{
-width:100%; height:42px; border:1px solid var(--border); border-radius:10px; padding:0 12px;
-background:transparent; color:inherit; font-size:15px; outline:none;
+/* --- General Body & Typography --- */
+body {
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+background-color: var(--bg);
+margin: 0;
+padding: 20px;
+color: var(--fg);
 }
-input[type=text]:focus, input[type=password]:focus{border-color:var(--accent); box-shadow:0 0 0 4px color-mix(in oklab, var(--accent) 20%, transparent)}
-.hint{color:var(--muted); font-size:13px}
-.section{padding:14px 0; border-top:1px dashed var(--border)}
-.section:first-of-type{border-top:none}
-fieldset{border:none; padding:0; margin:0}
-legend{font-weight:700; margin-bottom:8px}
-.radio-row{display:grid; gap:10px}
-.radio{display:flex; gap:10px; align-items:center}
-input[type=radio]{inline-size:18px; block-size:18px}
-/* Table */
-.table-wrap{border:1px solid var(--border); border-radius:var(--radius-sm); overflow:auto}
-table{width:100%; border-collapse:collapse; font-size:15px}
-thead th{position:sticky; top:0; background:color-mix(in oklab, var(--card) 85%, var(--bg)); text-align:left; padding:10px 12px; border-bottom:1px solid var(--border)}
-tbody td{padding:10px 12px; border-bottom:1px solid var(--border)}
-tbody tr:nth-child(even){background:color-mix(in oklab, var(--card) 96%, var(--bg))}
-tbody tr:hover{background:color-mix(in oklab, var(--card) 90%, var(--bg))}
-.num{font-variant-numeric:tabular-nums; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
-.clickable{cursor:pointer}
-/* Actions */
-.actions{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-button{
-appearance:none; border:1px solid var(--accent); background:var(--accent); color:white;
-padding:10px 16px; border-radius:12px; font-weight:700; font-size:15px; cursor:pointer; transition:transform .02s ease, filter .15s ease
+/* --- Main Content Container --- */
+main {
+max-width: 600px;
+margin: 0 auto;
+background-color: var(--card);
+padding: 25px 30px;
+border-radius: 8px;
+box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
-button[disabled]{opacity:.6; cursor:not-allowed; filter:grayscale(.2)}
-button:active{transform:translateY(1px)}
-.msg{min-height:24px; font-weight:600}
-.msg.success{color:var(--success)}
-.msg.warn{color:var(--warn)}
-.msg.error{color:var(--error)}
-.msg.neutral{color:var(--muted)}
-/* Reveal animation for cloud block */
-#tb_cld_wrap{display:grid; grid-template-rows:0fr; transition:grid-template-rows .25s ease}
-#tb_cld_wrap.open{grid-template-rows:1fr}
-#tb_cld{overflow:hidden}
-/* Tiny spinner */
-.spinner{inline-size:14px; block-size:14px; border:2px solid color-mix(in oklab, var(--accent) 20%, transparent); border-top-color:var(--accent); border-radius:50%; display:inline-block; animation:spin 1s linear infinite; vertical-align:-2px}
-@keyframes spin{to{transform:rotate(1turn)}}
-/* Focus visible */
-:focus-visible{outline:3px solid color-mix(in oklab, var(--accent) 45%, transparent); outline-offset:3px; border-radius:8px}
-/* Security+ radio chips */
-.secplus-group{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top: 8px;}
-.secplus-option{position:relative; display:inline-block}
-.secplus-option input{position:absolute; opacity:0; pointer-events:none}
-/* Base chip look */
-.secplus-option label {
-display:inline-flex; align-items:center; gap:8px;
-padding:8px 14px; border-radius:9999px;
-font-weight:700; cursor:pointer;
-border:2px solid var(--border);
-background:var(--card); color:var(--fg);
-transition:background .15s ease, color .15s ease, border-color .15s ease;
+h1 {
+text-align: center;
+color: var(--fg);
+margin-top: 0;
+margin-bottom: 25px;
 }
-/* Focus ring */
-.secplus-option input:focus + label {
-outline:3px solid color-mix(in oklab, var(--accent) 45%, transparent);
-outline-offset:2px;
+/* --- Form Elements & Inputs --- */
+.form-group {
+margin-bottom: 18px;
 }
-/* Hover previews */
-.secplus-option label.bg-yellow:hover {
-background:color-mix(in oklab, #eeee15 20%, var(--card));
+label {
+display: block;
+font-weight: 600;
+margin-bottom: 6px;
 }
-.secplus-option label.bg-purple:hover {
-background:color-mix(in oklab, #a855f7 20%, var(--card));
-color:#4b5563; /* gray-600 so text stays readable on light tint */
+input[type="text"],
+input[type="password"] {
+width: 100%;
+padding: 10px;
+font-size: 16px;
+border: 1px solid var(--border);
+border-radius: 5px;
+box-sizing: border-box;
+background-color: transparent;
+color: inherit;
+transition: border-color 0.2s, box-shadow 0.2s;
 }
-.secplus-option label.bg-green:hover {
-background:color-mix(in oklab, #22c55e 20%, var(--card));
-color:#14532d; /* dark green for contrast */
+input[type="text"]:focus,
+input[type="password"]:focus {
+border-color: var(--accent);
+box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent);
+outline: none;
 }
-/* Checked states */
-.secplus-option input:checked + label.bg-yellow {
-background:#eeee15; color:#111827; border-color:#d97706;
+
+/* --- Buttons --- */
+button {
+width: 100%;
+padding: 12px;
+font-size: 16px;
+font-weight: 600;
+color: #fff;
+background-color: var(--accent);
+border: none;
+border-radius: 5px;
+cursor: pointer;
+transition: background-color 0.2s;
 }
-.secplus-option input:checked + label.bg-purple {
-background:#a855f7; color:#ffffff; border-color:#6b21a8;
+
+button:disabled {
+opacity: 0.6;
+cursor: not-allowed;
 }
-.secplus-option input:checked + label.bg-green {
-background:#22c55e; color:#ffffff; border-color:#166534;
+/* --- Responsive Table Container --- */
+.table-container {
+overflow-x: auto; /* Makes the container scrollable horizontally */
+-webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+border: 1px solid var(--border);
+border-radius: 8px;
+margin-bottom: 25px;
+}
+
+/* --- WiFi Network List Table --- */
+#rd {
+width: 100%;
+border-collapse: collapse;
+}
+#rd th, #rd td {
+text-align: left;
+padding: 10px 12px;
+border-bottom: 1px solid var(--border);
+white-space: nowrap; /* Prevents columns from wrapping */
+}
+
+#rd tr:last-child td {
+border-bottom: none; /* remove border from the last row */
+}
+#rd th {
+font-weight: 600;
+color: var(--muted);
+background-color: color-mix(in oklab, var(--border) 20%, transparent);
+}
+/* --- Radio Button Styling --- */
+.radio-group label {
+display: flex;
+align-items: center;
+font-weight: normal;
+margin-bottom: 8px;
+}
+.radio-group input[type="radio"] {
+margin-right: 10px;
+}
+
+/* --- Security+ Radio Button Styling --- */
+.sec-radio-group {
+display: flex;
+gap: 10px;
+}
+.sec-radio-group input[type="radio"] {
+display: none;
+}
+.sec-radio-label {
+padding: 8px 16px;
+border-radius: 5px;
+cursor: pointer;
+font-weight: 600;
+text-align: center;
+flex-grow: 1;
+border: 2px solid var(--border);
+background-color: color-mix(in oklab, var(--border) 40%, transparent);
+color: var(--muted);
+transition: all 0.2s ease-in-out;
+}
+
+.sec-radio-group input[type="radio"]:not(:checked) + .sec-radio-label:hover {
+border-color: var(--muted);
+}
+/* MODIFIED: Changed yellow color */
+.sec-radio-group input[type="radio"]:checked + .sec-yellow {
+background-color: #eeee00;
+color: #111;
+border-color: #e6e600;
+}
+
+/* MODIFIED: Reverted to solid purple color */
+.sec-radio-group input[type="radio"]:checked + .sec-purple {
+background-color: #6f42c1;
+color: white;
+border-color: #59359a;
+}
+.sec-radio-group input[type="radio"]:checked + .sec-green {
+background-color: #28a745; color: white; border-color: #208637;
+}
+/* --- Hidden Cloud Section --- */
+#tb_cld {
+padding-left: 24px;
+border-left: 3px solid var(--accent);
+margin-top: 10px;
+}
+
+/* --- Message Area --- */
+#msg {
+text-align: center;
+font-weight: 600;
+margin: 20px 0;
+min-height: 20px;
 }
 </style>
 </head>
 <body>
-<div class="wrap">
-<div class="card" role="region" aria-labelledby="title">
-<div class="card-header">
-<h1 id="title">OpenGarage Wi-Fi Config</h1>
-</div>
-<div class="card-body">
-<div class="section">
-<div class="hint">Select your network below or enter it manually.</div>
-<div class="table-wrap" aria-live="polite">
-<table id="rd">
+<main>
+<h1>OpenGarage WiFi Setup</h1>
+<div class="form-group">
+<label>Available Networks</label>
+<div class="table-container">
+<table id='rd'>
 <thead>
-<tr><th>SSID</th><th>Strength</th><th>Power</th></tr>
+<tr>
+<th>SSID</th>
+<th>Strength</th>
+<th>Power Level</th>
+</tr>
 </thead>
 <tbody>
-<tr><td colspan="3"><span class="spinner"></span> Scanning Wi-Fi…</td></tr>
+<tr>
+<td colspan="3">(Scanning...)</td>
+</tr>
 </tbody>
 </table>
 </div>
 </div>
-<div class="section">
-<div class="grid two-col">
-<label for="ssid">Wi-Fi SSID</label>
-<input type="text" id="ssid" autocomplete="off">
-<label for="pass">Wi-Fi Password</label>
-<input type="password" id="pass" autocomplete="off">
-<label for="host">Host Name <span class="hint">(optional)</span></label>
-<input type="text" id="host" maxlength="32" placeholder="e.g., opengarage">
+<div id='div_input'>
+<div class="form-group">
+<label for="ssid">WiFi SSID</label>
+<input type='text' id='ssid'>
+</div>
+<div class="form-group">
+<label for="pass">WiFi Password</label>
+<input type='password' id='pass'>
+</div>
+<div class="form-group">
+<label for="host">Host Name (Optional)</label>
+<input type='text' id='host' placeholder='e.g., my-garage'>
+</div>
+
+<div id="secv_section" class="form-group" hidden>
+<label>Security+ Version</label>
+<div class="sec-radio-group">
+<input type="radio" id="secv2" name="secv" value="2">
+<label for="secv2" class="sec-radio-label sec-yellow">2.0</label>
+<input type="radio" id="secv1" name="secv" value="1">
+<label for="secv1" class="sec-radio-label sec-purple">1.0</label>
+<input type="radio" id="secv0" name="secv" value="0" checked>
+<label for="secv0" class="sec-radio-label sec-green">None</label>
 </div>
 </div>
-<!-- Security+ section (hidden by default; shown when has_swrx==1) -->
-<div class="section" id="secplus_section" hidden>
-<fieldset>
-<legend>Security+ version</legend>
-<div class="hint">Choose the version based on your Learn button color.</div>
-<div class="secplus-group" role="radiogroup" aria-label="Security+ version">
-<div class="secplus-option">
-<input type="radio" name="secplus" id="secplus_20" value="2">
-<label for="secplus_20" class="bg-yellow">2.0</label>
-</div>
-<div class="secplus-option">
-<input type="radio" name="secplus" id="secplus_10" value="1">
-<label for="secplus_10" class="bg-purple">1.0</label>
-</div>
-<div class="secplus-option">
-<input type="radio" name="secplus" id="secplus_none" value="0" checked>
-<label for="secplus_none" class="bg-green">None</label>
+<div class="form-group">
+<label>Cloud Connection</label>
+<div class="radio-group">
+<label><input type='radio' id='none' name='token' onclick='toggle_cld()' checked>No, configure later.</label>
+<label><input type='radio' id='blynk' name='token' onclick='toggle_cld()'>Use Blynk Token.</label>
+<label><input type='radio' id='otc' name='token' onclick='toggle_cld()'>Use OpenThings Cloud (OTC) Token.</label>
 </div>
 </div>
-</fieldset>
-</div>
-<div class="section">
-<fieldset>
-<legend>Enable Cloud Connection?</legend>
-<div class="radio-row">
-<label class="radio">
-<input type="radio" id="none" name="token" checked onclick="toggle_cld()">
-No, I’ll configure this later.
-</label>
-<label class="radio">
-<input type="radio" id="blynk" name="token" onclick="toggle_cld()">
-Use Blynk Token
-</label>
-<label class="radio">
-<input type="radio" id="otc" name="token" onclick="toggle_cld()">
-Use OpenThings Cloud (OTC) Token
-</label>
-</div>
-</fieldset>
-<div id="tb_cld_wrap" class="">
-<div id="tb_cld">
-<div class="grid two-col" style="margin-top:10px">
-<div></div><div class="hint">Enter your cloud credentials</div>
+
+<div id='tb_cld' hidden>
+<div class="form-group">
 <label for="auth">Token</label>
-<input type="text" id="auth">
+<input type='text' id='auth'>
+</div>
+<div class="form-group">
 <label for="bdmn">Server</label>
-<input type="text" id="bdmn">
+<input type='text' id='bdmn'>
+</div>
+<div class="form-group">
 <label for="bprt">Port</label>
-<input type="text" id="bprt">
+<input type='text' id='bprt'>
 </div>
 </div>
 </div>
-</div>
-<div class="section actions">
-<p id="msg" class="msg neutral" role="status" aria-live="polite"></p>
-<button type="button" id="butt" onclick="sf()">Submit</button>
-</div>
-</div>
-</div>
-</div>
+
+<p id='msg'></p>
+<button type='button' id='butt' onclick='sf()'>Submit</button>
+</main>
 <script>
 function id(s){return document.getElementById(s);}
-function sel(i){id('ssid').value=id('rd'+i).value;}
+function sel(i){id('ssid').value=document.querySelector('input[name="ssids"][id="rd'+i+'"]').value;}
 function eval_cb(n){return id(n).checked;}
-function dis_config(x){let a = document.querySelectorAll('#host, #ssid, #pass, #tb_cld input');for(let e of a){e.disabled = x;}}
-function show_msg(s, level){ const msg = id('msg'); msg.textContent = s || ''; msg.className = 'msg ' + (level || 'neutral'); }
-/* Cloud block open/close + defaults */
-function toggle_cld(){
-const wrap = id('tb_cld_wrap');
-wrap.classList.remove('open');
-if(eval_cb('blynk')) { wrap.classList.add('open'); id('bdmn').value='blynk.openthings.io'; id('bprt').value='8080'; }
-if(eval_cb('otc'))   { wrap.classList.add('open'); id('bdmn').value='ws.cloud.openthings.io'; id('bprt').value='80'; }
-}
+function dis_config(x){let a = document.querySelectorAll('#div_input input');for(let e of a){e.disabled = x;}}
+function show_msg(s,c){id('msg').innerHTML='<font color='+c+'>'+s+'</font>';}
 var tci;
+function toggle_cld(){
+id('tb_cld').hidden=true;
+if(eval_cb('blynk')) {id('tb_cld').hidden=false;id('bdmn').value='blynk.openthings.io';id('bprt').value='8080';}
+if(eval_cb('otc')) {id('tb_cld').hidden=false;id('bdmn').value='ws.cloud.openthings.io';id('bprt').value='80';}
+}
 function tryConnect(){
 var xhr=new XMLHttpRequest();
 xhr.onreadystatechange=function() {
@@ -231,42 +275,32 @@ if(xhr.readyState==4 && xhr.status==200) {
 var jd=JSON.parse(xhr.responseText);
 if(jd.ip==0) return;
 var ip=''+(jd.ip%256)+'.'+((jd.ip/256>>0)%256)+'.'+(((jd.ip/256>>0)/256>>0)%256)+'.'+(((jd.ip/256>>0)/256>>0)/256>>0);
-show_msg('Connected! Device IP: '+ip+' — rebooting… Switch back to the above WiFi, then tap the button below to redirect.', 'success');
-var b=id('butt'); b.innerHTML='Go to '+ip; b.disabled=false;
-b.onclick=function rd(){window.open('http://'+ip, '_self');}
+show_msg('<b>Connected! Device IP: '+ip+'</b><br>Device is rebooting. Switch back to your<br>regular WiFi and click the button to connect.', 'green');
+id('butt').innerHTML='Go to '+ip;
+id('butt').disabled=false;
+id('butt').onclick=function rd(){window.open('http://'+ip);}
 clearInterval(tci);
 }
 }
-xhr.open('GET', 'jt', true);
-xhr.send();
+xhr.open('GET', 'jt', true); xhr.send();
 }
 function sf(){
-show_msg('', 'neutral');
-if(!id('ssid').value) {show_msg('Wi-Fi SSID cannot be empty!', 'error');return;}
+show_msg('','black');
+if(!id('ssid').value) {show_msg('WiFi SSID cannot be empty!','red');return;}
 var xhr=new XMLHttpRequest();
 xhr.onreadystatechange=function() {
 if(xhr.readyState==4 && xhr.status==200) {
 var jd=JSON.parse(xhr.responseText);
-if(jd.result==1) {
-id('butt').innerHTML='<span class="spinner"></span> Connecting…';
-show_msg('Connecting, please wait…', 'neutral');
-tci=setInterval(tryConnect, 2000);
-return;
-}
-show_msg('Error code: '+jd.result+', item: '+jd.item, 'error');
+if(jd.result==1) { id('butt').innerHTML='Connecting...'; show_msg('Connecting, please wait...','gray'); tci=setInterval(tryConnect, 2000); return;}
+show_msg('Error code: '+jd.result+', item: '+jd.item,'red');
 id('butt').innerHTML='Submit';
 dis_config(false);
 }
 };
-// Read Security+ selection (default 0 if none selected/section hidden)
-var secplusSel = document.querySelector('input[name="secplus"]:checked');
-var secplusVal = secplusSel ? secplusSel.value : '0';
-var comm='cc?ssid='+encodeURIComponent(id('ssid').value)
-+'&pass='+encodeURIComponent(id('pass').value)
-+'&host='+encodeURIComponent(id('host').value)
-+'&secplus='+encodeURIComponent(secplusVal);
+var secv_val = document.querySelector('input[name="secv"]:checked').value;
+var comm='cc?ssid='+encodeURIComponent(id('ssid').value)+'&pass='+encodeURIComponent(id('pass').value)+'&host='+encodeURIComponent(id('host').value)+'&secv='+secv_val;
 if(eval_cb('otc')||eval_cb('blynk')){
-if(id('auth').value.length<32) {show_msg('Cloud token is too short!', 'error');return;}
+if(id('auth').value.length<32) {show_msg('Cloud token is too short!','red');return;}
 comm+='&cld='+(eval_cb('blynk')?'blynk':'otc');
 comm+='&auth='+encodeURIComponent(id('auth').value);
 comm+='&bdmn='+id('bdmn').value;
@@ -277,51 +311,46 @@ xhr.send();
 id('butt').disabled=true;
 dis_config(true);
 }
-/* Load SSIDs once and detect has_swrx for Security+ UI */
 function loadSSIDs(){
-const tbody = document.querySelector('#rd tbody');
-if(!tbody) return;
-tbody.innerHTML = '<tr><td colspan="3"><span class="spinner"></span> Scanning Wi-Fi…</td></tr>';
 var xhr=new XMLHttpRequest();
 xhr.onreadystatechange=function() {
 if(xhr.readyState==4 && xhr.status==200) {
-const jd=JSON.parse(xhr.responseText);
-// Show/hide Security+ group based on has_swrx
-if (typeof jd.has_swrx !== 'undefined' && Number(jd.has_swrx) === 1) {
-id('secplus_section').hidden = false;
+var jd=JSON.parse(xhr.responseText);
+if (jd.has_swrx && jd.has_swrx == 1) {
+id('secv_section').hidden = false;
+if (typeof jd.secv !== 'undefined') {
+id('secv0').checked = false;
+if (jd.secv == 2) {
+id('secv2').checked = true;
+} else if (jd.secv == 1) {
+id('secv1').checked = true;
 } else {
-id('secplus_section').hidden = true;
-}
-// Render SSIDs
-tbody.innerHTML = '';
-for(let i=0;i<jd.ssids.length;i++) {
-const s = jd.ssids[i], rssi = jd.rssis[i];
-const strength = rssi>-71?'OK':(rssi>-81?'Weak':'Poor');
-const tr = document.createElement('tr');
-tr.className = 'clickable';
-tr.innerHTML = `
-<td>
-<label style="display:flex; gap:8px; align-items:center; cursor:pointer">
-<input name="ssids" id="rd${i}" type="radio" value="${s}">
-<span>${s}</span>
-</label>
-</td>
-<td>${strength}</td>
-<td class="num">(${rssi} dBm)</td>
-`;
-tr.addEventListener('click', ()=>{ id('rd'+i).checked=true; sel(i); });
-tbody.appendChild(tr);
-}
-if(!jd.ssids.length){
-tbody.innerHTML = '<tr><td colspan="3">No networks found.</td></tr>';
+id('secv0').checked = true;
 }
 }
+}
+var tableBody = document.querySelector("#rd tbody");
+tableBody.innerHTML = '';
+if (!jd || !jd.ssids || jd.ssids.length === 0) {
+tableBody.innerHTML = "<tr><td colspan='3'>No networks found.</td></tr>";
+return;
+}
+for(var i=0; i<jd.ssids.length; i++) {
+var signalstrength = jd.rssis[i] > -71 ? 'Ok' : (jd.rssis[i] > -81 ? 'Weak' : 'Poor');
+var row = tableBody.insertRow(-1);
+var cell1 = row.insertCell(0);
+var cell2 = row.insertCell(1);
+var cell3 = row.insertCell(2);
+cell1.innerHTML = "<label style='display:flex; align-items:center; font-weight:normal; margin:0;'><input name='ssids' id='rd"+i+"' onclick='sel("+i+")' type='radio' value='"+jd.ssids[i]+"' style='margin-right: 8px;'>" + jd.ssids[i] + "</label>";
+cell2.innerHTML = signalstrength;
+cell3.innerHTML = "(" + jd.rssis[i] + " dBm)";
+}
+};
 }
 xhr.open('GET','js',true);
 xhr.send();
 }
-/* Kick off an initial scan a moment after load */
-setTimeout(loadSSIDs, 400);
+setTimeout(loadSSIDs, 500);
 </script>
 </body>
 </html>
@@ -458,7 +487,7 @@ xhr.send(formData);
 )OG";
 const char sta_home_html[] PROGMEM = R"OG(<head><title>OpenGarage</title><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='https://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'><script src='https://code.jquery.com/jquery-1.9.1.min.js' type='text/javascript'></script><script src='https://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js' type='text/javascript'></script></head>
 <body>
-<style> table, th, td {border: 0px solid black;padding: 6px; border-collapse: collapse; } .img {width: inherit; height: inherit; position: absolute; top: inherit; left: inherit;} .img[src=""] {display:none;} 
+<style> table, th, td {border: 0px solid black;padding: 6px; border-collapse: collapse; } .img {width: inherit; height: inherit; position: absolute; top: inherit; left: inherit;} .img[src=""] {display:none;}
 .lightlock-ctrl div.ui-slider-switch {width:160px;}
 </style>
 <div data-role='page' id='page_home'><div data-role='header'><h3 id='head_name'>OG</h3></div>
@@ -468,7 +497,7 @@ const char sta_home_html[] PROGMEM = R"OG(<head><title>OpenGarage</title><meta n
 <tr><td><b><label id='lbl_vstatus1'>Vehicle:</label></b></td><td><label id='lbl_vstatus'>-</label></td></tr>
 <tr><td><b>Distance:</b></td><td><label id='lbl_dist'>-</label></td><td></td></tr>
 <tr><td><b>Read Cnt.:</b></td><td><label id='lbl_beat'>-</label></td><td></td></tr>
-<tr id='tbl_sn2' style='display:none'><td><b>Switch Sn.:</b></td><td><label id='lbl_sn2'>-</label></td><td></td></tr>
+<tr id='tbl_sn2' style='display:none'><td><b>Switch Sn. :</b></td><td><label id='lbl_sn2'>-</label></td><td></td></tr>
 <tr id='tbl_obstruct' style='display:none'><td><b>Obstructed:</b></td><td><label id='lbl_obstruct'>-</label></td><td></td></tr>
 <tr><td><b>WiFi Signal:</b></td><td colspan='2'><label id='lbl_rssi'>-</label></td></tr>
 <tr><td><b>Cloud:</b></td><td colspan='2'><label id='lbl_cld'>-</label></td></tr>
@@ -571,7 +600,7 @@ do_action_command('lock=toggle');
 $('#btn_click').click(function(e) {
 do_action_command('click=1');
 });
-$(document).ready(function() { show(); si=setInterval('show()', 5000); });
+$(document).ready(function() { show(); si=setInterval('show()', 3000); });
 function show() {
 $.ajax({
 url:'jc',
@@ -598,28 +627,27 @@ status_color = "red";
 door_img.src = base+"open.svg"
 arrow_img.src = ""
 break;
-case 3: // Stopped
+case 2: // Stopped
 status_text = "STOPPED";
-status_color = "red";
+status_color = "orange";
 door_img.src = base+"partial.svg"
 arrow_img.src = ""
 break;
-case 4: // Closing
+case 3: // Closing
 status_text = "CLOSING";
 status_color = "green";
 door_img.src = base+"partial.svg"
 arrow_img.src = base+"arrow_down.svg"
 break;
-case 5: // Opening
+case 4: // Opening
 status_text = "OPENING";
 status_color = "red";
 door_img.src = base+"partial.svg"
 arrow_img.src = base+"arrow_up.svg"
 break;
-case 2: // UNKNOWN / UNSET
 default:
 status_text = "UNKNOWN";
-status_color = "red";
+status_color = "violet";
 break;
 }
 $('#lbl_status').text(status_text).css('color', status_color);
@@ -655,7 +683,7 @@ $('#head_name').text(jd.name);
 $('#btn_click').html(jd.door?'Close Door':'Open Door').button('refresh');
 if(typeof(jd.temp)!='undefined') {$('#tbl_th').show(); $('#lbl_th').text(jd.temp.toFixed(1)+String.fromCharCode(176)+'C / '+(jd.temp*1.8+32).toFixed(1)+String.fromCharCode(176)+'F (H:'+jd.humid.toFixed(1)+'%)');}
 else {$('#tbl_th').hide();}
-if(typeof(jd.obstruct)!='undefined') {$('#tbl_obstruct').show(); $('#lbl_obstruct').text(jd.obstruct?'YES':'no').css('color',jd.obstruct?'red':'black');} else {$('#tbl_obstruct').hide();}
+if(typeof(jd.obstruct)!='undefined') {$('#tbl_obstruct').show(); $('#lbl_obstruct').text(jd.obstruct?'no':'YES');} else {$('#tbl_obstruct').hide();}
 },
 error:function(){
 $('#lbl_beat').text('(offline)').css('color','red');
@@ -725,6 +753,11 @@ date.setTime(curr_time*1000);
 $('#lbl_time').text(date.toLocaleString());
 $('#lbl_up_time').text(get_delta_time(date, sdate));
 }
+const icons = ['iVBORw0KGgoAAAANSUhEUgAAACAAAAAZCAYAAABQDyyRAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4gEBFisqp+S1gQAAAuRJREFUSMfFlt1LFFEYxn9nZpx1dScV11w1NzNFQ7QouiiiDwq6kQiCoAir+6B/pbrLKLqqm6CrIIiMro2+sw9qzVXXdN00V3fc2dlzuuiL0t2OW+h7NcM5PO/znvd5n3NE/0BXA3AR2MbqxhBw3gJuAPtZ/WgHNhlrlPxH9BiscZRIQODLRRQSAD/vAqIkJGslmz1/nopAmJbwIbY0HSdStR2A5NwrXiduMjx1j/nsJ2zL0S+lf6BLFV5WZP004VAn0fABupv7cMqbUEoSm7rLm8QtFJL2yBHa6nsxDRvXS/Esfo2R6Qck0y+xLQdR5HQKEhAIdrSeo6f5LKZhk/GSvP90h+HkPWyrkvb6I7RFegGIpx7yduI2Xu4LkeqddDQcJVTeiELyPH6dR7GL5HwfXyqkBKUUUn1rWsEWmIZNa91hBmOXmJgdpKZyM50Nx+iJnlmyN1q7j2jtPgAyXpKnI1cZm45hiSZ2dZzgbfwCrpdBiKVKKdICRcZLcXL3feqcrpJVfvqSTXVlI0KIlYpQYBkBApZDLp/hycfLOMHGn2sLrk82tzz3ucwke7b04QTDlFnlBZNrT0Eu71Jf1cPG8EGtqmOTg2SyszjB8P8YQwEYDI0+xhT1WgTGU0N0bNj7bz5gCJjL5Mn5ElOAbYaoqoxogYaCtaBk6QSkVMQmFkmlXdT3NkslUVIPVEqp7YzW71ULkl88EtMehuCXeATMLkyQmHmjBZqajxMNd6+MgFKKd2MuizmJ8Qd5pRQt67fT2aTX16C9DqnyegSEADcr+TDu/pTccjKMTQ5iGKYW6FjqFbs7TuoRmEn7xCcXMQ1R5EZQVASqWRdcrwVaYY8DSo/A2FS2aHIhBEoponVbaW/YpXfDCQOlOwVFTIoyM8DAyyuYwmJmIcHo9Ast0M/pUQJlDqHyGmyrojjZ81db/nJWapmvv1tXob8SnVAHqsQnmRAMr+GTcNYA+oD8WmQXglNfAfQMC/0EmCdPAAAAAElFTkSuQmCC',//open
+'iVBORw0KGgoAAAANSUhEUgAAACAAAAAZCAYAAABQDyyRAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAB3RJTUUH4gEBFiwkDx0OQQAAArtJREFUSMfFlstLlFEYxn/nfN/5HHVmskTF1LQCcRMRRBAZClbQH1CLatUiqm2rWrUP2rRqUZuKVgUREUFR2M2yMhC6iGSafl3QaZxJ53K+75wWSReaMTUdn+XhXJ73Pe/7vI94/e6mrXj2nPhIkpCAkkAIJuvL0Vu24cbu3qdhxAMRpZSoTkHq40NkjS9AUHoIiKc8pBcqlg0C5IIOGgN5jY555FeUYXUeQrOgq9x57bagRZ78xvXYjnai1a1gLdnECJmnd4g/G8YJBQixSASCEC1y0NhI0NqMamlDtLSiyCD7X5F6cRkroKJ6LdGuPbA7RtZ/izMwRDA0gDfk4xgPlFMgmB8khT150hb+H0l61yYimztRbhSMJeX3Ibof4ExpdFc7sXVbkAi++f3I7kfocBq5dTuVzRuRjiLLFEFPN5W3esDMPGMtVhj82DgqdIsTsLEomcP7cB73ksslkfEqIjVrsc1NqEhV4YTpaRj9QDo9zGR/L/HBCfTBA5R37EQlUugwwMtC5De5KZ4Ba8Eavh3aQ7RhQ7GSKFbcACQIWCXUAmtACKzrorw4uWCS/g8XEDNXWwFl77Os6ZvCyL/P8fkLK48ep6Jh9SJ0gbUYE9DWuJeoqv213gKms3D02Zc9MDGBXQwCAoHMhHw6tp/J6XAunYoz6lN+7sb/tWGgIJ/4SKgzlMsyGq88QSXTc9eMQq1XAH8roZWkKwMmrp9DnT2Pm5z6sewszcD4IwOBJxkf6yNy5hp1CYPxFFos7aT6SSBTFpC8ep76Xr+k88hFOIznhpEXr1A/+LXkA9Edy72h9vRlVNawHHDrTl3C1bNImuOA687ftLjuHLfpWTTAGJx73YiqamR+nn7x9m2cprp/exJbXNIXzYBiiz8h7VL7QTt7fPJLU2TZLKF2QPonDhLK5SHw5sgOvgNSpAhhsRiYRQAAAABJRU5ErkJggg==',//closed
+'iVBORw0KGgoAAAANSUhEUgAAACAAAAAZCAYAAABQDyyRAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH6QkZABohIdpwCwAAAvxJREFUSMfFlt9Lk1EYxz/n3evmjw0VZ5tay0pZIlooIUX0g4IgQoIgSsLqPvCiey/6C9K7jKKbyougqyKQjG6CMPpF2Q9q2iynzuHvd257d04XS2M619uMfK4O7zk8z/c83+/zPa/o76mvALqA3fzfGAQ6dOAOcIj/H7XANm2Dii9Fo8YGR44ABNJcBCUBSJpRQOSUSf+bw2Z8HkehG3f1UarqTlPsbQJgNvye0Q93mRjqIzY/hm53Wb9Kf0+9WntbYcbmcLp34vYdZktDO/muKpSSTAQeMfrxHiiJt7YVT80JNJudeDRC8M1NJr89YS78LgVGiBwACMH25ktsabyYSmyEGfvygPBQH7q9CE9tK96aEwBEgk8JfbpPIj5DiXcPFf6T5DsrQUmCb28ReNGFmTCRpkJKUEql2BNZKNBsdsq3HyMw0M10aICi0h1U7DyFr/HCqrNlvoOU+Q4CEDfCfHt9g8nvAYRehX/vWYKfrhKPGqlGCMsUKOJGhH1tj3GV1+es8u7zdopKKhFr0KBnU7qmO9AdLpIJg+FX1yhwVS7vRRdMErHM2I3Zcer2t1PgcqPn5a9Z3PIUJBNRij2NuLcesXTr8cAAMWOaApf7X4yhADRGBl8ibB5LACI/BtnsP7A+HxAaGLNJzIRE2MBmd1JU7LWUtMBZhkLmDkBKRSiwyFwkivpFs5ISqawllVJadkY9/daCmXCcydE4QmNZPAJYmA7R29liKWnz8cu4fQ1/9xYopRj5bBAJpYqnDaRSbKpuSvt25srzjGuASv9+lExa64AQEItKfnyN/tZcBh2OBwbSPvV2tiwXXtmZ4dcP8e9rswZgbspkPLiIZsvCmVI4Ckssm4+9sARQ1iiY+B7LWlwIgVKKct+uVRT0drakdWIpPNuaURYFq2cxKWx5Dt71X0fYdBamRldRkGkN8PHZbfIcLvKdpej2wuwuc6Oj+g+9UhmXmV7P5ZkVK41s3U5oKVfWd39NDQjB0Ab+Ek5rQDuQ3IjqQnDuJ7EgFnNqrV1FAAAAAElFTkSuQmCC',//stopped
+];
+const texts = ['Closed', 'Opened', 'Stopped'];
 function show_log() {
 $.getJSON('jl', function(jd) {
 $('#lbl_name').text(jd.name);
@@ -738,7 +771,9 @@ $('#lbl_start_time').text(sdate.toLocaleString());
 var ldate = new Date();
 for(var i=0;i<logs.length;i++) {
 ldate.setTime(logs[i][0]*1000);
-var r='<tr></td><td align="left"><img id="pic" src="data:image/png;base64,' + (logs[i][1]?'iVBORw0KGgoAAAANSUhEUgAAACAAAAAZCAYAAABQDyyRAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAB3RJTUUH4gEBFiwkDx0OQQAAArtJREFUSMfFlstLlFEYxn/nfN/5HHVmskTF1LQCcRMRRBAZClbQH1CLatUiqm2rWrUP2rRqUZuKVgUREUFR2M2yMhC6iGSafl3QaZxJ53K+75wWSReaMTUdn+XhXJ73Pe/7vI94/e6mrXj2nPhIkpCAkkAIJuvL0Vu24cbu3qdhxAMRpZSoTkHq40NkjS9AUHoIiKc8pBcqlg0C5IIOGgN5jY555FeUYXUeQrOgq9x57bagRZ78xvXYjnai1a1gLdnECJmnd4g/G8YJBQixSASCEC1y0NhI0NqMamlDtLSiyCD7X5F6cRkroKJ6LdGuPbA7RtZ/izMwRDA0gDfk4xgPlFMgmB8khT150hb+H0l61yYimztRbhSMJeX3Ibof4ExpdFc7sXVbkAi++f3I7kfocBq5dTuVzRuRjiLLFEFPN5W3esDMPGMtVhj82DgqdIsTsLEomcP7cB73ksslkfEqIjVrsc1NqEhV4YTpaRj9QDo9zGR/L/HBCfTBA5R37EQlUugwwMtC5De5KZ4Ba8Eavh3aQ7RhQ7GSKFbcACQIWCXUAmtACKzrorw4uWCS/g8XEDNXWwFl77Os6ZvCyL/P8fkLK48ep6Jh9SJ0gbUYE9DWuJeoqv213gKms3D02Zc9MDGBXQwCAoHMhHw6tp/J6XAunYoz6lN+7sb/tWGgIJ/4SKgzlMsyGq88QSXTc9eMQq1XAH8roZWkKwMmrp9DnT2Pm5z6sewszcD4IwOBJxkf6yNy5hp1CYPxFFos7aT6SSBTFpC8ep76Xr+k88hFOIznhpEXr1A/+LXkA9Edy72h9vRlVNawHHDrTl3C1bNImuOA687ftLjuHLfpWTTAGJx73YiqamR+nn7x9m2cprp/exJbXNIXzYBiiz8h7VL7QTt7fPJLU2TZLKF2QPonDhLK5SHw5sgOvgNSpAhhsRiYRQAAAABJRU5ErkJggg==':'iVBORw0KGgoAAAANSUhEUgAAACAAAAAZCAYAAABQDyyRAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH4gEBFisqp+S1gQAAAuRJREFUSMfFlt1LFFEYxn9nZpx1dScV11w1NzNFQ7QouiiiDwq6kQiCoAir+6B/pbrLKLqqm6CrIIiMro2+sw9qzVXXdN00V3fc2dlzuuiL0t2OW+h7NcM5PO/znvd5n3NE/0BXA3AR2MbqxhBw3gJuAPtZ/WgHNhlrlPxH9BiscZRIQODLRRQSAD/vAqIkJGslmz1/nopAmJbwIbY0HSdStR2A5NwrXiduMjx1j/nsJ2zL0S+lf6BLFV5WZP004VAn0fABupv7cMqbUEoSm7rLm8QtFJL2yBHa6nsxDRvXS/Esfo2R6Qck0y+xLQdR5HQKEhAIdrSeo6f5LKZhk/GSvP90h+HkPWyrkvb6I7RFegGIpx7yduI2Xu4LkeqddDQcJVTeiELyPH6dR7GL5HwfXyqkBKUUUn1rWsEWmIZNa91hBmOXmJgdpKZyM50Nx+iJnlmyN1q7j2jtPgAyXpKnI1cZm45hiSZ2dZzgbfwCrpdBiKVKKdICRcZLcXL3feqcrpJVfvqSTXVlI0KIlYpQYBkBApZDLp/hycfLOMHGn2sLrk82tzz3ucwke7b04QTDlFnlBZNrT0Eu71Jf1cPG8EGtqmOTg2SyszjB8P8YQwEYDI0+xhT1WgTGU0N0bNj7bz5gCJjL5Mn5ElOAbYaoqoxogYaCtaBk6QSkVMQmFkmlXdT3NkslUVIPVEqp7YzW71ULkl88EtMehuCXeATMLkyQmHmjBZqajxMNd6+MgFKKd2MuizmJ8Qd5pRQt67fT2aTX16C9DqnyegSEADcr+TDu/pTccjKMTQ5iGKYW6FjqFbs7TuoRmEn7xCcXMQ1R5EZQVASqWRdcrwVaYY8DSo/A2FS2aHIhBEoponVbaW/YpXfDCQOlOwVFTIoyM8DAyyuYwmJmIcHo9Ast0M/pUQJlDqHyGmyrojjZ81db/nJWapmvv1tXob8SnVAHqsQnmRAMr+GTcNYA+oD8WmQXglNfAfQMC/0EmCdPAAAAAElFTkSuQmCC') +'" style="width:20px;height:15px;">'+(logs[i][1]?' Opened':' Closed')+'<td align="left">'+ldate.toLocaleString()+'</td><td align="right">'+logs[i][2]+' cm</td>';
+var status = logs[i][1];
+if(status>2) status=2;
+var r='<tr></td><td align="left"><img id="pic" src="data:image/png;base64,' + (icons[status]) +'" style="width:20px;height:15px;"> '+(texts[status])+'<td align="left">'+ldate.toLocaleString()+'</td><td align="right">'+logs[i][2]+' cm</td>';
 if(typeof(jd.ncols)!='undefined'&&jd.ncols>3) {
 r+='<td align="left">'+(logs[i][3]==255?'-':(logs[i][3]?'High':'Low'))+'</td></tr>';
 }
@@ -753,10 +788,10 @@ setTimeout(show_log, 10000);
 </script>
 </body>
 )OG";
-const char sta_options_html[] PROGMEM = R"OG(<head><title>OpenGarage</title><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'><script src='//code.jquery.com/jquery-1.9.1.min.js' type='text/javascript'></script><script src='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js' type='text/javascript'></script></head>
+const char sta_options_html[] PROGMEM = R"OG(<head><title>OpenGarage</title><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='https://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'><script src='https://code.jquery.com/jquery-1.9.1.min.js' type='text/javascript'></script><script src='https://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js' type='text/javascript'></script></head>
 <body>
 <style> table, th, td { border: 0px solid black; padding: 1px; border-collapse: collapse; } .ui-select{width:160px;}
-input[type="radio"].yellow:checked + label span{ background-color:#C0C000; }
+input[type="radio"].yellow:checked + label span{ background-color:#F0F000; color: black;}
 input[type="radio"].purple:checked + label span{ background-color:#A000A0; }
 input[type="radio"].green:checked + label span{ background-color:#00A000; }
 </style>
@@ -776,24 +811,24 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <option value=0>Ceiling Mount</option>
 <option value=1>Side Mount</option>
 </select></td></tr>
-<tr id='secv'><td><b>Security+ Version:</b><br><small>Learn button color</small></td><td>
+<tr id='secv'><td><b>Security+ Ver. :</b><br><small>Learn button color</small></td><td>
 <fieldset data-role='controlgroup' data-mini='true' data-type='horizontal'>
-<input type='radio' name='secv' id='secv2' value=2 class='yellow'><label for='secv2'>2.0</label>
-<input type='radio' name='secv' id='secv1' value=1 class='purple'><label for='secv1'>1.0</label>
-<input type='radio' name='secv' id='secv0' value=0 class='green'><label for='secv0'>None</label>
+<input type='radio' name='secv' id='secv2' value=2 class='yellow' onclick='update_secv()'><label for='secv2'>2.0</label>
+<input type='radio' name='secv' id='secv1' value=1 class='purple' onclick='update_secv()'><label for='secv1'>1.0</label>
+<input type='radio' name='secv' id='secv0' value=0 class='green' onclick='update_secv()' checked><label for='secv0'>None</label>
 </fieldset>
 </td></tr>
-<tr><td><b>Door Thres. (cm): </b></td><td><input type='text' size=3 maxlength=4 id='dth' data-mini='true' value=0></td></tr>
+<tr id='tr_dth'><td><b>Door Thres. (cm): </b></td><td><input type='text' size=3 maxlength=4 id='dth' data-mini='true' value=0></td></tr>
 <tr><td><b>Car Thres. (cm):</b><br><small>set to 0 to disable</small></td><td><input type='text' size=3 maxlength=4 id='vth' data-mini='true' value=0 ></td></tr>
 <tr><td><b>Status Check (s):</b><br><small>check status every</small></td><td><input type='text' size=3 maxlength=3 id='riv' data-mini='true' value=0></td></tr>
 <tr><td><b>Click Time (ms):</b></td><td><input type='text' size=3 maxlength=5 id='cdt' value=0 data-mini='true'></td></tr>
-<tr><td><b>Switch Sensor:</b><br><small>on G04 and GND</small></td><td>
+<tr id='tr_sn2'><td><b>Switch Sensor:</b><br><small>on G04 and GND</small></td><td>
 <select name='sn2' id='sn2' data-mini='true' onChange='update_sno()'>
 <option value=0>(none)</option>
 <option value=1>Normally Closed</option>
 <option value=2>Normally Open</option>
 </select></td></tr>
-<tr><td><b>Sensor Logic:</b><a href='#snoInfo' data-rel='popup' data-role='button' data-inline='true' data-transition='pop' data-icon='info' data-theme='c' data-iconpos='notext'>Explanation</a><div data-role='popup' id='snoInfo' class='ui-content' data-theme='b' style='max-width:250px;'><p>Choose which sensor(s) determine door 'open' status.</p></div></td><td>
+<tr id='tr_sno'><td><b>Sensor Logic:</b></td><td>
 <select name='sno' id='sno' data-mini='true' disabled='true'>
 <option value=0>Dist. sensor only</option>
 <option value=1>Switch sensor only</option>
@@ -851,7 +886,8 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <tr class='email'><td><b>App Password:</b></td><td><input type='text' size=16 maxlength=64 id='apwd' data-mini='true'></td></tr>
 <tr class='email'><td><b>Recipient Email:</b></td><td><input type='text' size=16 maxlength=64 id='recp' data-mini='true'></td></tr>
 <tr height=30px><td colspan=2><b>Choose Notification Events:</b></td></tr>
-<tr><td><input type='checkbox' id='noto0' data-mini='true'><label for='noto0'>Door Open</label></td><td><input type='checkbox' id='noto1' data-mini='true' ><label for='noto1'>Door Close</label></td></tr>
+<tr><td colspan=2><fieldset data-role='controlgroup' data-type='horizontal'><input type='checkbox' id='noto0' data-mini='true'><label for='noto0'>Door Opened</label>
+<input type='checkbox' id='noto1' data-mini='true' ><label for='noto1'>Door Closed</label><input type='checkbox' id='noto2' data-mini='true' ><label for='noto2'>Door Stopped</label></fieldset></td></tr>
 <tr><td><b>IFTTT Key:</b></td><td><input type='text' size=20 maxlength=64 id='iftt' data-mini='true' placeholder='(if using IFTTT notification)'></td></tr>
 </table>
 <table>
@@ -902,7 +938,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 </table>
 <div data-role='controlgroup' data-type='horizontal'>
 <a href='#' data-role='button' data-inline='true' data-theme='a' id='btn_back'>Back</a>
-<a href='#' data-role='button' data-inline='true' data-theme='b' id='btn_submit'>Submit</a> 
+<a href='#' data-role='button' data-inline='true' data-theme='b' id='btn_submit'>Submit</a>
 </div>
 </div>
 <div data-role='footer' data-theme='c'>
@@ -914,8 +950,20 @@ let prev_ct=1;
 function clear_msg() {$('#msg').text('');}
 function update_sno(){
 if(parseInt($('#sn2 option:selected').val())>0){
-$('#sno').selectmenu('enable'); 
+$('#sno').selectmenu('enable');
 }else{$('#sno').selectmenu('disable');}
+}
+function update_secv(){
+if(parseInt($('input[name="secv"]:checked').val())>0){
+$('#tr_dth').hide();
+$('#tr_sn2').hide();
+$('#tr_sno').hide();
+}else{
+$('#tr_dth').show();
+$('#tr_sn2').show();
+$('#tr_sno').show();
+update_sno();
+}
 }
 function update_cld(){
 if(eval_cb('#cld')) $('.cld').show();
@@ -972,7 +1020,7 @@ comm='co?dkey='+encodeURIComponent($('#dkey').val());
 bc('sn1');bc('sn2');bc('sno');bc('dth');bc('vth');bc('riv');bc('bas');bc('alm');
 bc('lsz');bc('tsn');bc('htp');bc('cdt');bc('dri');bc('ati');bc('atib');
 comm+='&aoo='+($('#aoo').is(':checked')?1:0);
-comm+='&secv='+$('input[name="secv"]:checked').val();
+if($('#secv').is(':visible')){comm+='&secv='+$('input[name="secv"]:checked').val();}
 comm+='&sto='+eval_cb('#to_cap');
 comm+='&sfi='+eval_cb('#sf_con');
 if(eval_cb('#sf_con')) bc('cmr');
@@ -983,7 +1031,7 @@ var atob=0;
 for(var i=1;i>=0;i--) { atob=(atob<<1)+eval_cb('#atob'+i); }
 comm+='&atob='+atob;
 var noto=0;
-for(var i=1;i>=0;i--) { noto=(noto<<1)+eval_cb('#noto'+i); }
+for(var i=2;i>=0;i--) { noto=(noto<<1)+eval_cb('#noto'+i); }
 comm+='&noto='+noto;
 if(eval_cb('#cld')) {comm+='&cld='+(eval_cb('#blynk')?1:2);
 if($('#auth').val().length<32) {show_msg('Cloud token is too short!');return;}}
@@ -1019,7 +1067,7 @@ setTimeout(goback, 4000);
 }
 });
 $(document).ready(function() {
-$('#secv').hide();
+$('#secv').show();
 $.getJSON('jo', function(jd){
 $('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 $('#alm').val(jd.alm).selectmenu('refresh');
@@ -1042,6 +1090,7 @@ $('#secv').show();
 if(jd.secv==2) cbt('secv2');
 else if(jd.secv==1) cbt('secv1');
 else cbt('secv0');}
+update_secv();
 if(jd.sto) cbt('to_cap');
 else cbt('to_ignore');
 if(jd.sfi) cbt('sf_con');
@@ -1052,7 +1101,7 @@ $('#ati').val(jd.ati);
 $('#atib').val(jd.atib);
 for(var i=0;i<=1;i++) {if(jd.ato&(1<<i)) cbt('ato'+i);}
 for(var i=0;i<=1;i++) {if(jd.atob&(1<<i)) cbt('atob'+i);}
-for(var i=0;i<=1;i++) {if(jd.noto&(1<<i)) cbt('noto'+i);}
+for(var i=0;i<=2;i++) {if(jd.noto&(1<<i)) cbt('noto'+i);}
 $('#name').val(jd.name);
 if(jd.cld>0) cbt('cld');
 if(jd.cld==1) {cbt('blynk');cbt('otc',false);prev_ct=1;}

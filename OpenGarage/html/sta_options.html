@@ -1,7 +1,7 @@
-<head><title>OpenGarage</title><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'><script src='//code.jquery.com/jquery-1.9.1.min.js' type='text/javascript'></script><script src='//code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js' type='text/javascript'></script></head>
+<head><title>OpenGarage</title><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='https://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.css' type='text/css'><script src='https://code.jquery.com/jquery-1.9.1.min.js' type='text/javascript'></script><script src='https://code.jquery.com/mobile/1.3.1/jquery.mobile-1.3.1.min.js' type='text/javascript'></script></head>
 <body>
 <style> table, th, td { border: 0px solid black; padding: 1px; border-collapse: collapse; } .ui-select{width:160px;}
-input[type="radio"].yellow:checked + label span{ background-color:#C0C000; }
+input[type="radio"].yellow:checked + label span{ background-color:#F0F000; color: black;}
 input[type="radio"].purple:checked + label span{ background-color:#A000A0; }
 input[type="radio"].green:checked + label span{ background-color:#00A000; }
 </style>
@@ -21,24 +21,24 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <option value=0>Ceiling Mount</option>
 <option value=1>Side Mount</option>
 </select></td></tr>
-<tr id='secv'><td><b>Security+ Version:</b><br><small>Learn button color</small></td><td>
+<tr id='secv'><td><b>Security+ Ver. :</b><br><small>Learn button color</small></td><td>
 <fieldset data-role='controlgroup' data-mini='true' data-type='horizontal'>
-<input type='radio' name='secv' id='secv2' value=2 class='yellow'><label for='secv2'>2.0</label>
-<input type='radio' name='secv' id='secv1' value=1 class='purple'><label for='secv1'>1.0</label>
-<input type='radio' name='secv' id='secv0' value=0 class='green'><label for='secv0'>None</label>
+<input type='radio' name='secv' id='secv2' value=2 class='yellow' onclick='update_secv()'><label for='secv2'>2.0</label>
+<input type='radio' name='secv' id='secv1' value=1 class='purple' onclick='update_secv()'><label for='secv1'>1.0</label>
+<input type='radio' name='secv' id='secv0' value=0 class='green' onclick='update_secv()' checked><label for='secv0'>None</label>
 </fieldset>
 </td></tr>
-<tr><td><b>Door Thres. (cm): </b></td><td><input type='text' size=3 maxlength=4 id='dth' data-mini='true' value=0></td></tr>
+<tr id='tr_dth'><td><b>Door Thres. (cm): </b></td><td><input type='text' size=3 maxlength=4 id='dth' data-mini='true' value=0></td></tr>
 <tr><td><b>Car Thres. (cm):</b><br><small>set to 0 to disable</small></td><td><input type='text' size=3 maxlength=4 id='vth' data-mini='true' value=0 ></td></tr>
 <tr><td><b>Status Check (s):</b><br><small>check status every</small></td><td><input type='text' size=3 maxlength=3 id='riv' data-mini='true' value=0></td></tr>
 <tr><td><b>Click Time (ms):</b></td><td><input type='text' size=3 maxlength=5 id='cdt' value=0 data-mini='true'></td></tr>
-<tr><td><b>Switch Sensor:</b><br><small>on G04 and GND</small></td><td>
+<tr id='tr_sn2'><td><b>Switch Sensor:</b><br><small>on G04 and GND</small></td><td>
 <select name='sn2' id='sn2' data-mini='true' onChange='update_sno()'>
 <option value=0>(none)</option>
 <option value=1>Normally Closed</option>
 <option value=2>Normally Open</option>
 </select></td></tr>
-<tr><td><b>Sensor Logic:</b><a href='#snoInfo' data-rel='popup' data-role='button' data-inline='true' data-transition='pop' data-icon='info' data-theme='c' data-iconpos='notext'>Explanation</a><div data-role='popup' id='snoInfo' class='ui-content' data-theme='b' style='max-width:250px;'><p>Choose which sensor(s) determine door 'open' status.</p></div></td><td>
+<tr id='tr_sno'><td><b>Sensor Logic:</b></td><td>
 <select name='sno' id='sno' data-mini='true' disabled='true'>
 <option value=0>Dist. sensor only</option>
 <option value=1>Switch sensor only</option>
@@ -96,7 +96,8 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <tr class='email'><td><b>App Password:</b></td><td><input type='text' size=16 maxlength=64 id='apwd' data-mini='true'></td></tr>
 <tr class='email'><td><b>Recipient Email:</b></td><td><input type='text' size=16 maxlength=64 id='recp' data-mini='true'></td></tr>
 <tr height=30px><td colspan=2><b>Choose Notification Events:</b></td></tr>
-<tr><td><input type='checkbox' id='noto0' data-mini='true'><label for='noto0'>Door Open</label></td><td><input type='checkbox' id='noto1' data-mini='true' ><label for='noto1'>Door Close</label></td></tr>
+<tr><td colspan=2><fieldset data-role='controlgroup' data-type='horizontal'><input type='checkbox' id='noto0' data-mini='true'><label for='noto0'>Door Opened</label>
+<input type='checkbox' id='noto1' data-mini='true' ><label for='noto1'>Door Closed</label><input type='checkbox' id='noto2' data-mini='true' ><label for='noto2'>Door Stopped</label></fieldset></td></tr>
 <tr><td><b>IFTTT Key:</b></td><td><input type='text' size=20 maxlength=64 id='iftt' data-mini='true' placeholder='(if using IFTTT notification)'></td></tr>
 </table>
 <table>
@@ -147,7 +148,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 </table>
 <div data-role='controlgroup' data-type='horizontal'>
 <a href='#' data-role='button' data-inline='true' data-theme='a' id='btn_back'>Back</a>
-<a href='#' data-role='button' data-inline='true' data-theme='b' id='btn_submit'>Submit</a> 
+<a href='#' data-role='button' data-inline='true' data-theme='b' id='btn_submit'>Submit</a>
 </div>
 </div>
 <div data-role='footer' data-theme='c'>
@@ -159,8 +160,20 @@ let prev_ct=1;
 function clear_msg() {$('#msg').text('');}
 function update_sno(){
 if(parseInt($('#sn2 option:selected').val())>0){
-$('#sno').selectmenu('enable'); 
+$('#sno').selectmenu('enable');
 }else{$('#sno').selectmenu('disable');}
+}
+function update_secv(){
+if(parseInt($('input[name="secv"]:checked').val())>0){
+$('#tr_dth').hide();
+$('#tr_sn2').hide();
+$('#tr_sno').hide();
+}else{
+$('#tr_dth').show();
+$('#tr_sn2').show();
+$('#tr_sno').show();
+update_sno();
+}
 }
 function update_cld(){
 if(eval_cb('#cld')) $('.cld').show();
@@ -217,7 +230,7 @@ comm='co?dkey='+encodeURIComponent($('#dkey').val());
 bc('sn1');bc('sn2');bc('sno');bc('dth');bc('vth');bc('riv');bc('bas');bc('alm');
 bc('lsz');bc('tsn');bc('htp');bc('cdt');bc('dri');bc('ati');bc('atib');
 comm+='&aoo='+($('#aoo').is(':checked')?1:0);
-comm+='&secv='+$('input[name="secv"]:checked').val();
+if($('#secv').is(':visible')){comm+='&secv='+$('input[name="secv"]:checked').val();}
 comm+='&sto='+eval_cb('#to_cap');
 comm+='&sfi='+eval_cb('#sf_con');
 if(eval_cb('#sf_con')) bc('cmr');
@@ -228,7 +241,7 @@ var atob=0;
 for(var i=1;i>=0;i--) { atob=(atob<<1)+eval_cb('#atob'+i); }
 comm+='&atob='+atob;
 var noto=0;
-for(var i=1;i>=0;i--) { noto=(noto<<1)+eval_cb('#noto'+i); }
+for(var i=2;i>=0;i--) { noto=(noto<<1)+eval_cb('#noto'+i); }
 comm+='&noto='+noto;
 if(eval_cb('#cld')) {comm+='&cld='+(eval_cb('#blynk')?1:2);
 if($('#auth').val().length<32) {show_msg('Cloud token is too short!');return;}}
@@ -264,7 +277,7 @@ setTimeout(goback, 4000);
 }
 });
 $(document).ready(function() {
-$('#secv').hide();
+$('#secv').show();
 $.getJSON('jo', function(jd){
 $('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 $('#alm').val(jd.alm).selectmenu('refresh');
@@ -287,6 +300,7 @@ $('#secv').show();
 if(jd.secv==2) cbt('secv2');
 else if(jd.secv==1) cbt('secv1');
 else cbt('secv0');}
+update_secv();
 if(jd.sto) cbt('to_cap');
 else cbt('to_ignore');
 if(jd.sfi) cbt('sf_con');
@@ -297,7 +311,7 @@ $('#ati').val(jd.ati);
 $('#atib').val(jd.atib);
 for(var i=0;i<=1;i++) {if(jd.ato&(1<<i)) cbt('ato'+i);}
 for(var i=0;i<=1;i++) {if(jd.atob&(1<<i)) cbt('atob'+i);}
-for(var i=0;i<=1;i++) {if(jd.noto&(1<<i)) cbt('noto'+i);}
+for(var i=0;i<=2;i++) {if(jd.noto&(1<<i)) cbt('noto'+i);}
 $('#name').val(jd.name);
 if(jd.cld>0) cbt('cld');
 if(jd.cld==1) {cbt('blynk');cbt('otc',false);prev_ct=1;}

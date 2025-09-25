@@ -62,8 +62,12 @@
 #define DEFAULT_SMTP_SERVER "smtp.gmail.com"
 #define DEFAULT_SMTP_PORT   465
 
-#define OG_SN1_CEILING  0x00 // SN1 is built-in ultrasonic sensor
-#define OG_SN1_SIDE     0x01
+#define STRING_RESERVE_SIZE 400
+
+enum { // SN1 is built-in ultrasonic sensor
+	OG_SN1_CEILING = 0,
+	OG_SN1_SIDE,
+};
 
 enum { // SN2 is optional switch sensor
 	OG_SN2_NONE = 0,
@@ -98,14 +102,16 @@ enum { // sound alarm setting
 
 enum { // temperature/humidity sensor
 	OG_TSN_NONE = 0,
-	OG_TSN_AM2320_RETIRED, // AM2320 is no longer supported
+	OG_TSN_AM2320_RETIRED, // AM2320 is no longer supported due to pin 5 used for swrx
 	OG_TSN_DHT11,
 	OG_TSN_DHT22,
 	OG_TSN_DS18B20,
 };
 
-#define OG_MOD_AP       0xA9
-#define OG_MOD_STA      0x2A
+enum {
+	OG_MOD_AP = 0xA9,
+	OG_MOD_STA = 0x2A,
+};
 
 enum { // automation actions
 	OG_AUTO_NONE   = 0,
@@ -117,20 +123,23 @@ enum { // automation notification options
 	OG_NOTIFY_NONE = 0x00,
 	OG_NOTIFY_DO   = 0x01, // door open
 	OG_NOTIFY_DC   = 0x02, // door close
-	OG_NOTIFY_VL   = 0x04,
-	OG_NOTIFY_VA   = 0x08,
+	OG_NOTIFY_DS   = 0x04, // door stop
+	OG_NOTIFY_VL   = 0x08,
+	OG_NOTIFY_VA   = 0x10,
 };
 
-#define OG_STATE_INITIAL        0
-#define OG_STATE_CONNECTING     1
-#define OG_STATE_CONNECTED      2
-#define OG_STATE_TRY_CONNECT    3
-#define OG_STATE_WAIT_RESTART   4
-#define OG_STATE_RESET          9
+enum {
+	OG_STATE_INITIAL = 0,
+	OG_STATE_CONNECTING,
+	OG_STATE_CONNECTED,
+	OG_STATE_TRY_CONNECT,
+	OG_STATE_WAIT_RESTART,
+	OG_STATE_RESET = 9,
+};
 
 #define OG_LIGHT_BLINK_FOREVER  0
 #define OG_LIGHT_BLINK_MAX      99	// limited by rcnt to 99
-#define OG_LIGHT_BLINK_TIME     25
+#define OG_LIGHT_BLINK_TIME     1
 #define OG_LIGHT_BLINK_NOTIFY   2000 // specifies how long the last blink should last before blinking turns off
 
 enum { // cloud settings
@@ -155,21 +164,26 @@ enum { // cloud settings
 enum { // door status
 	DOOR_STATUS_CLOSED = 0,
 	DOOR_STATUS_OPEN,
-	DOOR_STATUS_UNKNOWN,
 	DOOR_STATUS_STOPPED,
 	DOOR_STATUS_CLOSING,
 	DOOR_STATUS_OPENING,
+	DOOR_STATUS_UNKNOWN,
 };
 
-// door status histogram
-// number of values (maximum is 8)
+// door status event
 #define DOOR_STATUS_HIST_K        4
 enum {
-	DOOR_STATUS_REMAIN_CLOSED = 0,
-	DOOR_STATUS_REMAIN_OPEN,
-	DOOR_STATUS_JUST_OPENED,
-	DOOR_STATUS_JUST_CLOSED,
-	DOOR_STATUS_MIXED,
+	DOOR_EVENT_REMAIN_CLOSED = 0,
+	DOOR_EVENT_REMAIN_OPEN,
+	DOOR_EVENT_JUST_OPENED,
+	DOOR_EVENT_JUST_CLOSED,
+	DOOR_EVENT_NONE,
+	DOOR_EVENT_REMAIN_STOPPED,
+	DOOR_EVENT_JUST_STOPPED,
+	DOOR_EVENT_STILL_OPENING,
+	DOOR_EVENT_START_OPENING,
+	DOOR_EVENT_STILL_CLOSING,
+	DOOR_EVENT_START_CLOSING,
 };
 
 typedef enum {
@@ -244,8 +258,6 @@ typedef enum {
 #define TMP_BUFFER_SIZE 100
 
 /** Serial debug functions */
-#define SERIAL_DEBUG
-
 #if defined(SERIAL_DEBUG)
 	#define DEBUG_PRINT(x)   Serial.print(x)
 	#define DEBUG_PRINTLN(x) Serial.println(x)
