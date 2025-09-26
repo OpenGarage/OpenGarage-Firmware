@@ -194,7 +194,7 @@ function show() {
 		else if(jd.cld==1) {$('#lbl_cld').text('Blynk '+['(disconnected)','(connected)'][jd.clds]);}
 		else {$('#lbl_cld').text('OTC '+['(not enabled)','(connecting...)','(disconnected)','(connected)'][jd.clds]);}
 		$('#head_name').text(jd.name);
-		$('#btn_click').html(jd.door?'Close Door':'Open Door').button('refresh');
+		$('#btn_click').html(jd.door>=2?'Click':(jd.door?'Close Door':'Open Door')).button('refresh');
 		if(typeof(jd.temp)!='undefined') {$('#tbl_th').show(); $('#lbl_th').text(jd.temp.toFixed(1)+String.fromCharCode(176)+'C / '+(jd.temp*1.8+32).toFixed(1)+String.fromCharCode(176)+'F (H:'+jd.humid.toFixed(1)+'%)');}
 		else {$('#tbl_th').hide();}
 		if(typeof(jd.obstruct)!='undefined') {$('#tbl_obstruct').show(); $('#lbl_obstruct').text(jd.obstruct?'no':'YES');} else {$('#tbl_obstruct').hide();}

@@ -25,7 +25,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <fieldset data-role='controlgroup' data-mini='true' data-type='horizontal'>
 <input type='radio' name='secv' id='secv2' value=2 class='yellow' onclick='update_secv()'><label for='secv2'>2.0</label>
 <input type='radio' name='secv' id='secv1' value=1 class='purple' onclick='update_secv()'><label for='secv1'>1.0</label>
-<input type='radio' name='secv' id='secv0' value=0 class='green' onclick='update_secv()' checked><label for='secv0'>None</label>
+<input type='radio' name='secv' id='secv0' value=0 class='green' checked onclick='update_secv()'><label for='secv0'>None</label>
 </fieldset>
 </td></tr>
 <tr id='tr_dth'><td><b>Door Thres. (cm): </b></td><td><input type='text' size=3 maxlength=4 id='dth' data-mini='true' value=0></td></tr>
@@ -277,7 +277,7 @@ setTimeout(goback, 4000);
 }
 });
 $(document).ready(function() {
-$('#secv').show();
+$('#secv').hide();
 $.getJSON('jo', function(jd){
 $('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 $('#alm').val(jd.alm).selectmenu('refresh');
@@ -297,9 +297,11 @@ $('#cdt').val(jd.cdt);
 $('#dri').val(jd.dri);
 if(jd.has_swrx){
 $('#secv').show();
-if(jd.secv==2) cbt('secv2');
-else if(jd.secv==1) cbt('secv1');
-else cbt('secv0');}
+$('input[name="secv"]').prop('checked', false);
+$('label[for="secv0"],label[for="secv1"],label[for="secv2"]').removeClass('ui-btn-active');
+$('#secv' + (jd.secv || 0)).prop('checked', true);
+$('input[name="secv"]').checkboxradio('refresh');
+}
 update_secv();
 if(jd.sto) cbt('to_cap');
 else cbt('to_ignore');

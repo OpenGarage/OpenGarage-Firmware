@@ -1409,13 +1409,21 @@ void check_status() {
 			// for side-mount, we can't decide vehicle status
 			vehicle_status = OG_VEH_NOTAVAIL;
 		} else {
-		  if (vth>0) {
-				if(!sn1_status) {
-					// if vehicle distance threshold is defined and door is closed (i.e. not blocking view of vehicle)
-					// vehicle status can be determined by checking if distance is within bracket [dth, vth]
+			vehicle_status = OG_VEH_NOTAVAIL;
+		  if (vth>0) { // if vehicle distance threshold is defined
+				if(og.options[OPTION_SECV].ival>0 || og.options[OPTION_SNO].ival==OG_SNO_2ONLY) {
+					// if door status is not determined using distance sensor (either using security+ or using SN2 only)
+					// vehicle status can be deduced by checking if distance is less than vth
+					vehicle_status = (distance <=vth) ? OG_VEH_PRESENT:OG_VEH_ABSENT;
+				} else if (!sn1_status) {
+					// if door is currently closed, vehicle status can be deduced by checking if distance is within bracket [dth, vth]
 					vehicle_status = ((distance>dth) && (distance <=vth)) ? OG_VEH_PRESENT:OG_VEH_ABSENT;
-				} else { vehicle_status = OG_VEH_UNKNOWN; }	// door is open, blocking view of vehicle
-			} else {vehicle_status = OG_VEH_NOTAVAIL;} // vth undefined
+				} else {
+					// otherwise, door status is determined by distance sensor and door is open, blocking its view
+					// so we can't deduce vehicle status
+					vehicle_status = OG_VEH_UNKNOWN;
+				}
+			}
 		}
 
 		// Read SN2 -- optional switch sensor
