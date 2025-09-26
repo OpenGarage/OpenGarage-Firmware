@@ -502,10 +502,10 @@ const char sta_home_html[] PROGMEM = R"OG(<head><title>OpenGarage</title><meta n
 <tr><td><b>WiFi Signal:</b></td><td colspan='2'><label id='lbl_rssi'>-</label></td></tr>
 <tr><td><b>Cloud:</b></td><td colspan='2'><label id='lbl_cld'>-</label></td></tr>
 <tr id='tbl_th'><td><b>T/H sensor:</b></td><td colspan='2'><label id='lbl_th'>-</label></td></tr>
-<tr><td><b>Device Key:</b></td><td colspan='2' ><input type='password' size=20 maxlength=64 name='dkey' id='dkey'></td></tr>
+<tr><td><b>Device Key:</b></td><td colspan='2' ><input type='password' size=20 maxlength=64 name='dkey' id='dkey' data-clear-btn='true'></td></tr>
 <tr><td colspan=3><label id='msg'></label></td></tr>
 </table>
-<div class="lightlock-ctrl" style='display:none'>
+<div class="lightlock-ctrl">
 <label for="lightflip" class="ui-hidden-accessible"></label>
 <select name="lightflip" id="lightflip" data-theme="e" data-role="slider">
 <option value=0>Light Off</option>
@@ -539,11 +539,12 @@ const char sta_home_html[] PROGMEM = R"OG(<head><title>OpenGarage</title><meta n
 var si;
 function clear_msg() {$('#msg').text('');}
 function show_msg(s,t,c) { $('#msg').text(s).css('color',c); if(t>0) setTimeout(clear_msg, t); }
+function get_and_save_dkey() {var dkey_val = $('#dkey').val(); localStorage.setItem('og_dkey', dkey_val);	return dkey_val;}
 $('#btn_opts').click(function(e){window.open('vo', '_top');});
 $('#btn_log').click(function(e){window.open('vl', '_top');});
 $('#btn_cll').click(function(e){
 if(confirm('Clear log data?')){
-var comm = 'clearlog?dkey='+encodeURIComponent($('#dkey').val());
+var comm = 'clearlog?dkey='+encodeURIComponent(get_and_save_dkey());
 clear_msg();
 $.getJSON(comm, function(jd) {
 if(jd.result!=1) show_msg('Check device key and try again.',2000,'red');
@@ -553,7 +554,7 @@ else { show_msg('Log data cleared',2000,'green'); }
 });
 $('#btn_rbt').click(function(e){
 if(confirm('Reboot the device now?')){
-var comm = 'cc?reboot=1&dkey='+encodeURIComponent($('#dkey').val());
+var comm = 'cc?reboot=1&dkey='+encodeURIComponent(get_and_save_dkey());
 clear_msg();
 $.getJSON(comm, function(jd) {
 if(jd.result!=1) show_msg('Check device key and try again.',2000,'red');
@@ -567,7 +568,7 @@ setTimeout(function(){location.reload(true);}, 10000);
 });
 $('#btn_rap').click(function(e){
 if(confirm('Reset the device to AP mode?')){
-var comm = 'cc?apmode=1&dkey='+encodeURIComponent($('#dkey').val());
+var comm = 'cc?apmode=1&dkey='+encodeURIComponent(get_and_save_dkey());
 clear_msg();
 $.getJSON(comm, function(jd) {
 if(jd.result!=1) show_msg('Check device key and try again.',2000,'red');
@@ -579,7 +580,7 @@ $('#msg').html('Device is now in AP mode. Log on<br>to SSID OG_xxxxxx, then <br>
 }
 });
 function do_action_command(comm) {
-var comm = 'cc?'+comm+'&dkey='+encodeURIComponent($('#dkey').val());
+var comm = 'cc?'+comm+'&dkey='+encodeURIComponent(get_and_save_dkey());
 $.getJSON(comm)
 .done(function( jd ) {
 if(jd.result!=1) {
@@ -591,6 +592,9 @@ var err = error;
 $('#msg').text('Request Failed: ' + err).css('color','red');
 });
 }
+$('#dkey').on('input change', function() {
+if ($(this).val() === '') {localStorage.removeItem('og_dkey');show_msg('Cleared saved key.',1500,'green');}
+});
 $('#lightflip').on('change', function(e) {
 do_action_command('light=toggle');
 });
@@ -600,7 +604,11 @@ do_action_command('lock=toggle');
 $('#btn_click').click(function(e) {
 do_action_command('click=1');
 });
-$(document).ready(function() { show(); si=setInterval('show()', 3000); });
+$(document).ready(function() {
+var savedKey = localStorage.getItem('og_dkey');
+if (savedKey) { $('#dkey').val(savedKey);	}
+show(); si=setInterval('show()', 3000);
+});
 function show() {
 $.ajax({
 url:'jc',
@@ -933,7 +941,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 </div>
 <br />
 <table cellpadding=2>
-<tr><td><b>Device Key:</b></td><td><input type='password' size=24 maxlength=64 id='dkey' data-mini='true'></td></tr>
+<tr><td><b>Device Key:</b></td><td><input type='password' size=24 maxlength=64 id='dkey' data-mini='true' data-clear-btn='true'></td></tr>
 <tr><td colspan=2><p id='msg'></p></td></tr>
 </table>
 <div data-role='controlgroup' data-type='horizontal'>
@@ -948,6 +956,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <script>
 let prev_ct=1;
 function clear_msg() {$('#msg').text('');}
+function get_and_save_dkey() {var dkey_val = $('#dkey').val(); localStorage.setItem('og_dkey', dkey_val);	return dkey_val;}
 function update_sno(){
 if(parseInt($('#sn2 option:selected').val())>0){
 $('#sno').selectmenu('enable');
@@ -985,7 +994,7 @@ function update_sfi(){
 if(eval_cb('#sf_con')) $('#tbl_cmr').show();
 else $('#tbl_cmr').hide();
 }
-function show_msg(s) {$('#msg').text(s).css('color','red'); setTimeout(clear_msg, 2000);}
+function show_msg(s,c='red') {$('#msg').text(s).css('color',c); setTimeout(clear_msg, 2000);}
 function goback() {history.back();}
 function eval_cb(n)  {return $(n).is(':checked')?1:0;}
 function update_ckey(){
@@ -1016,7 +1025,7 @@ function cbt(n,v=true) {$('#'+n).attr('checked',v).checkboxradio('refresh');}
 $('#btn_submit').click(function(e){
 e.preventDefault();
 if(confirm('Submit changes?')) {
-comm='co?dkey='+encodeURIComponent($('#dkey').val());
+comm='co?dkey='+encodeURIComponent(get_and_save_dkey());
 bc('sn1');bc('sn2');bc('sno');bc('dth');bc('vth');bc('riv');bc('bas');bc('alm');
 bc('lsz');bc('tsn');bc('htp');bc('cdt');bc('dri');bc('ati');bc('atib');
 comm+='&aoo='+($('#aoo').is(':checked')?1:0);
@@ -1066,7 +1075,12 @@ setTimeout(goback, 4000);
 });
 }
 });
+$('#dkey').on('input change', function() {
+if ($(this).val() === '') {localStorage.removeItem('og_dkey');show_msg('Cleared saved key.','green');}
+});
 $(document).ready(function() {
+var savedKey = localStorage.getItem('og_dkey');
+if (savedKey) {$('#dkey').val(savedKey);}
 $('#secv').hide();
 $.getJSON('jo', function(jd){
 $('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));

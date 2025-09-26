@@ -15,7 +15,7 @@
 <tr><td><b>WiFi Signal:</b></td><td colspan='2'><label id='lbl_rssi'>-</label></td></tr>
 <tr><td><b>Cloud:</b></td><td colspan='2'><label id='lbl_cld'>-</label></td></tr>
 <tr id='tbl_th'><td><b>T/H sensor:</b></td><td colspan='2'><label id='lbl_th'>-</label></td></tr>
-<tr><td><b>Device Key:</b></td><td colspan='2' ><input type='password' size=20 maxlength=64 name='dkey' id='dkey'></td></tr>
+<tr><td><b>Device Key:</b></td><td colspan='2' ><input type='password' size=20 maxlength=64 name='dkey' id='dkey' data-clear-btn='true'></td></tr>
 <tr><td colspan=3><label id='msg'></label></td></tr>
 </table>
 <div class="lightlock-ctrl" style='display:none'>
@@ -52,11 +52,12 @@
 var si;
 function clear_msg() {$('#msg').text('');}
 function show_msg(s,t,c) { $('#msg').text(s).css('color',c); if(t>0) setTimeout(clear_msg, t); }
+function get_and_save_dkey() {var dkey_val = $('#dkey').val(); localStorage.setItem('og_dkey', dkey_val);	return dkey_val;}
 $('#btn_opts').click(function(e){window.open('vo', '_top');});
 $('#btn_log').click(function(e){window.open('vl', '_top');});
 $('#btn_cll').click(function(e){
 	if(confirm('Clear log data?')){
-		var comm = 'clearlog?dkey='+encodeURIComponent($('#dkey').val());
+		var comm = 'clearlog?dkey='+encodeURIComponent(get_and_save_dkey());
 		clear_msg();
 		$.getJSON(comm, function(jd) {
 			if(jd.result!=1) show_msg('Check device key and try again.',2000,'red');
@@ -66,7 +67,7 @@ $('#btn_cll').click(function(e){
 });
 $('#btn_rbt').click(function(e){
 	if(confirm('Reboot the device now?')){
-		var comm = 'cc?reboot=1&dkey='+encodeURIComponent($('#dkey').val());
+		var comm = 'cc?reboot=1&dkey='+encodeURIComponent(get_and_save_dkey());
 		clear_msg();
 		$.getJSON(comm, function(jd) {
 			if(jd.result!=1) show_msg('Check device key and try again.',2000,'red');
@@ -80,7 +81,7 @@ $('#btn_rbt').click(function(e){
 });
 $('#btn_rap').click(function(e){
 	if(confirm('Reset the device to AP mode?')){
-		var comm = 'cc?apmode=1&dkey='+encodeURIComponent($('#dkey').val());
+		var comm = 'cc?apmode=1&dkey='+encodeURIComponent(get_and_save_dkey());
 		clear_msg();
 		$.getJSON(comm, function(jd) {
 			if(jd.result!=1) show_msg('Check device key and try again.',2000,'red');
@@ -92,7 +93,7 @@ $('#btn_rap').click(function(e){
 	}
 });
 function do_action_command(comm) {
-	var comm = 'cc?'+comm+'&dkey='+encodeURIComponent($('#dkey').val());
+	var comm = 'cc?'+comm+'&dkey='+encodeURIComponent(get_and_save_dkey());
 	$.getJSON(comm)
 	.done(function( jd ) {
 		if(jd.result!=1) {
@@ -104,6 +105,9 @@ function do_action_command(comm) {
 		$('#msg').text('Request Failed: ' + err).css('color','red');
 	});
 }
+$('#dkey').on('input change', function() {
+if ($(this).val() === '') {localStorage.removeItem('og_dkey');show_msg('Cleared saved key.',1500,'green');}
+});
 $('#lightflip').on('change', function(e) {
 	do_action_command('light=toggle');
 });
@@ -113,7 +117,11 @@ $('#lockflip').on('change', function(e) {
 $('#btn_click').click(function(e) {
 	do_action_command('click=1');
 });
-$(document).ready(function() { show(); si=setInterval('show()', 3000); });
+$(document).ready(function() {
+var savedKey = localStorage.getItem('og_dkey');
+if (savedKey) { $('#dkey').val(savedKey);	}
+show(); si=setInterval('show()', 3000);
+});
 function show() {
 	$.ajax({
 	url:'jc',

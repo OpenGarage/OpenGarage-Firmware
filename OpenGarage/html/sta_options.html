@@ -143,7 +143,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 </div>
 <br />
 <table cellpadding=2>
-<tr><td><b>Device Key:</b></td><td><input type='password' size=24 maxlength=64 id='dkey' data-mini='true'></td></tr>
+<tr><td><b>Device Key:</b></td><td><input type='password' size=24 maxlength=64 id='dkey' data-mini='true' data-clear-btn='true'></td></tr>
 <tr><td colspan=2><p id='msg'></p></td></tr>
 </table>
 <div data-role='controlgroup' data-type='horizontal'>
@@ -158,6 +158,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <script>
 let prev_ct=1;
 function clear_msg() {$('#msg').text('');}
+function get_and_save_dkey() {var dkey_val = $('#dkey').val(); localStorage.setItem('og_dkey', dkey_val);	return dkey_val;}
 function update_sno(){
 if(parseInt($('#sn2 option:selected').val())>0){
 $('#sno').selectmenu('enable');
@@ -195,7 +196,7 @@ function update_sfi(){
 if(eval_cb('#sf_con')) $('#tbl_cmr').show();
 else $('#tbl_cmr').hide();
 }
-function show_msg(s) {$('#msg').text(s).css('color','red'); setTimeout(clear_msg, 2000);}
+function show_msg(s,c='red') {$('#msg').text(s).css('color',c); setTimeout(clear_msg, 2000);}
 function goback() {history.back();}
 function eval_cb(n)  {return $(n).is(':checked')?1:0;}
 function update_ckey(){
@@ -226,7 +227,7 @@ function cbt(n,v=true) {$('#'+n).attr('checked',v).checkboxradio('refresh');}
 $('#btn_submit').click(function(e){
 e.preventDefault();
 if(confirm('Submit changes?')) {
-comm='co?dkey='+encodeURIComponent($('#dkey').val());
+comm='co?dkey='+encodeURIComponent(get_and_save_dkey());
 bc('sn1');bc('sn2');bc('sno');bc('dth');bc('vth');bc('riv');bc('bas');bc('alm');
 bc('lsz');bc('tsn');bc('htp');bc('cdt');bc('dri');bc('ati');bc('atib');
 comm+='&aoo='+($('#aoo').is(':checked')?1:0);
@@ -276,7 +277,12 @@ setTimeout(goback, 4000);
 });
 }
 });
+$('#dkey').on('input change', function() {
+if ($(this).val() === '') {localStorage.removeItem('og_dkey');show_msg('Cleared saved key.','green');}
+});
 $(document).ready(function() {
+var savedKey = localStorage.getItem('og_dkey');
+if (savedKey) {$('#dkey').val(savedKey);}
 $('#secv').hide();
 $.getJSON('jo', function(jd){
 $('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
