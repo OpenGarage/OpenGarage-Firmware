@@ -98,6 +98,20 @@ void otf_send_html_P(OTF::Response &res, const __FlashStringHelper *content) {
 	DEBUG_PRINTLN(F(" bytes sent."));
 }
 
+void otf_send_compressed_P(OTF::Response& res, const __FlashStringHelper* content, size_t len) {
+	res.writeStatus(200, F("OK"));
+	res.writeHeader(F("Content-Type"), F("text/html; charset=utf-8"));
+	res.writeHeader(F("Access-Control-Allow-Origin"), F("*")); // from esp8266 2.4 this has to be sent explicitly
+	res.writeHeader(F("Content-Length"), len);
+	res.writeHeader(F("Vary"), F("Accept-Encoding"));
+	res.writeHeader(F("Content-Encoding"), F("gzip"));
+	res.writeHeader(F("Cache-Control"), F("public, max-age=86400"));
+	res.writeHeader(F("Connection"), F("close"));
+	res.writeBodyData(content, len);
+	DEBUG_PRINT(len);
+	DEBUG_PRINTLN(F(" bytes sent."));
+}
+
 void otf_send_json(OTF::Response &res, String json) {
 	res.writeStatus(200, F("OK"));
 	res.writeHeader(F("Content-Type"), F("application/json"));
@@ -183,21 +197,20 @@ void restart_in(uint32_t ms) {
 	}
 }
 
-void on_home(const OTF::Request &req, OTF::Response &res)
-{
+void on_home(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_AP) {
-		otf_send_html_P(res, (const __FlashStringHelper *) ap_home_html);
+		otf_send_compressed_P(res, (const __FlashStringHelper*)ap_home_html_gz, ap_home_html_gz_len);
 	} else {
-		otf_send_html_P(res, (const __FlashStringHelper *) sta_home_html);
+	otf_send_compressed_P(res, (const __FlashStringHelper*)sta_home_html_gz, sta_home_html_gz_len);
 	}
 }
 
 void on_sta_view_options(const OTF::Request &req, OTF::Response &res) {
-	otf_send_html_P(res, (const __FlashStringHelper *) sta_options_html);
+	otf_send_compressed_P(res, (const __FlashStringHelper*)sta_options_html_gz, sta_options_html_gz_len);
 }
 
 void on_sta_view_logs(const OTF::Request &req, OTF::Response &res) {
-	otf_send_html_P(res, (const __FlashStringHelper *) sta_logs_html);
+	otf_send_compressed_P(res, (const __FlashStringHelper*)sta_logs_html_gz, sta_logs_html_gz_len);
 }
 
 char dec2hexchar(byte dec) {
@@ -1048,11 +1061,11 @@ void process_ui() {
 
 void on_sta_update(const OTF::Request &req, OTF::Response &res) {
 	if(req.isCloudRequest()) otf_send_result(res, HTML_NOT_PERMITTED, "fw update");
-	else otf_send_html_P(res, (const __FlashStringHelper *) sta_update_html);
+	otf_send_compressed_P(res, (const __FlashStringHelper*)sta_update_html_gz, sta_update_html_gz_len);
 }
 
 void on_ap_update(const OTF::Request &req, OTF::Response &res) {
-	otf_send_html_P(res, (const __FlashStringHelper *) ap_update_html);
+	otf_send_compressed_P(res, (const __FlashStringHelper*)ap_update_html_gz, ap_update_html_gz_len);
 }
 
 void on_sta_upload_fin() {
@@ -1755,7 +1768,7 @@ void do_loop() {
 			og.state = OG_STATE_CONNECTED;
 			connecting_timeout = 0;
 		} else {
-			if(millis() > connecting_timeout) {
+			if(connecting_timeout && millis() > connecting_timeout) {
 				DEBUG_PRINTLN(F("Wifi Connecting timeout, restart"));
 				og.restart();
 			}
