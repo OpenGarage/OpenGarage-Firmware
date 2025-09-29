@@ -23,7 +23,6 @@
  #if defined(SERIAL_DEBUG)
 	#define BLYNK_DEBUG
 	#define BLYNK_PRINT Serial
-	#define GARAGELIB_DEBUG
 #endif
 
 #include <BlynkSimpleEsp8266.h>
@@ -430,6 +429,27 @@ void on_clear_log(const OTF::Request &req, OTF::Response &res) {
 	}
 	og.log_reset();
 	otf_send_result(res, HTML_SUCCESS, nullptr);
+}
+
+int run_auto_detect() {
+	// Try Sec+ 2.0 first
+	if (secplus2_garage.detect()) {
+		return 2;
+	}
+	// If that fails, try Sec+ 1.0
+	if (secplus1_garage.detect()) {
+		return 1;
+	}
+	return 0; // Detected nothing
+}
+
+void on_auto_detect(const OTF::Request &req, OTF::Response &res) {
+	int detected_version = run_auto_detect();
+	// TODO
+	//og.options[OPTION_SECV].ival = detected_version;
+	//og.options_save();
+	String json = "{\"version\": " + String(detected_version) + "}";
+	otf_send_json(res, json);
 }
 
 void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
@@ -962,6 +982,10 @@ void secplus2_state_callback(SecPlus2::state_struct_t state) {
 
 void do_setup() {
 	Serial.begin(115200);
+#if defined(SERIAL_DEBUG)
+	delay(2000);
+	DEBUG_PRINTLN("started.");
+#endif
 	if(otf) {
 		delete otf;
 		otf = NULL;
@@ -976,9 +1000,18 @@ void do_setup() {
 	og.init_sensors();
 	if(og.get_mode() == OG_MOD_AP) og.play_startup_tune();
 	curr_mode = og.get_mode();
-	// register secplus callback functions
-	secplus1_garage.enable_callback(secplus1_state_callback);
-	secplus2_garage.enable_callback(secplus2_state_callback);
+
+	// initialize secplus objects and enable callbacks
+	switch(og.options[OPTION_SECV].ival) {
+		case 2:
+			secplus2_garage.begin();
+			secplus2_garage.enable_callback(secplus2_state_callback);
+			break;
+		case 1:
+			secplus1_garage.begin();
+			secplus1_garage.enable_callback(secplus1_state_callback);
+			break;
+	}
 
 	if(!otf) {
 		const String otfDeviceKey = og.options[OPTION_AUTH].sval;
@@ -1679,6 +1712,7 @@ void do_loop() {
 			otf->on("/cc", on_ap_change_config);
 			otf->on("/jt", on_ap_try_connect);
 			otf->on("/db", on_ap_debug);
+			otf->on("/ad", on_auto_detect);
 			// FIXME get update ap updates working.
 			otf->on("/update", on_ap_update, OTF::HTTP_GET);
 			updateServer->on("/update", HTTP_POST, on_ap_upload_fin, on_ap_upload);
@@ -1729,6 +1763,7 @@ void do_loop() {
 			otf->on("/jc", on_sta_controller);
 			otf->on("/jo", on_sta_options);
 			otf->on("/jl", on_sta_logs);
+			otf->on("/ad", on_auto_detect);
 			otf->on("/vo", on_sta_view_options);
 			otf->on("/vl", on_sta_view_logs);
 			otf->on("/cc", on_sta_change_controller);

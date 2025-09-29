@@ -72,7 +72,7 @@
             box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent);
             outline: none;
         }
-        
+
         /* --- Buttons --- */
         button {
             width: 100%;
@@ -86,7 +86,7 @@
             cursor: pointer;
             transition: background-color 0.2s;
         }
-        
+
         button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
@@ -100,7 +100,7 @@
             border-radius: 8px;
             margin-bottom: 25px;
         }
-        
+
         /* --- WiFi Network List Table --- */
         #rd {
             width: 100%;
@@ -113,7 +113,7 @@
             border-bottom: 1px solid var(--border);
             white-space: nowrap; /* Prevents columns from wrapping */
         }
-        
+
         #rd tr:last-child td {
             border-bottom: none; /* remove border from the last row */
         }
@@ -135,7 +135,7 @@
         .radio-group input[type="radio"] {
             margin-right: 10px;
         }
-        
+
         /* --- Security+ Radio Button Styling --- */
         .sec-radio-group {
             display: flex;
@@ -158,7 +158,7 @@
             color: var(--muted);
             transition: all 0.2s ease-in-out;
         }
-        
+
         .sec-radio-group input[type="radio"]:not(:checked) + .sec-radio-label:hover {
             border-color: var(--muted);
         }
@@ -169,7 +169,7 @@
             color: #111;
             border-color: #e6e600;
         }
-        
+
         /* MODIFIED: Reverted to solid purple color */
         .sec-radio-group input[type="radio"]:checked + .sec-purple {
             background-color: #6f42c1;
@@ -187,10 +187,10 @@
             border-left: 3px solid var(--accent);
             margin-top: 10px;
         }
-        
+
         /* --- Message Area --- */
         #msg {
-            text-align: center;
+            text-align: left;
             font-weight: 600;
             margin: 20px 0;
             min-height: 20px;
@@ -235,7 +235,7 @@
             <label for="host">Host Name (Optional)</label>
             <input type='text' id='host' placeholder='e.g., my-garage'>
         </div>
-        
+
         <div id="secv_section" class="form-group" hidden>
             <label>Security+ Version</label>
             <div class="sec-radio-group">
@@ -246,6 +246,7 @@
                 <input type="radio" id="secv0" name="secv" value="0" checked>
                 <label for="secv0" class="sec-radio-label sec-green">None</label>
             </div>
+            <button type="button" id="btn_autodetect">Detect</button>
         </div>
 
         <div class="form-group">
@@ -256,7 +257,7 @@
                 <label><input type='radio' id='otc' name='token' onclick='toggle_cld()'>Use OpenThings Cloud (OTC) Token.</label>
             </div>
         </div>
-        
+
         <div id='tb_cld' hidden>
             <div class="form-group">
                 <label for="auth">Token</label>
@@ -272,7 +273,7 @@
             </div>
         </div>
     </div>
-    
+
     <p id='msg'></p>
     <button type='button' id='butt' onclick='sf()'>Submit</button>
 </main>
@@ -332,6 +333,54 @@ function sf(){
   id('butt').disabled=true;
   dis_config(true);
 }
+id('btn_autodetect').addEventListener('click', function() {
+  if (!confirm('This will auto-detect the Security+ Version, which can take up to 15 seconds. Continue?')) {
+    return;
+  }
+
+  const detectButton = this;
+  const msgElement = id('msg');
+  let dotAnimation;
+
+  // Show a message and disable the button
+  detectButton.disabled = true;
+  show_msg('Detecting', 'gray');
+
+  // Start the animated ellipsis in the message area
+  let dotCount = 0;
+  dotAnimation = setInterval(function() {
+    dotCount = (dotCount + 1) % 4;
+    let dots = ".".repeat(dotCount);
+    msgElement.innerHTML = '<font color=gray>Detecting ' + dots + '</font>';
+  }, 500);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
+
+  fetch('/ad', { signal: controller.signal })
+    .then(response => response.json())
+    .then(data => {
+      const resultText = data.version > 0 ? `Found Security+ v${data.version}.` : 'No supported protocol was found.';
+      show_msg(resultText + ' The version has been selected for you.', 'green');
+
+      // Automatically check the correct radio button
+      document.querySelector('input[name="secv"][value="' + data.version + '"]').checked = true;
+    })
+    .catch(error => {
+      if (error.name === 'AbortError') {
+        show_msg('Detection timed out after 20 seconds.', 'red');
+      } else {
+        show_msg('An error occurred during detection.', 'red');
+      }
+      console.error('Detection error:', error);
+    })
+    .finally(() => {
+      clearTimeout(timeoutId);
+      clearInterval(dotAnimation);
+      detectButton.disabled = false;
+    });
+});
+
 function loadSSIDs(){
     var xhr=new XMLHttpRequest();
   xhr.onreadystatechange=function() {

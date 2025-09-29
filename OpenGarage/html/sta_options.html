@@ -8,6 +8,16 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <div data-role='page' id='page_opts'>
 <div data-role='header'><h3>Edit Options</h3></div>
 <div data-role='content'>
+<div data-role='popup' id='detectPopup' data-overlay-theme='a' data-theme='c' data-dismissible='false' style='max-width:400px;' class='ui-corner-all'>
+<div data-role='header' data-theme='a' class='ui-corner-top'>
+<h1>Auto-Detect</h1>
+</div>
+<div data-role='content' data-theme='d' class='ui-corner-bottom ui-content'>
+<h3 class='ui-title' id='popupStatusText'>Detecting Security+ Version ....</h3>
+<p id='popupMessageText'>This will take up to 15 seconds. Please do not close or refresh the page.</p>
+<a href='#' data-role='button' data-rel='back' data-theme='c' id='popupOkButton' class='ui-btn ui-corner-all ui-shadow ui-btn-up-c' style='display:none;'><span class='ui-btn-inner'><span class='ui-btn-text'>OK</span></span></a>
+</div>
+</div>
 <fieldset data-role='controlgroup' data-type='horizontal'>
 <input type='radio' name='opt_group' id='basic' onclick='toggle_opt()' checked><label for='basic'>Basic</label>
 <input type='radio' name='opt_group' id='cloud' onclick='toggle_opt()'><label for='cloud'>Integration</label>
@@ -26,6 +36,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <input type='radio' name='secv' id='secv2' value=2 class='yellow' onclick='update_secv()'><label for='secv2'>2.0</label>
 <input type='radio' name='secv' id='secv1' value=1 class='purple' onclick='update_secv()'><label for='secv1'>1.0</label>
 <input type='radio' name='secv' id='secv0' value=0 class='green' checked onclick='update_secv()'><label for='secv0'>None</label>
+<a href='#' data-role='button' data-mini='true' data-inline='true' data-theme='a' id='btn_autodetect'>Detect</a>
 </fieldset>
 </td></tr>
 <tr id='tr_dth'><td><b>Door Thres. (cm): </b></td><td><input type='text' size=3 maxlength=4 id='dth' data-mini='true' value=0></td></tr>
@@ -276,6 +287,52 @@ setTimeout(goback, 4000);
 }
 });
 }
+});
+$('#btn_autodetect').click(function(e) {
+e.preventDefault();
+$('#popupStatusText').text('Detecting Security+ Version');
+$('#popupMessageText').text('This will take up to 15 seconds. Please do not close or refresh the page.');
+$('#popupOkButton').hide();
+$('#detectPopup').popup('open');
+let dotCount = 0;
+dotAnimation = setInterval(function() {
+	dotCount = (dotCount + 1) % 5; // Loop from 0 to 4
+	let dots = ".".repeat(dotCount);
+	$('#popupStatusText').text('Detecting Security+ Version ' + dots);
+}, 500); // Add a dot every 500ms
+// Set a client-side timeout for the request
+const controller = new AbortController();
+const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
+
+fetch('/ad', { signal: controller.signal })
+.then(response => response.json())
+.then(data => {
+// Update the modal with the success message
+const resultText = data.version > 0 ? `Found Security+ v${data.version}.` : 'No supported protocol was found.';
+$('#popupStatusText').text('Detection Complete!');
+$('#popupMessageText').html(resultText + '<br>This version has been selected for you.');
+
+// Automatically select the correct radio button
+$('input[name="secv"]').prop('checked', false).checkboxradio('refresh');
+$('#secv' + data.version).prop('checked', true).checkboxradio('refresh');
+update_secv();
+})
+.catch(error => {
+// Update the modal with the error message
+if (error.name === 'AbortError') {
+	$('#popupStatusText').text('Error');
+	$('#popupMessageText').text('Detection timed out after 20 seconds.');
+} else {
+	$('#popupStatusText').text('Error');
+	$('#popupMessageText').text('An error occurred during detection.');
+}
+console.error('Detection error:', error);
+})
+.finally(() => {
+clearTimeout(timeoutId);
+clearInterval(dotAnimation);
+$('#popupOkButton').show();
+});
 });
 $('#dkey').on('input change', function() {
 if ($(this).val() === '') {localStorage.removeItem('og_dkey');show_msg('Cleared saved key.','green');}
