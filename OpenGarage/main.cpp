@@ -1144,6 +1144,14 @@ void on_sta_upload_fin() {
 
 void on_ap_upload_fin() { on_sta_upload_fin(); }
 
+void on_update_options() {
+	updateServer->sendHeader("Access-Control-Allow-Origin", "*");
+	updateServer->sendHeader("Access-Control-Max-Age", "10000");
+	updateServer->sendHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");
+	updateServer->sendHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+	updateServer->send(200, "text/plain", "");
+}
+
 void on_sta_upload() {
 	HTTPUpload& upload = updateServer->upload();
 	if(upload.status == UPLOAD_FILE_START){
@@ -1735,6 +1743,7 @@ void do_loop() {
 			// FIXME get update ap updates working.
 			otf->on("/update", on_ap_update, OTF::HTTP_GET);
 			updateServer->on("/update", HTTP_POST, on_ap_upload_fin, on_ap_upload);
+			updateServer->on("/update", HTTP_OPTIONS, on_update_options);
 			otf->on("/resetall",on_reset_all);
 			otf->onMissingPage(on_home);
 			updateServer->begin();
@@ -1791,6 +1800,7 @@ void do_loop() {
 			// FIXME get sta updates working.
 			otf->on("/update", on_sta_update, OTF::HTTP_GET);
 			updateServer->on("/update", HTTP_POST, on_sta_upload_fin, on_sta_upload);
+			updateServer->on("/update", HTTP_OPTIONS, on_update_options);
 			otf->on("/clearlog", on_clear_log);
 			otf->on("/resetall",on_reset_all);
 			updateServer->begin();
