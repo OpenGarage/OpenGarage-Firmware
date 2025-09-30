@@ -431,6 +431,43 @@ void on_clear_log(const OTF::Request &req, OTF::Response &res) {
 	otf_send_result(res, HTML_SUCCESS, nullptr);
 }
 
+void secplus_update_door(SecPlusCommon::DoorStatus door_state) {
+	switch (door_state) {
+		case SecPlusCommon::DoorStatus::OPEN:
+			secplus_door_status = DOOR_STATUS_OPEN;
+			break;
+		case SecPlusCommon::DoorStatus::CLOSED:
+			secplus_door_status = DOOR_STATUS_CLOSED;
+			break;
+		case SecPlusCommon::DoorStatus::STOPPED:
+			secplus_door_status = DOOR_STATUS_STOPPED;
+			break;
+		case SecPlusCommon::DoorStatus::OPENING:
+			secplus_door_status = DOOR_STATUS_OPENING;
+			break;
+		case SecPlusCommon::DoorStatus::CLOSING:
+			secplus_door_status = DOOR_STATUS_CLOSING;
+			break;
+		default:
+			secplus_door_status = DOOR_STATUS_UNKNOWN;
+	}
+}
+
+void secplus1_state_callback(SecPlus1::state_struct_t state) {
+	secplus_update_door(state.door_state);
+	light_status = state.light_state;
+	lock_status = state.lock_state;
+	obstruction_status = state.obstruction_state;
+}
+
+void secplus2_state_callback(SecPlus2::state_struct_t state) {
+	secplus_update_door(state.door_state);
+	light_status = state.light_state;
+	lock_status = state.lock_state;
+	obstruction_status = state.obstruction_state;
+	opening_count = state.openings;
+}
+
 int run_auto_detect() {
 	// Try Sec+ 2.0 first
 	if (secplus2_garage.detect()) {
@@ -445,9 +482,6 @@ int run_auto_detect() {
 
 void on_auto_detect(const OTF::Request &req, OTF::Response &res) {
 	int detected_version = run_auto_detect();
-	// TODO
-	//og.options[OPTION_SECV].ival = detected_version;
-	//og.options_save();
 	String json = "{\"version\": " + String(detected_version) + "}";
 	otf_send_json(res, json);
 }
@@ -483,15 +517,15 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 						} else if (click) {
 							secplus2_garage.toggle_door();
 						}
-					} else if (og.options[OPTION_AOO].ival && open) { // If opening and "no alarm on open"
-						secplus2_garage.open_door();
 					} else {
 						if (open) {
-							og.set_alarm(0, 2);
+							if(og.options[OPTION_AOO].ival) secplus2_garage.open_door(); // if "no alarm on open" selected
+							else og.set_alarm(0, 2);
 						} else if (close) {
 							og.set_alarm(0, 1);
 						} else if (click) {
-							og.set_alarm(0, 0);
+							if(og.options[OPTION_AOO].ival && (door_status == DOOR_STATUS_CLOSED)) secplus2_garage.open_door(); // if "no alarm on open" selected
+							else og.set_alarm(0, 0);
 						}
 					}
 				}
@@ -684,6 +718,7 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 	}
 
 	// SECOND ROUND: change option values
+	uint old_secv = og.options[OPTION_SECV].ival;
 	o = og.options;
 	for(i=0;i<NUM_OPTIONS;i++,o++) {
 		const char *key = o->name.c_str();
@@ -719,6 +754,25 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 	}
 
 	og.options_save();
+
+	uint new_secv = og.options[OPTION_SECV].ival;
+	if(old_secv != new_secv) { // sec+ version changed
+		switch(new_secv) {
+			case 2:
+				secplus2_garage.begin();
+				secplus2_garage.reset_state();
+				secplus_door_status = DOOR_STATUS_UNKNOWN;
+				secplus2_garage.enable_callback(secplus2_state_callback);
+				break;
+			case 1:
+				secplus1_garage.begin();
+				secplus1_garage.reset_state();
+				secplus_door_status = DOOR_STATUS_UNKNOWN;
+				secplus1_garage.enable_callback(secplus1_state_callback);
+				break;
+		}
+	}
+
 	otf_send_result(res, HTML_SUCCESS, nullptr);
 }
 
@@ -943,43 +997,6 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 	}
 }
 
-void secplus_update_door(SecPlusCommon::DoorStatus door_state) {
-	switch (door_state) {
-		case SecPlusCommon::DoorStatus::OPEN:
-			secplus_door_status = DOOR_STATUS_OPEN;
-			break;
-		case SecPlusCommon::DoorStatus::CLOSED:
-			secplus_door_status = DOOR_STATUS_CLOSED;
-			break;
-		case SecPlusCommon::DoorStatus::STOPPED:
-			secplus_door_status = DOOR_STATUS_STOPPED;
-			break;
-		case SecPlusCommon::DoorStatus::OPENING:
-			secplus_door_status = DOOR_STATUS_OPENING;
-			break;
-		case SecPlusCommon::DoorStatus::CLOSING:
-			secplus_door_status = DOOR_STATUS_CLOSING;
-			break;
-		default:
-			secplus_door_status = DOOR_STATUS_UNKNOWN;
-	}
-}
-
-void secplus1_state_callback(SecPlus1::state_struct_t state) {
-	secplus_update_door(state.door_state);
-	light_status = state.light_state;
-	lock_status = state.lock_state;
-	obstruction_status = state.obstruction_state;
-}
-
-void secplus2_state_callback(SecPlus2::state_struct_t state) {
-	secplus_update_door(state.door_state);
-	light_status = state.light_state;
-	lock_status = state.lock_state;
-	obstruction_status = state.obstruction_state;
-	opening_count = state.openings;
-}
-
 void do_setup() {
 	Serial.begin(115200);
 #if defined(SERIAL_DEBUG)
@@ -1005,10 +1022,12 @@ void do_setup() {
 	switch(og.options[OPTION_SECV].ival) {
 		case 2:
 			secplus2_garage.begin();
+			secplus2_garage.reset_state();
 			secplus2_garage.enable_callback(secplus2_state_callback);
 			break;
 		case 1:
 			secplus1_garage.begin();
+			secplus1_garage.reset_state();
 			secplus1_garage.enable_callback(secplus1_state_callback);
 			break;
 	}
