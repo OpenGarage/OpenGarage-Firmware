@@ -161,7 +161,8 @@ enum { // cloud settings
 #define MAX_LOG_SIZE      500
 #define ALARM_FREQ       1000
 
-enum { // door status
+// door status
+enum {
 	DOOR_STATUS_CLOSED = 0,
 	DOOR_STATUS_OPEN,
 	DOOR_STATUS_STOPPED,
@@ -170,7 +171,7 @@ enum { // door status
 	DOOR_STATUS_UNKNOWN,
 };
 
-// door status event
+// door events
 #define DOOR_STATUS_HIST_K        4
 enum {
 	DOOR_EVENT_REMAIN_CLOSED = 0,
@@ -184,6 +185,13 @@ enum {
 	DOOR_EVENT_START_OPENING,
 	DOOR_EVENT_STILL_CLOSING,
 	DOOR_EVENT_START_CLOSING,
+};
+
+// door actions
+enum {
+	DOOR_ACTION_TOGGLE = 0,
+	DOOR_ACTION_CLOSE,
+	DOOR_ACTION_OPEN
 };
 
 typedef enum {

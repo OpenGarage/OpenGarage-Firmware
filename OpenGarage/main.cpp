@@ -490,6 +490,53 @@ void on_auto_detect(const OTF::Request &req, OTF::Response &res) {
 	otf_send_json(res, json);
 }
 
+void performDoorAction(uint8_t action, bool force_alarm_off = false) {
+	// Check if the requested action is valid based on the current door state
+	bool isValidAction = false;
+	if((og.options[OPTION_SECV].ival == 2) || // For Sec+ 2.0, open/close commands are always valid
+		(action == DOOR_ACTION_TOGGLE) || // toggle action is always valid
+		(action == DOOR_ACTION_OPEN && (door_status == DOOR_STATUS_CLOSED || door_status == DOOR_STATUS_CLOSING)) || // can only open from CLOSED or CLOSING states
+		(action == DOOR_ACTION_CLOSE && (door_status == DOOR_STATUS_OPEN || door_status == DOOR_STATUS_STOPPED))) {
+			isValidAction = true;
+	}
+
+	if (!isValidAction) {
+		DEBUG_PRINTLN(F("Requested command not valid, or door already in requested state"));
+		return;
+	}
+
+	// This is the core logic for deciding whether to trigger the alarm or the door directly.
+	bool shouldTriggerAlarm = true;
+	if (force_alarm_off || // override is on
+		(!og.options[OPTION_ALM].ival) || // alarm not enabled
+		(og.options[OPTION_AOO].ival && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING || door_status==DOOR_STATUS_OPENING))) { shouldTriggerAlarm = false;
+	}
+
+	if (shouldTriggerAlarm) { // if using alarm
+		if (og.options[OPTION_SECV].ival == 2) {
+			og.set_alarm(0, action);
+		} else {
+			og.set_alarm();
+		}
+		return;
+	}
+
+	// no alarm
+	switch (og.options[OPTION_SECV].ival) {
+		case 2: // SecPlus 2.0
+			if (action == DOOR_ACTION_OPEN) secplus2_garage.open_door();
+			else if (action == DOOR_ACTION_CLOSE) secplus2_garage.close_door();
+			else secplus2_garage.toggle_door();
+			break;
+		case 1: // SecPlus 1.0
+			secplus1_garage.toggle_door();
+			break;
+		default: // No SecPlus (standard relay)
+			og.click_relay();
+			break;
+	}
+}
+
 void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_AP) return;
 
@@ -498,72 +545,21 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 		return;
 	}
 
-	bool click = req.getQueryParameter("click");
-	bool close = req.getQueryParameter("close");
-	bool open = req.getQueryParameter("open");
+	uint8_t action = 255;
+	if((bool)req.getQueryParameter("click")) { action = DOOR_ACTION_TOGGLE; }
+	else if((bool)req.getQueryParameter("close")) { action = DOOR_ACTION_CLOSE; }
+	else if((bool)req.getQueryParameter("open")) { action = DOOR_ACTION_OPEN; }
+
 	char* light = req.getQueryParameter("light");
 	char* lock = req.getQueryParameter("lock");
 
-	if(click || close || open) {
-		DEBUG_PRINTLN(F("Received button request (click, close, or open)"));
+	if(action < 255) {
 		otf_send_result(res, HTML_SUCCESS, nullptr);
-		switch (og.options[OPTION_SECV].ival) {
-			case 2: // SecPlus 2
-				if (click + close + open != 1) {
-					DEBUG_PRINTLN(F("Command request not valid, recieved multiple states"));
-				} else {
-					// Security plus 2.0 allows you to send the target state instead of only being able to toggle
-					if (!og.options[OPTION_ALM].ival) { // If no alarm
-						if (open) {
-							secplus2_garage.open_door();
-						} else if (close) {
-							secplus2_garage.close_door();
-						} else if (click) {
-							secplus2_garage.toggle_door();
-						}
-					} else {
-						if (open) {
-							if(og.options[OPTION_AOO].ival) secplus2_garage.open_door(); // if "no alarm on open" selected
-							else og.set_alarm(0, 2);
-						} else if (close) {
-							og.set_alarm(0, 1);
-						} else if (click) {
-							if(og.options[OPTION_AOO].ival && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING || door_status==DOOR_STATUS_OPENING)) {
-								secplus2_garage.toggle_door(); // if "no alarm on open" selected
-							}
-							else og.set_alarm(0, 0);
-						}
-					}
-				}
-				break;
+		performDoorAction(action);
+		return;
+	}
 
-			case 1: // SecPlus 1
-			default: // No secplus
-				if (click + close + open != 1) {
-					DEBUG_PRINTLN(F("Command request not valid, invalid state"));
-				} else if ((close && (door_status==DOOR_STATUS_OPEN || door_status==DOOR_STATUS_STOPPED)) ||   // from open or stopped you can close
-						(open && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING)) || // from closed or closing you can open
-						(click)) {
-					DEBUG_PRINTLN(F("Valid command recieved based on door status"));
-					// If no alarm, or, if opening and "no alarm on open"
-					if(!og.options[OPTION_ALM].ival || (og.options[OPTION_AOO].ival && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING || door_status==DOOR_STATUS_OPENING))) {
-						// if alarm is not enabled, trigger relay right away
-						switch (og.options[OPTION_SECV].ival) {
-							case 1:
-								secplus1_garage.toggle_door();
-								break;
-							default:
-								og.click_relay();
-						}
-					} else {
-						og.set_alarm();
-					}
-				} else {
-					DEBUG_PRINTLN(F("Command request not valid, or door already in requested state"));
-				}
-				break;
-		}
-	} else if(light) {
+	if(light) {
 		otf_send_result(res, HTML_SUCCESS, nullptr);
 		if(strcmp(light, "toggle")==0) {
 			switch (og.options[OPTION_SECV].ival) {
@@ -579,7 +575,10 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 		} else {
 			// TODO: handle light=1 or 0
 		}
-	} else if(lock) {
+		return;
+	}
+
+	if(lock) {
 		otf_send_result(res, HTML_SUCCESS, nullptr);
 		if(strcmp(lock, "toggle")==0) {
 			switch (og.options[OPTION_SECV].ival) {
@@ -595,7 +594,10 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 		} else {
 			// TODO: handle lock=1 or 0
 		}
-	} else if(req.getQueryParameter("reboot") != NULL) {
+		return;
+	}
+
+	if(req.getQueryParameter("reboot") != NULL) {
 		otf_send_result(res, HTML_SUCCESS, nullptr);
 		restart_in(1000);
 	} else if(req.getQueryParameter("apmode") != NULL) {
@@ -926,84 +928,24 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 	//Accept button on any topic for backwards compat with existing code - use IN messages below if possible
 	if (Payload=="Button") {
 		DEBUG_PRINTLN(F("MQTT Button request received, change door state"));
-		if(!og.options[OPTION_ALM].ival ||(og.options[OPTION_AOO].ival && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING || door_status==DOOR_STATUS_OPENING))) {
-			// if alarm is not enabled, or if 'no alarm' on opening is enabled and opening
-			switch (og.options[OPTION_SECV].ival) {
-				case 2: // SecPlus 2
-					secplus2_garage.toggle_door();
-					break;
-				case 1: // SecPlus 1
-					secplus1_garage.toggle_door();
-					break;
-				default: // No secplus
-					og.click_relay();
-			}
-		} else {
-			// else, set alarm
-			og.set_alarm();
-		}
+		performDoorAction(DOOR_ACTION_TOGGLE);
+		return;
 	}
+
 	//Accept click for consistency with api, open and close should be used instead, use IN topic if possible
 	if (Topic==(mqtt_topic+"/IN/STATE")){
 		DEBUG_PRINT(F("MQTT IN Message detected, check data for action, Data:"));
 		DEBUG_PRINTLN(Payload);
-		bool close = (Payload == "close");
-		bool open = (Payload == "open");
-		bool click = (Payload == "click");
-		switch (og.options[OPTION_SECV].ival) {
-			case 2: { // SecPlus 2
-				if (click + close + open != 1) {
-					DEBUG_PRINTLN(F("Command request not valid, invalid state"));
-				} else {
-					// Security plus 2.0 allows you to send the target state instead of only being able to toggle
-					if (!og.options[OPTION_ALM].ival) { // If no alarm process right away
-						if (open) {
-							secplus2_garage.open_door();
-						} else if (close) {
-							secplus2_garage.close_door();
-						} else if (click) {
-							secplus2_garage.toggle_door();
-						}
-					} else {
-						if (open) {
-							if(og.options[OPTION_AOO].ival) secplus2_garage.open_door(); // if "no alarm on open" selected
-							else og.set_alarm(0, 2);
-						} else if (close) {
-							og.set_alarm(0, 1);
-						} else if (click) {
-							if(og.options[OPTION_AOO].ival && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING || door_status==DOOR_STATUS_OPENING)) {
-								secplus2_garage.toggle_door(); // if "no alarm on open" selected
-							}
-							else og.set_alarm(0, 0);
-						}
-					}
-				}
-				break;
-			}
-			case 1: // SecPlus 1
-			default: // No secplus
-				if (click + close + open != 1) {
-					DEBUG_PRINTLN(F("Command request not valid, invalid state"));
-				} else if ( (close && (door_status==DOOR_STATUS_OPEN || door_status==DOOR_STATUS_STOPPED))
-				  || (open && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING))
-					|| (click)) {
-					DEBUG_PRINTLN(F("Command is valid based on existing state, trigger change"));
-					if(!og.options[OPTION_ALM].ival || (og.options[OPTION_AOO].ival && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING || door_status==DOOR_STATUS_OPENING))) {
-						switch (og.options[OPTION_SECV].ival) {
-							case 1:
-								secplus1_garage.toggle_door();
-								break;
-							default:
-								og.click_relay();
-						}
-					} else {
-						og.set_alarm();
-					}
-				} else {
-					DEBUG_PRINTLN(F("Command request not valid, door already in requested state"));
-				}
-				break;
+		uint8_t action = 255;
+		if(Payload == "click") { action = DOOR_ACTION_TOGGLE; }
+		else if(Payload == "close") { action = DOOR_ACTION_CLOSE; }
+		else if(Payload == "open") { action = DOOR_ACTION_OPEN; }
+		if(action < 255) {
+			performDoorAction(action);
+		} else {
+			DEBUG_PRINT(F("Payload command not recognized"));
 		}
+		return;
 	}
 }
 
@@ -1093,16 +1035,7 @@ void process_ui() {
 				ipString.replace(".", ". ");
 				report_ip();
 			} else if(curr > button_down_time + 50) {
-				switch (og.options[OPTION_SECV].ival) {
-					case 2: // SecPlus 2
-						secplus2_garage.toggle_door();
-						break;
-					case 1: // SecPlus 1
-						secplus1_garage.toggle_door();
-						break;
-					default: // No secplus
-						og.click_relay();
-				}
+				performDoorAction(DOOR_ACTION_TOGGLE, true); // no alarm since manual operation
 			}
 			button_down_time = 0;
 		}
@@ -1118,16 +1051,16 @@ void process_ui() {
 	}
 }
 
-void on_sta_update(const OTF::Request &req, OTF::Response &res) {
-	if(req.isCloudRequest()) otf_send_result(res, HTML_NOT_PERMITTED, "fw update");
-	otf_send_compressed_P(res, (const __FlashStringHelper*)sta_update_html_gz, sta_update_html_gz_len);
+void on_update(const OTF::Request &req, OTF::Response &res) {
+	if(curr_mode == OG_MOD_AP) {
+		otf_send_compressed_P(res, (const __FlashStringHelper*)ap_update_html_gz, ap_update_html_gz_len);
+	} else {
+		if(req.isCloudRequest()) otf_send_result(res, HTML_NOT_PERMITTED, "fw update");
+		otf_send_compressed_P(res, (const __FlashStringHelper*)sta_update_html_gz, sta_update_html_gz_len);
+	}
 }
 
-void on_ap_update(const OTF::Request &req, OTF::Response &res) {
-	otf_send_compressed_P(res, (const __FlashStringHelper*)ap_update_html_gz, ap_update_html_gz_len);
-}
-
-void on_sta_upload_fin() {
+void on_firmware_upload_fin() {
 
 	// Verify the device key.
 	if(!(updateServer->hasArg("dkey") && (updateServer->arg("dkey") == og.options[OPTION_DKEY].sval))) {
@@ -1149,8 +1082,6 @@ void on_sta_upload_fin() {
 	restart_in(1000);
 }
 
-void on_ap_upload_fin() { on_sta_upload_fin(); }
-
 void on_update_options() {
 	updateServer->sendHeader("Access-Control-Allow-Origin", "*");
 	updateServer->sendHeader("Access-Control-Max-Age", "10000");
@@ -1159,37 +1090,16 @@ void on_update_options() {
 	updateServer->send(200, "text/plain", "");
 }
 
-void on_sta_upload() {
+void on_firmware_upload() {
 	HTTPUpload& upload = updateServer->upload();
 	if(upload.status == UPLOAD_FILE_START){
-		DEBUG_PRINTLN(F("Stopping all network clients"));
-		WiFiUDP::stopAll();
-		Blynk.disconnect(); // disconnect Blynk during firmware upload
-		mqttclient.disconnect();
+		if(curr_mode == OG_MOD_STA) {
+			DEBUG_PRINTLN(F("Stopping all network clients"));
+			WiFiUDP::stopAll();
+			Blynk.disconnect(); // disconnect Blynk during firmware upload
+			mqttclient.disconnect();
+		}
 		DEBUG_PRINT(F("prepare to upload: "));
-		DEBUG_PRINTLN(upload.filename);
-		uint32_t maxSketchSpace = (ESP.getFreeSketchSpace()-0x1000)&0xFFFFF000;
-		if(!Update.begin(maxSketchSpace)) {
-			DEBUG_PRINTLN(F("not enough space"));
-		}
-	} else if(upload.status == UPLOAD_FILE_WRITE) {
-		DEBUG_PRINT(".");
-		if(Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-			DEBUG_PRINTLN(F("size mismatch"));
-		}
-	} else if(upload.status == UPLOAD_FILE_END) {
-		DEBUG_PRINTLN(F("upload completed"));
-	} else if(upload.status == UPLOAD_FILE_ABORTED){
-		Update.end();
-		DEBUG_PRINTLN(F("upload aborted"));
-	}
-	delay(0);
-}
-
-void on_ap_upload() {
-	HTTPUpload& upload = updateServer->upload();
-	if(upload.status == UPLOAD_FILE_START){
-		DEBUG_PRINTLN(F("prepare to upload: "));
 		DEBUG_PRINTLN(upload.filename);
 		uint32_t maxSketchSpace = (ESP.getFreeSketchSpace()-0x1000)&0xFFFFF000;
 		if(!Update.begin(maxSketchSpace)) {
@@ -1775,8 +1685,8 @@ void do_loop() {
 			otf->on("/db", on_ap_debug);
 			otf->on("/ad", on_auto_detect);
 			// FIXME get update ap updates working.
-			otf->on("/update", on_ap_update, OTF::HTTP_GET);
-			updateServer->on("/update", HTTP_POST, on_ap_upload_fin, on_ap_upload);
+			otf->on("/update", on_update, OTF::HTTP_GET);
+			updateServer->on("/update", HTTP_POST, on_firmware_upload_fin, on_firmware_upload);
 			updateServer->on("/update", HTTP_OPTIONS, on_update_options);
 			otf->on("/resetall",on_reset_all);
 			otf->onMissingPage(on_home);
@@ -1832,8 +1742,8 @@ void do_loop() {
 			otf->on("/co", on_sta_change_options);
 			otf->on("/db", on_sta_debug);
 			// FIXME get sta updates working.
-			otf->on("/update", on_sta_update, OTF::HTTP_GET);
-			updateServer->on("/update", HTTP_POST, on_sta_upload_fin, on_sta_upload);
+			otf->on("/update", on_update, OTF::HTTP_GET);
+			updateServer->on("/update", HTTP_POST, on_firmware_upload_fin, on_firmware_upload);
 			updateServer->on("/update", HTTP_OPTIONS, on_update_options);
 			otf->on("/clearlog", on_clear_log);
 			otf->on("/resetall",on_reset_all);
@@ -1958,26 +1868,9 @@ void do_loop() {
 BLYNK_WRITE(BLYNK_PIN_RELAY) {
 	static bool last_button_state = 0;
 	bool current_button_state = param.asInt();
-
 	if (last_button_state && !current_button_state) {
 		DEBUG_PRINTLN(F("Received Blynk generated button request"));
-		if(!og.options[OPTION_ALM].ival || (og.options[OPTION_AOO].ival && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING || door_status==DOOR_STATUS_OPENING))) {
-			// if alarm is not enabled, or if 'no alarm' on opening is enabled and opening
-			switch (og.options[OPTION_SECV].ival) {
-				case 2: // SecPlus 2
-					secplus2_garage.toggle_door();
-					break;
-				case 1: // SecPlus 1
-					secplus1_garage.toggle_door();
-					break;
-				default: // No secplus
-					og.click_relay();
-			}
-		} else {
-			// else, set alarm
-			og.set_alarm();
-		}
+		performDoorAction(DOOR_ACTION_TOGGLE);
 	}
-
 	last_button_state = current_button_state;
 }

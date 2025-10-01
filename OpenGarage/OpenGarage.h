@@ -82,7 +82,7 @@ public:
 	static bool read_log_next(LogStruct& data);
 	static bool read_log_end();
 	static void play_note(uint freq);
-	static void set_alarm(byte ov=0, byte action=0) { // ov = override value //action (0: toggle, 1: close, 2: open)
+	static void set_alarm(byte ov=0, byte action=DOOR_ACTION_TOGGLE) { // ov = override value //action (0: toggle, 1: close, 2: open)
 		if(ov) alarm = ov*10+1;
 		else alarm = options[OPTION_ALM].ival * 10 + 1;
 		alarm_action = action;
