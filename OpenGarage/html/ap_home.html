@@ -6,13 +6,13 @@
     <style>
         :root{
           --bg:#f6f7fb; --fg:#0f172a; --muted:#586380;
-          --card:#fff; --border:#e2e8f0;
+          --card:#fff; --border:#cdd5e0;
           --accent:#2563eb;
         }
         @media (prefers-color-scheme: dark){
           :root{
             --bg:#0b1220; --fg:#e6eaff; --muted:#a3acc7;
-            --card:#0f172a; --border:#1e293b;
+            --card:#0f172a; --border:#334155;
             --accent:#60a5fa;
           }
         }
@@ -52,9 +52,7 @@
             font-weight: 600;
             margin-bottom: 6px;
         }
-
-        input[type="text"],
-        input[type="password"] {
+        input:not([type]),input[type="text"],input[type="password"] {
             width: 100%;
             padding: 10px;
             font-size: 16px;
@@ -66,8 +64,7 @@
             transition: border-color 0.2s, box-shadow 0.2s;
         }
 
-        input[type="text"]:focus,
-        input[type="password"]:focus {
+        input:not([type]):focus,input[type="text"]:focus,input[type="password"]:focus {
             border-color: var(--accent);
             box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent);
             outline: none;
