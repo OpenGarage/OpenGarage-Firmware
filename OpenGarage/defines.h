@@ -189,10 +189,11 @@ enum {
 
 // door actions
 enum {
-	DOOR_ACTION_TOGGLE = 0,
-	DOOR_ACTION_CLOSE,
-	DOOR_ACTION_OPEN
+	ACTION_TOGGLE = 0,
+	ACTION_CLOSE,
+	ACTION_OPEN
 };
+
 
 typedef enum {
 	OPTION_FWV = 0, // firmware version

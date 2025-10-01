@@ -494,9 +494,9 @@ void performDoorAction(uint8_t action, bool force_alarm_off = false) {
 	// Check if the requested action is valid based on the current door state
 	bool isValidAction = false;
 	if((og.options[OPTION_SECV].ival == 2) || // For Sec+ 2.0, open/close commands are always valid
-		(action == DOOR_ACTION_TOGGLE) || // toggle action is always valid
-		(action == DOOR_ACTION_OPEN && (door_status == DOOR_STATUS_CLOSED || door_status == DOOR_STATUS_CLOSING)) || // can only open from CLOSED or CLOSING states
-		(action == DOOR_ACTION_CLOSE && (door_status == DOOR_STATUS_OPEN || door_status == DOOR_STATUS_STOPPED))) {
+		(action == ACTION_TOGGLE) || // toggle action is always valid
+		(action == ACTION_OPEN && (door_status == DOOR_STATUS_CLOSED || door_status == DOOR_STATUS_CLOSING)) || // can only open from CLOSED or CLOSING states
+		(action == ACTION_CLOSE && (door_status == DOOR_STATUS_OPEN || door_status == DOOR_STATUS_STOPPED))) {
 			isValidAction = true;
 	}
 
@@ -524,8 +524,8 @@ void performDoorAction(uint8_t action, bool force_alarm_off = false) {
 	// no alarm
 	switch (og.options[OPTION_SECV].ival) {
 		case 2: // SecPlus 2.0
-			if (action == DOOR_ACTION_OPEN) secplus2_garage.open_door();
-			else if (action == DOOR_ACTION_CLOSE) secplus2_garage.close_door();
+			if (action == ACTION_OPEN) secplus2_garage.open_door();
+			else if (action == ACTION_CLOSE) secplus2_garage.close_door();
 			else secplus2_garage.toggle_door();
 			break;
 		case 1: // SecPlus 1.0
@@ -537,6 +537,45 @@ void performDoorAction(uint8_t action, bool force_alarm_off = false) {
 	}
 }
 
+void performLightAction(uint8_t action) {
+	switch(action) {
+		case ACTION_TOGGLE:
+			switch (og.options[OPTION_SECV].ival) {
+				case 2: // SecPlus 2
+					secplus2_garage.toggle_light();
+					break;
+				case 1: // SecPlus 1
+					secplus1_garage.toggle_light();
+					break;
+				default: // No secplus
+					DEBUG_PRINTLN(F("Command request not valid, light requires secplus"));
+			}
+			break;
+		case ACTION_OPEN: // TODO
+		case ACTION_CLOSE:
+			break;
+	}
+}
+
+void performLockAction(uint8_t action) {
+	switch(action) {
+		case ACTION_TOGGLE:
+			switch (og.options[OPTION_SECV].ival) {
+				case 2: // SecPlus 2
+					secplus2_garage.toggle_lock();
+					break;
+				case 1: // SecPlus 1
+					secplus1_garage.toggle_lock();
+					break;
+				default: // No secplus
+					DEBUG_PRINTLN(F("Command request not valid, light requires secplus"));
+			}
+			break;
+		case ACTION_OPEN: // TODO
+		case ACTION_CLOSE:
+			break;
+	}
+}
 void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_AP) return;
 
@@ -546,9 +585,9 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 	}
 
 	uint8_t action = 255;
-	if((bool)req.getQueryParameter("click")) { action = DOOR_ACTION_TOGGLE; }
-	else if((bool)req.getQueryParameter("close")) { action = DOOR_ACTION_CLOSE; }
-	else if((bool)req.getQueryParameter("open")) { action = DOOR_ACTION_OPEN; }
+	if((bool)req.getQueryParameter("click")) { action = ACTION_TOGGLE; }
+	else if((bool)req.getQueryParameter("close")) { action = ACTION_CLOSE; }
+	else if((bool)req.getQueryParameter("open")) { action = ACTION_OPEN; }
 
 	char* light = req.getQueryParameter("light");
 	char* lock = req.getQueryParameter("lock");
@@ -562,18 +601,7 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 	if(light) {
 		otf_send_result(res, HTML_SUCCESS, nullptr);
 		if(strcmp(light, "toggle")==0) {
-			switch (og.options[OPTION_SECV].ival) {
-				case 1: // SecPlus 1
-					secplus1_garage.toggle_light();
-					break;
-				case 2: // SecPlus 2
-					secplus2_garage.toggle_light();
-					break;
-				default: // No secplus
-					DEBUG_PRINTLN(F("Command request not valid, light requires secplus"));
-			}
-		} else {
-			// TODO: handle light=1 or 0
+			performLightAction(ACTION_TOGGLE);
 		}
 		return;
 	}
@@ -581,18 +609,7 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 	if(lock) {
 		otf_send_result(res, HTML_SUCCESS, nullptr);
 		if(strcmp(lock, "toggle")==0) {
-			switch (og.options[OPTION_SECV].ival) {
-				case 1: // SecPlus 1
-					secplus1_garage.toggle_lock();
-					break;
-				case 2: // SecPlus 2
-					secplus2_garage.toggle_lock();
-					break;
-				default: // No secplus
-					DEBUG_PRINTLN(F("Command request not valid, lock requires secplus?"));
-			}
-		} else {
-			// TODO: handle lock=1 or 0
+			performLockAction(ACTION_TOGGLE);
 		}
 		return;
 	}
@@ -928,7 +945,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 	//Accept button on any topic for backwards compat with existing code - use IN messages below if possible
 	if (Payload=="Button") {
 		DEBUG_PRINTLN(F("MQTT Button request received, change door state"));
-		performDoorAction(DOOR_ACTION_TOGGLE);
+		performDoorAction(ACTION_TOGGLE);
 		return;
 	}
 
@@ -936,13 +953,12 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 	if (Topic==(mqtt_topic+"/IN/STATE")){
 		DEBUG_PRINT(F("MQTT IN Message detected, check data for action, Data:"));
 		DEBUG_PRINTLN(Payload);
-		uint8_t action = 255;
-		if(Payload == "click") { action = DOOR_ACTION_TOGGLE; }
-		else if(Payload == "close") { action = DOOR_ACTION_CLOSE; }
-		else if(Payload == "open") { action = DOOR_ACTION_OPEN; }
-		if(action < 255) {
-			performDoorAction(action);
-		} else {
+		if(Payload == "click")      { performDoorAction(ACTION_TOGGLE); }
+		else if(Payload == "close") { performDoorAction(ACTION_CLOSE); }
+		else if(Payload == "open")  { performDoorAction(ACTION_OPEN); }
+		else if(Payload == "togglelight") performLightAction(ACTION_TOGGLE);
+		else if(Payload == "togglelock") performLockAction(ACTION_TOGGLE);
+		else {
 			DEBUG_PRINT(F("Payload command not recognized"));
 		}
 		return;
@@ -1035,7 +1051,7 @@ void process_ui() {
 				ipString.replace(".", ". ");
 				report_ip();
 			} else if(curr > button_down_time + 50) {
-				performDoorAction(DOOR_ACTION_TOGGLE, true); // no alarm since manual operation
+				performDoorAction(ACTION_TOGGLE, true); // no alarm since manual operation
 			}
 			button_down_time = 0;
 		}
@@ -1279,7 +1295,6 @@ void process_dynamics(byte event) {
 				if(ato & OG_AUTO_CLOSE) {
 					// auto close door
 					// alarm is mandatory in auto-close
-					// TODO: need to handle different secplus?
 					if(!og.options[OPTION_ALM].ival) { og.set_alarm(OG_ALM_5); }
 					else { og.set_alarm(); }
 				}
@@ -1306,7 +1321,6 @@ void process_dynamics(byte event) {
 				if(atob & OG_AUTO_CLOSE) {
 					// auto close door
 					// alarm is mandatory in auto-close
-					// TODO: need to handle different secplus?
 					if(!og.options[OPTION_ALM].ival) { og.set_alarm(OG_ALM_5); }
 					else { og.set_alarm(); }
 				}
@@ -1870,7 +1884,7 @@ BLYNK_WRITE(BLYNK_PIN_RELAY) {
 	bool current_button_state = param.asInt();
 	if (last_button_state && !current_button_state) {
 		DEBUG_PRINTLN(F("Received Blynk generated button request"));
-		performDoorAction(DOOR_ACTION_TOGGLE);
+		performDoorAction(ACTION_TOGGLE);
 	}
 	last_button_state = current_button_state;
 }
