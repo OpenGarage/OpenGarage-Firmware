@@ -287,9 +287,13 @@ json += F(",\"fwv\":");
 			json += lock_status;
 			json += F(",\"obstruct\":");
 			json += obstruction_status;
-			if(og.options[OPTION_SECV].ival>=2) {
+			if(og.options[OPTION_SECV].ival==2) {
 				json += F(",\"nopenings\":");
 				json += opening_count;
+			}
+			if(og.options[OPTION_SECV].ival==1) {
+				json += F(",\"pemu\":");
+				json += secplus1_garage.get_panel_emu_status();
 			}
 		}
 	}
@@ -524,7 +528,9 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 						} else if (close) {
 							og.set_alarm(0, 1);
 						} else if (click) {
-							if(og.options[OPTION_AOO].ival && (door_status == DOOR_STATUS_CLOSED)) secplus2_garage.open_door(); // if "no alarm on open" selected
+							if(og.options[OPTION_AOO].ival && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING || door_status==DOOR_STATUS_OPENING)) {
+								secplus2_garage.toggle_door(); // if "no alarm on open" selected
+							}
 							else og.set_alarm(0, 0);
 						}
 					}
@@ -533,13 +539,14 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 
 			case 1: // SecPlus 1
 			default: // No secplus
-				// 1 is open
-				if ((close && (door_status == DOOR_STATUS_OPEN)) ||
-						(open && (door_status == DOOR_STATUS_CLOSED)) ||
+				if (click + close + open != 1) {
+					DEBUG_PRINTLN(F("Command request not valid, invalid state"));
+				} else if ((close && (door_status==DOOR_STATUS_OPEN || door_status==DOOR_STATUS_STOPPED)) ||   // from open or stopped you can close
+						(open && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING)) || // from closed or closing you can open
 						(click)) {
 					DEBUG_PRINTLN(F("Valid command recieved based on door status"));
 					// If no alarm, or, if opening and "no alarm on open"
-					if(!og.options[OPTION_ALM].ival || (og.options[OPTION_AOO].ival && (door_status == DOOR_STATUS_CLOSED))) {
+					if(!og.options[OPTION_ALM].ival || (og.options[OPTION_AOO].ival && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING || door_status==DOOR_STATUS_OPENING))) {
 						// if alarm is not enabled, trigger relay right away
 						switch (og.options[OPTION_SECV].ival) {
 							case 1:
@@ -552,7 +559,7 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 						og.set_alarm();
 					}
 				} else {
-					DEBUG_PRINTLN(F("Command request not valid, door already in requested state"));
+					DEBUG_PRINTLN(F("Command request not valid, or door already in requested state"));
 				}
 				break;
 		}
@@ -919,8 +926,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 	//Accept button on any topic for backwards compat with existing code - use IN messages below if possible
 	if (Payload=="Button") {
 		DEBUG_PRINTLN(F("MQTT Button request received, change door state"));
-		if(!og.options[OPTION_ALM].ival ||(og.options[OPTION_AOO].ival && (door_status == DOOR_STATUS_CLOSED))) {
-			// if alarm is not enabled, trigger relay right away
+		if(!og.options[OPTION_ALM].ival ||(og.options[OPTION_AOO].ival && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING || door_status==DOOR_STATUS_OPENING))) {
+			// if alarm is not enabled, or if 'no alarm' on opening is enabled and opening
 			switch (og.options[OPTION_SECV].ival) {
 				case 2: // SecPlus 2
 					secplus2_garage.toggle_door();
@@ -940,11 +947,11 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 	if (Topic==(mqtt_topic+"/IN/STATE")){
 		DEBUG_PRINT(F("MQTT IN Message detected, check data for action, Data:"));
 		DEBUG_PRINTLN(Payload);
+		bool close = (Payload == "close");
+		bool open = (Payload == "open");
+		bool click = (Payload == "click");
 		switch (og.options[OPTION_SECV].ival) {
 			case 2: { // SecPlus 2
-				bool close = (Payload == "close");
-				bool open = (Payload == "open");
-				bool click = (Payload == "click");
 				if (click + close + open != 1) {
 					DEBUG_PRINTLN(F("Command request not valid, invalid state"));
 				} else {
@@ -957,15 +964,17 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 						} else if (click) {
 							secplus2_garage.toggle_door();
 						}
-					} else if (og.options[OPTION_AOO].ival && open) { // If opening and "no alarm on open"
-							secplus2_garage.open_door();
 					} else {
 						if (open) {
-							og.set_alarm(0, 2);
+							if(og.options[OPTION_AOO].ival) secplus2_garage.open_door(); // if "no alarm on open" selected
+							else og.set_alarm(0, 2);
 						} else if (close) {
 							og.set_alarm(0, 1);
 						} else if (click) {
-							og.set_alarm(0, 0);
+							if(og.options[OPTION_AOO].ival && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING || door_status==DOOR_STATUS_OPENING)) {
+								secplus2_garage.toggle_door(); // if "no alarm on open" selected
+							}
+							else og.set_alarm(0, 0);
 						}
 					}
 				}
@@ -973,9 +982,13 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 			}
 			case 1: // SecPlus 1
 			default: // No secplus
-				if ( (Payload == "close" && door_status) || (Payload == "open" && !door_status) || Payload == "click") {
+				if (click + close + open != 1) {
+					DEBUG_PRINTLN(F("Command request not valid, invalid state"));
+				} else if ( (close && (door_status==DOOR_STATUS_OPEN || door_status==DOOR_STATUS_STOPPED))
+				  || (open && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING))
+					|| (click)) {
 					DEBUG_PRINTLN(F("Command is valid based on existing state, trigger change"));
-					if(!og.options[OPTION_ALM].ival || (og.options[OPTION_AOO].ival && !door_status)) {
+					if(!og.options[OPTION_ALM].ival || (og.options[OPTION_AOO].ival && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING || door_status==DOOR_STATUS_OPENING))) {
 						switch (og.options[OPTION_SECV].ival) {
 							case 1:
 								secplus1_garage.toggle_door();
@@ -986,11 +999,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 					} else {
 						og.set_alarm();
 					}
-				} else if ( (Payload=="close" && !door_status) || (Payload=="open" && door_status) ){
+				} else {
 					DEBUG_PRINTLN(F("Command request not valid, door already in requested state"));
-				}
-				else {
-					DEBUG_PRINT(F("Unrecognized MQTT data/command:"));
 				}
 				break;
 		}
@@ -999,10 +1009,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 
 void do_setup() {
 	Serial.begin(115200);
-#if defined(SERIAL_DEBUG)
-	delay(2000);
 	DEBUG_PRINTLN("started.");
-#endif
 	if(otf) {
 		delete otf;
 		otf = NULL;
@@ -1609,7 +1616,34 @@ void check_status() {
 
 			// to reduce traffic, only send updated values
 			if(distance != old_distance) {  Blynk.virtualWrite(BLYNK_PIN_DIST, distance); old_distance = distance; }
-			if(door_status != old_door_status) { (door_status == DOOR_STATUS_OPEN) ? blynk_door.on() : blynk_door.off(); old_door_status = door_status; }
+			if(door_status != old_door_status) {
+				switch(door_status) {
+					case DOOR_STATUS_OPEN:
+						blynk_door.setColor("#E02040"); // Red for Open
+						blynk_door.on();
+						break;
+					case DOOR_STATUS_CLOSED:
+						blynk_door.setColor("#20E080"); // Green for Closed
+						blynk_door.on();
+						break;
+					case DOOR_STATUS_STOPPED:
+						blynk_door.setColor("#E08000"); // Orange for Stopped
+						blynk_door.on();
+						break;
+					case DOOR_STATUS_OPENING:
+						blynk_door.setColor("#D000D0"); // Purple for Opening
+						blynk_door.on();
+						break;
+					case DOOR_STATUS_CLOSING:
+						blynk_door.setColor("#20A0E0"); // Cyan for Closing
+						blynk_door.on();
+						break;
+					default:
+						blynk_door.off();
+						break;
+				}
+				old_door_status = door_status;
+			}
 			if(vehicle_status != old_vehicle_status) { (vehicle_status==1) ? blynk_car.on() : blynk_car.off(); old_vehicle_status = vehicle_status; }
 			if(old_ip != get_ip()) { Blynk.virtualWrite(BLYNK_PIN_IP, get_ip()); old_ip = get_ip(); }
 			// hack to simulate temp humid changes
@@ -1921,60 +1955,29 @@ void do_loop() {
 		process_alarm();
 }
 
-bool last_blynk_button_state = 0;
-
 BLYNK_WRITE(BLYNK_PIN_RELAY) {
-	DEBUG_PRINTLN(F("Received Blynk generated button request"));
-	if(!og.options[OPTION_ALM].ival) {
-		// if alarm is disabled, trigger right away
-		if(param.asInt()) {
+	static bool last_button_state = 0;
+	bool current_button_state = param.asInt();
+
+	if (last_button_state && !current_button_state) {
+		DEBUG_PRINTLN(F("Received Blynk generated button request"));
+		if(!og.options[OPTION_ALM].ival || (og.options[OPTION_AOO].ival && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING || door_status==DOOR_STATUS_OPENING))) {
+			// if alarm is not enabled, or if 'no alarm' on opening is enabled and opening
 			switch (og.options[OPTION_SECV].ival) {
 				case 2: // SecPlus 2
-					if (!last_blynk_button_state) {
-						secplus2_garage.toggle_door();
-					}
+					secplus2_garage.toggle_door();
 					break;
 				case 1: // SecPlus 1
-					if (!last_blynk_button_state) {
-						secplus1_garage.toggle_door();
-					}
+					secplus1_garage.toggle_door();
 					break;
 				default: // No secplus
-					og.set_relay(HIGH);
-					break;
+					og.click_relay();
 			}
-			last_blynk_button_state = 1;
 		} else {
-			switch (og.options[OPTION_SECV].ival) {
-				case 2: // SecPlus 2
-					break;
-				case 1: // SecPlus 1
-					break;
-				default: // No secplus
-					og.set_relay(LOW);
-			}
-			last_blynk_button_state = 0;
-		}
-	} else {
-		// otherwise, set alarm
-		if(param.asInt()) {
-			if(!og.options[OPTION_ALM].ival) {
-				og.set_alarm(OG_ALM_5);
-			} else if(og.options[OPTION_AOO].ival && (door_status == DOOR_STATUS_CLOSED)) {
-				switch (og.options[OPTION_SECV].ival) {
-					case 2: // SecPlus 2
-						secplus2_garage.toggle_door();
-						break;
-					case 1: // SecPlus 1
-						secplus1_garage.toggle_door();
-						break;
-					default: // No secplus
-						og.click_relay();
-				}
-			} else {
-				og.set_alarm();
-			}
+			// else, set alarm
+			og.set_alarm();
 		}
 	}
-}
 
+	last_button_state = current_button_state;
+}

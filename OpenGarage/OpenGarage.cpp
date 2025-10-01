@@ -48,7 +48,7 @@ OptionStruct OpenGarage::options[] = {
 	{"secv",0,             2, ""},
 	{"dth", 50,        65535, ""},
 	{"vth", 150,       65535, ""},
-	{"riv", 2,            30, ""},
+	{"riv", 1,            30, ""},
 	{"alm", OG_ALM_5,      2, ""},
 	{"aoo", 0,             1, ""},
 	{"lsz", DEFAULT_LOG_SIZE,400,""},

@@ -257,7 +257,7 @@ typedef enum {
 
 #define TMP_BUFFER_SIZE 100
 
-#define SERIAL_DEBUG
+//#define SERIAL_DEBUG
 /** Serial debug functions */
 #if defined(SERIAL_DEBUG)
 	#define DEBUG_PRINT(x)   Serial.print(x)
