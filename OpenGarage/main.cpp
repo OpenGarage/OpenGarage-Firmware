@@ -43,6 +43,7 @@ DNSServer *dns = NULL;
 
 WidgetLED blynk_door(BLYNK_PIN_DOOR);
 WidgetLED blynk_car(BLYNK_PIN_CAR);
+WidgetLED blynk_dval(BLYNK_PIN_DVAL);
 
 static Ticker aux_ticker;
 static Ticker ip_ticker;
@@ -1386,7 +1387,6 @@ byte check_door_event() {
 
 void check_status() {
 	static ulong checkstatus_timeout = 0;
-	static ulong checkstatus_report_timeout = 0;
 
 	if((curr_utc_time > checkstatus_timeout) || (checkstatus_timeout == 0))  { //also check on first boot
 		last_door_status = door_status; // save the current status to last_door_status
@@ -1503,8 +1503,9 @@ void check_status() {
 
 		} //End state change updates
 
+		static ulong force_mqtt_update_timeout = 0;
 		// Send current status on change, or on status_report interval
-		if ((curr_utc_time > checkstatus_report_timeout) ||
+		if ((curr_utc_time > force_mqtt_update_timeout) ||
 				(event == DOOR_EVENT_JUST_OPENED || event == DOOR_EVENT_JUST_CLOSED || event == DOOR_EVENT_JUST_STOPPED || event == DOOR_EVENT_START_OPENING || event == DOOR_EVENT_START_CLOSING) ){
 			// Mqtt update
 			if(og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval) && (mqttclient.connected())) {
@@ -1524,8 +1525,11 @@ void check_status() {
 				mqttclient.publish((mqtt_topic + "/OUT/JSON").c_str(),msg.c_str());
 			}
 			// Send status report every 15 seconds: we don't need to send updates frequently if there is no status change.
-			checkstatus_report_timeout= curr_utc_time + 15;
+			force_mqtt_update_timeout= curr_utc_time + 15;
 		}
+
+		static ulong force_blynk_update_timeout = 0;
+
 
 		// Process dynamics: automation and notifications
 		// report status to Blynk
@@ -1534,9 +1538,10 @@ void check_status() {
 
 			static uint old_distance = 0;
 			static byte old_door_status = 0xff, old_vehicle_status = 0xff;
-			static String old_ip = "";
 			static float old_tempC = -100;
 			static float old_humid = -100;
+			static byte old_light_status = 255;
+			static byte old_lock_status = 255;
 
 			// to reduce traffic, only send updated values
 			if(distance != old_distance) {  Blynk.virtualWrite(BLYNK_PIN_DIST, distance); old_distance = distance; }
@@ -1546,12 +1551,8 @@ void check_status() {
 						blynk_door.setColor("#E02040"); // Red for Open
 						blynk_door.on();
 						break;
-					case DOOR_STATUS_CLOSED:
-						blynk_door.setColor("#20E080"); // Green for Closed
-						blynk_door.on();
-						break;
 					case DOOR_STATUS_STOPPED:
-						blynk_door.setColor("#E08000"); // Orange for Stopped
+						blynk_door.setColor("#E0E000"); // Yellow for Stopped
 						blynk_door.on();
 						break;
 					case DOOR_STATUS_OPENING:
@@ -1562,17 +1563,24 @@ void check_status() {
 						blynk_door.setColor("#20A0E0"); // Cyan for Closing
 						blynk_door.on();
 						break;
-					default:
+					case DOOR_STATUS_CLOSED:
+						//blynk_door.setColor("#20E080"); // Green for Closed
 						blynk_door.off();
 						break;
+					default:
+						blynk_door.setColor("#808080"); // Gray for Unknown
+						blynk_door.on();
+						break;
 				}
+				blynk_dval.setValue(door_status);
 				old_door_status = door_status;
 			}
 			if(vehicle_status != old_vehicle_status) { (vehicle_status==1) ? blynk_car.on() : blynk_car.off(); old_vehicle_status = vehicle_status; }
-			if(old_ip != get_ip()) { Blynk.virtualWrite(BLYNK_PIN_IP, get_ip()); old_ip = get_ip(); }
 			// hack to simulate temp humid changes
 			if(old_tempC != tempC) { Blynk.virtualWrite(BLYNK_PIN_TEMP, tempC); old_tempC = tempC; }
 			if(old_humid != humid) { Blynk.virtualWrite(BLYNK_PIN_HUMID,humid); old_humid = humid; }
+			if(old_light_status != light_status) { Blynk.virtualWrite(BLYNK_PIN_LIGHT, light_status); old_light_status = light_status; }
+			if(old_lock_status != lock_status) { Blynk.virtualWrite(BLYNK_PIN_LOCK, lock_status); old_lock_status = lock_status; }
 		}
 
 		process_dynamics(event);
@@ -1882,9 +1890,25 @@ void do_loop() {
 BLYNK_WRITE(BLYNK_PIN_RELAY) {
 	static bool last_button_state = 0;
 	bool current_button_state = param.asInt();
-	if (last_button_state && !current_button_state) {
+	if (last_button_state && !current_button_state) { // on button release
 		DEBUG_PRINTLN(F("Received Blynk generated button request"));
 		performDoorAction(ACTION_TOGGLE);
 	}
 	last_button_state = current_button_state;
+}
+
+BLYNK_WRITE(BLYNK_PIN_LIGHT) {
+	bool requested_light_state = param.asInt();
+	if (requested_light_state != light_status) {
+		DEBUG_PRINTLN(F("Received Blynk generated light change request"));
+		performLightAction(ACTION_TOGGLE);
+	}
+}
+
+BLYNK_WRITE(BLYNK_PIN_LOCK) {
+	bool requested_lock_state = param.asInt();
+	if (requested_lock_state != lock_status) {
+		DEBUG_PRINTLN(F("Received Blynk generated lock change request"));
+		performLockAction(ACTION_TOGGLE);
+	}
 }

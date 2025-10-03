@@ -150,12 +150,14 @@ enum { // cloud settings
 
 #define BLYNK_PIN_DOOR  V0
 #define BLYNK_PIN_RELAY V1
-#define BLYNK_PIN_LCD   V2
+#define BLYNK_PIN_DVAL  V2
 #define BLYNK_PIN_DIST  V3
 #define BLYNK_PIN_CAR   V4
 #define BLYNK_PIN_IP    V5
 #define BLYNK_PIN_TEMP  V6
 #define BLYNK_PIN_HUMID V7
+#define BLYNK_PIN_LIGHT V8
+#define BLYNK_PIN_LOCK  V9
 
 #define DEFAULT_LOG_SIZE  100
 #define MAX_LOG_SIZE      500

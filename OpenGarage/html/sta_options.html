@@ -290,6 +290,9 @@ setTimeout(goback, 4000);
 });
 $('#btn_autodetect').click(function(e) {
 e.preventDefault();
+if (!confirm('Auto-detecting Security+ version may take up to 15 seconds, and the door may move during this process. Continue?')) {
+	return;
+}
 $('#popupStatusText').text('Detecting Security+ Version');
 $('#popupMessageText').text('This will take up to 15 seconds. Please do not close or refresh the page.');
 $('#popupOkButton').hide();
