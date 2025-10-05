@@ -104,6 +104,8 @@ This section walks you through powering on your OpenGarage, connecting it to you
 
 #### Step 2: WiFi Configuration
 
+![AP homepage](screenshots/1_ap.jpg){: .center }
+
 * After connecting to the `OG_` network, most smart devices will automatically prompt you to "Sign In".
     * If you don't see this prompt or "Sign In" page, manually open a web browser and go to `192.168.4.1`.
 * Follow the on-screen instructions (see the attached screenshot below):
@@ -112,8 +114,6 @@ This section walks you through powering on your OpenGarage, connecting it to you
     * **Security+ Detection** *(Optional, OpenGarage v2.3+ only)* : If you have wired your v2.3+ it to your garage opener, click **Detect** to automatically detect the Security+ protocol version. This feature is hidden on OpenGarage v2.2 and earlier as they do not support Security+.
     * **Cloud Token** *(Optional)* : If you already have a Blynk or OTC token (see the [Cloud Connection](#step-5-cloud-connection) section), enter it here. Otherwise, select `No` and you can configure it later.
 * Click **Submit**. Upon a successful connection, you will hear a short tune from the buzzer. Your WiFi credentials are saved and the device reboots into WiFi **Client Mode**, where it automatically obtains a **Device IP** address from your router. This device IP is typically displayed at the bottom of the screen upon the completion of this step.
-
-![AP homepage](screenshots/1_ap.jpg){: .center }
 
 #### Step 3: Access the Device Locally on Your Network
 
@@ -173,6 +173,8 @@ To control and monitor your OpenGarage remotely from anywhere, you'll need to se
 
 #### Homepage
 
+![Homepage](screenshots/2_home.jpg){: .center }
+
 The homepage displays a real-time overview of your device's status including:
 
 * **Door** status
@@ -194,8 +196,6 @@ You can also perform several key operations including:
 * **Toggle Light and Remote Lock** (*Security+ 2.0/1.0 only*)
 
 All of these actions require the **Device Key** (default: `opendoor`), except when accessed remotely via OTC token, where the key is not required. For convenience, the key is cached in your browser and can be cleared by clicking the ✖ icon next to it.
-
-![Homepage](screenshots/2_home.jpg){: .center }
 
 The homepage also provides navigation links to **Edit Options**, **Show Log**, **Firmware Update**, and the **User Manual**.
 
@@ -324,7 +324,7 @@ If the device is in WiFi AP mode, you can perform the firmware update by connect
 
 * [OpenGarage Homepage](https://opengarage.io/)
 * [OpenGarage Github Repository](https://github.com/opengarage)
-* [OpenGarage Documentation]
+* [OpenGarage Documentation](https://opengarage.github.io/OpenGarage-Firmware/)
 * [OpenGarage Blog Post](https://rayshobby.net/introducing-opengarage/)
 
 
