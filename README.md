@@ -1,1 +1,2 @@
-[![View Full Documentation](https://img.shields.io/badge/User_Manual-View_Live-brightgreen)](https://opengarage.github.io/OpenGarage-Firmware/)
+View Full Documentation:
+[![MkDocs](https://img.shields.io/badge/docs%20by-MkDocs-1f77b4?style=for-the-badge&logo=readthedocs)](https://opengarage.github.io/OpenGarage-Firmware/)
