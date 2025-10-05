@@ -1,0 +1,85 @@
+hr.double {
+  height: 3px;
+  border-top: 4px double #ccc;
+  border-bottom: none; /* Ensure no other borders interfere */
+}
+.hl {
+  background-color: #d0ead0; /* Light Green */
+}
+.hl_purple {
+  background-color: #A000A0;
+  color: white;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+.hl_yellow {
+  background-color: #F0F020;
+  color: black;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+.hl_red {
+  background-color: #C02020;
+  color: white;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+.hl_orange {
+  background-color: #F28500;
+  color: white;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+.hl_green {
+  background-color: #209020;
+  color: white;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+.hl_black {
+  background-color: #d0ead0;
+}
+.hl_white {
+  background-color: #DDDDDD;
+  color: black;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+.hl_gray {
+  background-color: #555555;
+  color: white;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+table th,
+table td {
+  padding: 6px 10px;
+}
+.rst-content :not(pre) > code {
+  border: none;
+  background-color: #f4f4f4;
+  color: #A04020;
+  font-size: 85%;
+}
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 325px;
+}
+.center_wider {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 500px;
+}
+
+ul > li {
+  margin-bottom: 0.25em; /* Adjust this value as needed */
+}
+.custom-box {
+  background-color: #d0ead0;
+  padding: 0.7em;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}

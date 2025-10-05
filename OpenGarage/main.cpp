@@ -1528,9 +1528,6 @@ void check_status() {
 			force_mqtt_update_timeout= curr_utc_time + 15;
 		}
 
-		static ulong force_blynk_update_timeout = 0;
-
-
 		// Process dynamics: automation and notifications
 		// report status to Blynk
 		if(og.options[OPTION_CLD].ival==CLOUD_BLYNK && Blynk.connected()) {
