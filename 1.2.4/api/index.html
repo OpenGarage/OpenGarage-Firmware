@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://OpenGarage.github.io/OpenGarage-Firmware/1.2.4/api/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>API Reference - OpenGarage Documentation</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../custom.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "API Reference";
+        var mkdocs_page_input_path = "1.2.4/api.md";
+        var mkdocs_page_url = "/OpenGarage-Firmware/1.2.4/api/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> OpenGarage Documentation
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Firmware v1.2.4</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../manual/">User Manual</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">API Reference</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#1-overview">1. Overview</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#2-get-controller-variables-jc">2. Get Controller Variables /jc</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#3-change-controller-variables-cc">3. Change Controller Variables /cc</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#4-get-options-jo">4. Get Options /jo</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#5-change-options-co">5. Change Options /co</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#6-get-logs-jl">6. Get Logs /jl</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#7-clear-logs-clearlog">7. Clear Logs /clearlog</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#8-factory-reset-resetall">8. Factory Reset /resetall</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#9-mqtt">9. MQTT</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#10-cloud-connection">10. Cloud Connection</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#blynk">Blynk</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#otc-openthings-token">OTC (OpenThings Token)</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Archived</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../archive/">Previous Manuals and API docs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">OpenGarage Documentation</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Firmware v1.2.4</li>
+      <li class="breadcrumb-item active">API Reference</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/OpenGarage/OpenGarage-Firmware/edit/master/docs/1.2.4/api.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h2 id="firmware-124-api-reference-oct-6-2025">Firmware 1.2.4 API Reference [Oct 6, 2025]</h2>
+<h3 id="1-overview">1. Overview</h3>
+<p><span class="hl">New changes since the last firmware version are highlighted in green like here.</span></p>
+<ul>
+<li><span class="hl">This firmware supports OpenGarage v2.3+ with built-in support for Security+ 2.0/1.0.</span></li>
+<li>Whenever device key is required, use <code>dkey=xxx</code>. At factory reset, the <strong>default device key</strong> is <code>opendoor</code>.</li>
+<li>The device's IP address is referred to as <code>devip</code>. For most commands, parameters are optional and the order of parameters does not matter.</li>
+<li>Return values are all formatted in JSON, for example: <code>{"result":1}</code>. Below is the list of error codes:</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Code</th>
+<th style="text-align: left;">Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>1</code></td>
+<td style="text-align: left;">Success</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>2</code></td>
+<td style="text-align: left;">Unauthorized (e.g. missing device key or device key is incorrect)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>3</code></td>
+<td style="text-align: left;">Mismatch (e.g. new device key and confirmation key do not match)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>16</code></td>
+<td style="text-align: left;">Data Missing (e.g. missing required parameters)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>17</code></td>
+<td style="text-align: left;">Out of Range (e.g. value exceeds the acceptable range)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>18</code></td>
+<td style="text-align: left;">Data Format Error (e.g. provided data does not match required format)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>32</code></td>
+<td style="text-align: left;">Page Not Found (e.g. page not found or requested file missing)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>48</code></td>
+<td style="text-align: left;">Not Permitted (e.g. cannot operate on the requested station)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>64</code></td>
+<td style="text-align: left;">Upload failed (e.g. OTA firmware update failed)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="2-get-controller-variables-jc">2. Get Controller Variables <code>/jc</code></h3>
+<p><strong>Usage</strong>: <code>http://devip/jc</code></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Variable</th>
+<th style="text-align: left;">Explanation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>dist</code></td>
+<td style="text-align: left;">Distance sensor value (unit: cm)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>sn2</code></td>
+<td style="text-align: left;">Switch sensor value (present only if switch sensor is enabled)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><a id="jc_door"></a><code>door</code></td>
+<td style="text-align: left;"><span class="hl">Door status</span> (<code>0:closed; 1:open; 2:stopped (partially open); 3:closing; 4:opening; 5:unknown</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>vehicle</code></td>
+<td style="text-align: left;">Vehicle status (<code>0:vehicle not detected; 1:detected; 2:unknown</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>rcnt</code></td>
+<td style="text-align: left;">Read count (increments every time sensor values are updated)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>fwv</code></td>
+<td style="text-align: left;">Firmware version</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>name</code></td>
+<td style="text-align: left;">Device name</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>mac</code></td>
+<td style="text-align: left;">MAC address</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>cid</code></td>
+<td style="text-align: left;">WiFi chip ID</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>rssi</code></td>
+<td style="text-align: left;">WiFi signal strength (dBm)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>cld</code></td>
+<td style="text-align: left;">Cloud option (<code>0:none; 1:Blynk; 2:OTC</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>clds</code></td>
+<td style="text-align: left;">Cloud connection status<br>• For Blynk: <code>0:disconnected; 1:connected</code> <br>• For OTC: <code>0:not enabled; 1:connecting; 2:disconnected; 3:connected</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>temp</code></td>
+<td style="text-align: left;">temperature reading (Celsius), only if T/H sensor is enabled</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>humid</code></td>
+<td style="text-align: left;">humidity reading (relative percentage), only if T/H sensor is enabled</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>secv</code></td>
+<td style="text-align: left;"><span class="hl">Security+ version</span> (<code>2:v2.0; 1:v1.0; 0:None</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>has_swrx</code></td>
+<td style="text-align: left;"><span class="hl">Support for software RX (required for native support of Security+ 2.0/1.0)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>light</code></td>
+<td style="text-align: left;"><span class="hl">Light status</span> (<code>0:off; 1:on</code>)</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>lock</code></td>
+<td style="text-align: left;"><span class="hl">Remote lock status</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>obstruct</code></td>
+<td style="text-align: left;"><span class="hl">Obstruction sensor status</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>nopenings</code></td>
+<td style="text-align: left;"><span class="hl">Number of times the door has opened</span> (available only if <code>secv=2</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>pemu</code></td>
+<td style="text-align: left;"><span class="hl">Panel emulator status</span> (<code>0:inactive; 1:active; 2:detecting</code>, available only if <code>secv=1</code>)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="3-change-controller-variables-cc">3. Change Controller Variables <code>/cc</code></h3>
+<p><strong>Usage</strong>: <code>http://devip/cc?<strong>dkey</strong>=xxx&amp;<strong>click</strong>=1&amp;<strong>close</strong>=1&amp;<strong>open</strong>=1&amp;<strong>light</strong>=toggle&amp;<strong>lock</strong>=toggle&amp;&amp;<strong>reboot</strong>=1&amp;<strong>apmode</strong>=1</code></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Parameters</th>
+<th style="text-align: left;">Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>dkey</code></td>
+<td style="text-align: left;">Device key (at factory reset it is <code>opendoor</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>click</code></td>
+<td style="text-align: left;">Toggle door</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>close</code></td>
+<td style="text-align: left;">Trigger door close action</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>open</code></td>
+<td style="text-align: left;">Trigger door open action</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>reboot</code></td>
+<td style="text-align: left;">Reboot the controller</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>apmode</code></td>
+<td style="text-align: left;">Reset the controller to WiFi AP mode (for reconfiguring WiFi setting)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>light</code></td>
+<td style="text-align: left;"><span class="hl">Toggle light. Supported only for Security+ 2.0/1.0</span>. The only accepted value currently is <code>toggle</code>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>lock</code></td>
+<td style="text-align: left;"><span class="hl">Toggle remote lock. Supported only for Security+ 2.0/1.0</span> The only accepted value currently is <code>toggle</code>.</td>
+</tr>
+</tbody>
+</table>
+<p><br><strong>Examples:</strong></p>
+<ul>
+<li><code>http://devip/cc?dkey=xxx&amp;click=1</code>: toggle door</li>
+<li><code>http://devip/cc?dkey=xxx&amp;close=1</code>: close door (ignored if the door is already closed)</li>
+<li><code>http://devip/cc?dkey=xxx&amp;reboot=1</code>: reboot device</li>
+<li><code>http://devip/cc?dkey=xxx&amp;light=toggle</code>: toggle light</li>
+</ul>
+<hr />
+<h3 id="4-get-options-jo">4. Get Options <code>/jo</code></h3>
+<p><strong>Usage</strong>: <code>http://devip/jo</code></p>
+<p><u>Underlined</u> values indicate factory default values.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Variable</th>
+<th style="text-align: left;">Explanation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>fwv</code></td>
+<td style="text-align: left;">Firmware version (read-only)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>sn1</code></td>
+<td style="text-align: left;">Distance sensor (<code>sn1</code>) mounting type (<code><u>0:ceiling mount</u>; 1:side mount</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>sn2</code></td>
+<td style="text-align: left;">Switch sensor (<code>sn2</code>) type (<code><u>0:none</u>; 1:normally closed; 2:normally open</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>sno</code></td>
+<td style="text-align: left;">Sensor logic: door 'open' status is determined by: <code><u>0:use sn1 only</u>; 1:sn2 only; 2:sn1 AND sn2; 3:sn1 OR sn2</code>. <span class="hl">This option has no effect for Security+ 2.0/1.0</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>dth</code></td>
+<td style="text-align: left;">Door distance threshold (unit: <code>cm</code>, used to detect if the door is open). <span class="hl">This option has no effect for Security+ 2.0/1.0</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>vth</code></td>
+<td style="text-align: left;">Vehicle distance threshold (unit: <code>cm</code>, used to detect if a vehicle is present)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>riv</code></td>
+<td style="text-align: left;">Status and sensor check interval (unit: <code>second</code>, default is <code>1</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>alm</code></td>
+<td style="text-align: left;">Sound alarm: <code>0:no alarm; <u>1:5-second alarm</u>; 2:10-second alarm</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>aoo</code></td>
+<td style="text-align: left;">Disable alarm on opening (<code><u>0:no</u>; 1:yes, i.e. alarm disabled</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>lsz</code></td>
+<td style="text-align: left;">Log size (e.g. <code>50</code> means the controller keeps the most recent <code>50</code> records)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>tsn</code></td>
+<td style="text-align: left;">Temperature/humidity sensor type (<code><u>0:none</u>; 2:DHT11; 3:DHT22; 4:DS18B20</code>). Note that the previous <code>AM2320</code> type is no longer supported due to GPIO pin conflict with OpenGarage v2.3+</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>htp</code></td>
+<td style="text-align: left;">HTTP port (default is <code>80</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>cdt</code></td>
+<td style="text-align: left;">Button click time (unit: <code>ms</code>, default is <code>1000</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>dri</code></td>
+<td style="text-align: left;">Distance reading interval (unit: <code>ms</code>, default is <code>500</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>sfi</code></td>
+<td style="text-align: left;">Sensor filtering method (<code>0:median; <u>1:consensus</u></code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>cmr</code></td>
+<td style="text-align: left;">Consensus margin for the consensus method (unit: <code>cm</code>, default is <code>10</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>sto</code></td>
+<td style="text-align: left;">Sensor timeout handling option (<code><u>0:ignore</u>; 1:cap to maximum value</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>ati</code></td>
+<td style="text-align: left;">Automation rule A time (unit: <code>minutes</code>): detect if the door is left open for longer than <code>ati</code> minutes</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>ato</code></td>
+<td style="text-align: left;">Automation rule A option (<code>bit 0:notify; bit 1:auto-close</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>atib</code></td>
+<td style="text-align: left;">Automation rule B time (unit: <code>UTC hour</code>, detect if the door is left open after hour <code>atib:00 UTC</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>atob</code></td>
+<td style="text-align: left;">Automation rule B option (<code>bit 0:notify; bit 1:auto-close</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>noto</code></td>
+<td style="text-align: left;">Choose notification events (<code>bit 0:door OPEN event; bit 1:door CLOSED event; bit 2:door STOPPED event</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>usi</code></td>
+<td style="text-align: left;">Use static IP (<code><u>0:use DHCP</u>; 1:use static IP</code>).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>dvip</code>,<br><code>gwip</code>,<br><code>subn</code>,<br><code>dns1</code></td>
+<td style="text-align: left;">Customizing device IP, gateway IP, subnet mask, and DNS IP in static IP mode. Effective only when <code>usi=1</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a id="jo_cld"></a><code>cld</code></td>
+<td style="text-align: left;">Cloud connection type (<code><u>0:none</u>; 1:Blynk; 2:OTC</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>auth</code></td>
+<td style="text-align: left;">Cloud authorization token</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>bdmn</code></td>
+<td style="text-align: left;">Cloud server domain name (refer to <a href="#10-cloud-connection">cloud connection</a> for details)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>bprt</code></td>
+<td style="text-align: left;">Cloud server port (refer to <a href="#10-cloud-connection">cloud connection</a> for details)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>name</code></td>
+<td style="text-align: left;">Device name (default is <code>My OpenGarage</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>iftt</code></td>
+<td style="text-align: left;">IFTTT Maker channel token</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>ssid</code></td>
+<td style="text-align: left;">SSID of the WiFi network this device is connected to</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>mqen</code></td>
+<td style="text-align: left;">MQTT enable (<code><u>0:disabled</u>; 1:enabled</code>). Note: this option preserves other mqtt option values when temporarily disabling MQTT.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>mqtt</code></td>
+<td style="text-align: left;">MQTT server url (IP or domain name both allowed)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>mqpt</code></td>
+<td style="text-align: left;">MQTT port (default is <code>1883</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>mqur</code></td>
+<td style="text-align: left;">MQTT server user name (if authentication is required)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>mqpw</code></td>
+<td style="text-align: left;">MQTT password (this variable is NOT shown in the result of <code>/jo</code>, but you can change it using the <code>/co</code> command in the <a href="#5-change-options-co">section below</a>.)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>mqtp</code></td>
+<td style="text-align: left;">MQTT topic (optional, if left empty it will use the Device name as the topic)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>emen</code></td>
+<td style="text-align: left;">Email enable (<code><u>0:disabled</u>; 1:enabled</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>smtp</code></td>
+<td style="text-align: left;">SMTP server name (default is <code>smtp.gmail.com</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>sprt</code></td>
+<td style="text-align: left;">SMTP server port (default is <code>465</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>send</code></td>
+<td style="text-align: left;">Email sender (for authentication with the SMTP server)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>apwd</code></td>
+<td style="text-align: left;">Email app password (for authentication with the SMTP server)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>recp</code></td>
+<td style="text-align: left;">Recipient email (for receiving notification, may or may not be the same as the sender)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>ntp1</code></td>
+<td style="text-align: left;">NTP server url (optional, if customizing NTP server)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>host</code></td>
+<td style="text-align: left;">Custom Host name (used for the mDNS feature). For example, if <code>host=my_og</code>, you can access the device via its mDNS name <code>my_og.local/</code>)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="5-change-options-co">5. Change Options <code>/co</code></h3>
+<p><strong>Usage</strong>: <code>http://devip/co?<strong>dkey</strong>=xxx&amp;<strong>nkey</strong>=xxx&amp;<strong>ckey</strong>=xxx&amp;<strong>opn</strong>=opv...</code></p>
+<ul>
+<li><code>opn</code> can be any variable name listed in the table above, and <code>opv</code> is the value you want to change it to.</li>
+<li><code>fwv</code> is read-only and thus not changeable.</li>
+<li>The device key <code>dkey</code> may be changed only by providing both <code>nkey</code> (new key) and <code>ckey</code> (confirm key) and they must match exactly.</li>
+</ul>
+<p><br><strong>Examples:</strong></p>
+<ul>
+<li><code>devip/co?dkey=xxx&amp;nkey=abc&amp;ckey=abc</code>: set device key to <code>abc</code></li>
+<li><code>devip/co?dkey=xxx&amp;dth=75</code>: set door's distance threshold to <code>75cm</code></li>
+<li><code>devip/co?dkey=xxx&amp;auth=0123456789abcdef</code>: set the cloud authentication token</li>
+<li><code>devip/co?dkey=xxx&amp;htp=8080&amp;riv=2</code>: set HTTP port to <code>8080</code>, and set sensor read interval to <code>2</code> seconds</li>
+<li><code>devip/co?dkey=xxx&amp;ati=5&amp;ato=3</code>: set automation rule A time to <code>5</code> minutes and its option to <code>0b11</code> (i.e. auto-notify and auto-close if the door is left open for <code>&gt;5 minutes</code>).</li>
+</ul>
+<hr />
+<h3 id="6-get-logs-jl">6. Get Logs <code>/jl</code></h3>
+<p><strong>Usage</strong>: <code>http://devip/jl</code></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Variable</th>
+<th style="text-align: left;">Explanation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>name</code></td>
+<td style="text-align: left;">Device name</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>time</code></td>
+<td style="text-align: left;">Device time (UTC epoch time)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>starttime</code></td>
+<td style="text-align: left;">Time when the device is powered on (UTC epoch time)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>ncols</code></td>
+<td style="text-align: left;">Number of columns (<code>3</code> or <code>4</code> depending on if <code>sn2_value</code> is present in the log data)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>logs</code></td>
+<td style="text-align: left;">Log data: an array of log entries, each in the format of <code>[time_stamp, door_status, distance_value, sn2_value]</code>. Note that <code>sn2_value</code> is only available if <code>sn2</code> is enabled.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="7-clear-logs-clearlog">7. Clear Logs <code>/clearlog</code></h3>
+<p><strong>Usage</strong>: <code>http://devip/clearlog?<strong>dkey</strong>=xxx</code></p>
+<p>Clears the entire log data.</p>
+<hr />
+<h3 id="8-factory-reset-resetall">8. Factory Reset <code>/resetall</code></h3>
+<p><strong>Usage</strong>: <code>http://devip/resetall?<strong>dkey</strong>=xxx</code></p>
+<p>Resets the controller back to factory default settings. WiFi will be restored to AP (Access Point) mode.</p>
+<hr />
+<h3 id="9-mqtt">9. MQTT</h3>
+<p>To use MQTT features:</p>
+<ul>
+<li>Enable MQTT (set <code>mqen=1</code>) and provide server parameters (server url <code>mqtt</code>, port <code>mqpt</code>, user name <code>mqur</code> and password <code>mqpw</code> if using authentication).</li>
+<li>You may define a custom MQTT topic (<code>mqtp</code>). If left empty, the device name will be used as the topic. In the example below, the topic is referred to as <code>OGTOPIC</code>.</li>
+<li>To disable MQTT, set <code>mqen=0</code>, which preserves the other values, allowing you to easily switch between enabling and disabling MQTT without the loss of other parameters.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Published Message</th>
+<th style="text-align: left;">Explanation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>/OGTOPIC/OUT/NOTIFY</code></td>
+<td style="text-align: left;">Published upon changes in door status, including just <code>OPENED</code>, just <code>CLOSED</code>, or just <code>STOPPED</code>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>/OGTOPIC/OUT/STATUS</code></td>
+<td style="text-align: left;">Report device online/offline status.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>/OGTOPIC/OUT/STATE</code></td>
+<td style="text-align: left;">Published every 15 seconds to report the current state, including <code>OPEN</code>, <code>CLOSED</code>, <code>STOPPED</code>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>/OGTOPIC/OUT/JSON</code></td>
+<td style="text-align: left;">Published every 15 seconds and reports the same controller variables as the <a href="#2-get-controller-variables-jc"><code>/jc</code> endpoint</a></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Subscribed Message</strong>:</p>
+<p>The controller subscribes to topic <code>/OGTOPIC/IN/STATE</code> and accepts the following payload messages:</p>
+<ul>
+<li><code>click</code>: Toggle door</li>
+<li><code>close</code>: Trigger door close action</li>
+<li><code>open</code> : Trigger door open action</li>
+<li><code>togglelight</code>: <span class="hl">Toggle light. Supported only for Security+ 2.0/1.0</span></li>
+<li><code>togglelock</code>: <span class="hl">Toggle remote lock. Supported only for Security+ 2.0/1.0</span></li>
+</ul>
+<hr />
+<h3 id="10-cloud-connection">10. Cloud Connection</h3>
+<p>The cloud connection type is defined by the <a href="#jo_cld"><code>cld</code> option</a>. Two types are supported: Blynk and OTC.</p>
+<h4 id="blynk">Blynk</h4>
+<p>As the Blynk team officially ended support for their legacy app and server, we provide a replicated Blynk server at <a href="https://openthings.io"><code>openthings.io</code></a>. This allows existing users of the legacy app can continue using it for connection.</p>
+<ul>
+<li>Default server domain name (<code>bdmn</code>): <code>blynk.openthings.io</code></li>
+<li>Default server port (<code>bprt</code>): <code>8080</code>. Change these accordingly if using your own Blynk server.</li>
+</ul>
+<p>Once connected, you can use the <strong>Blynk Legacy HTTP API</strong> to retrieve data or trigger garage door actions. The base URL is:</p>
+<ul>
+<li>Secure (HTTPS): <code>https://blynk.openthings.io:9443/token</code></li>
+<li>Non-secure (HTTP): <code>https://blynk.openthings.io:8080/token</code></li>
+</ul>
+<p>For example:</p>
+<ul>
+<li><code>https://blynk.openthings.io:9443/token/project</code> returns the entire project in JSON, where <code>token</code> is the 32-character authorization token.</li>
+<li><code>https://blynk.openthings.io:9443/token/get/V?</code> returns the value of pin <code>V?</code>, where:<ul>
+<li><code>V0</code>: door status (see <a href="#jc_door"><code>door</code> variable</a> for supported values)</li>
+<li><code>V3</code>: distance sensor value</li>
+<li><code>V4</code>: vehicle status</li>
+<li><code>V6</code>: temperature sensor value</li>
+<li><code>V7</code>: humidity sensor value</li>
+</ul>
+</li>
+<li><code>https://blynk.openthings.io:9443/token/update/V1?value=1</code> updates pin <code>V1</code> with value <code>1</code>, triggering a door click.</li>
+</ul>
+<h4 id="otc-openthings-token">OTC (OpenThings Token)</h4>
+<p>OTC is based on our own <a href="https://github.com/openthingsio">OpenThingsFramework (OTF) proxy</a>.</p>
+<ul>
+<li>Default server domain name (<code>bdmn</code>) is <code>ws.cloud.openthings.io</code></li>
+<li>Default server port (<code>bprt</code>) is: <code>80</code>. Change these accordingly if using your own OTC server.</li>
+</ul>
+<p>Once connected, you can use the same <strong>OpenGarage API</strong> (this document) via the OTC cloud. The base URL is <code>https://cloud.openthings.io/forward/v1/token</code>. For example:</p>
+<ul>
+<li><code>https://cloud.openthings.io/forward/v1/token/</code> returns the controller homepage, where <code>token</code> is the 32-character OTC token.</li>
+<li><code>https://cloud.openthings.io/forward/v1/token/jc</code> returns <a href="#2-get-controller-variables-jc">controller variables</a>.</li>
+<li><code>https://cloud.openthings.io/forward/v1/token/jl</code> returns <a href="#6-get-logs-jl">log data</a>.</li>
+<li><u><strong>NOTE</strong></u>: When using OTC, the device key (<code>dkey</code>) is ignored. The OTC token itself serves as the globally unique secret key.</li>
+</ul>
+<hr />
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../manual/" class="btn btn-neutral float-left" title="User Manual"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../archive/" class="btn btn-neutral float-right" title="Previous Manuals and API docs">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/OpenGarage/OpenGarage-Firmware" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../manual/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../archive/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

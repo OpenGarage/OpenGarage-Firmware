@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://OpenGarage.github.io/OpenGarage-Firmware/1.2.4/manual/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>User Manual - OpenGarage Documentation</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../custom.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "User Manual";
+        var mkdocs_page_input_path = "1.2.4/manual.md";
+        var mkdocs_page_url = "/OpenGarage-Firmware/1.2.4/manual/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> OpenGarage Documentation
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Firmware v1.2.4</span></p>
+              <ul class="current">
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">User Manual</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#whats-new-in-firmware-124">What's New in Firmware 1.2.4?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#hardware-setup">Hardware Setup</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#step-1-locate-door-button-terminals">Step 1: Locate Door-Button Terminals</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#step-2-wiring">Step 2: Wiring</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#step-3-mounting">Step 3: Mounting</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#software-setup">Software Setup</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#step-1-power-up-and-ap-mode">Step 1: Power-Up and AP Mode</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#step-2-wifi-configuration">Step 2: WiFi Configuration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#step-3-access-the-device-locally-on-your-network">Step 3: Access the Device Locally on Your Network</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#step-4-button-actions">Step 4: Button Actions</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#step-5-cloud-connection">Step 5: Cloud Connection</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#step-6-browser-mobile-app-and-home-assistant-integration">Step 6: Browser, Mobile App, and Home Assistant Integration</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#built-in-web-interface">Built-in Web Interface</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#homepage">Homepage</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#edit-options">Edit Options</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#1-basic-tab">1. Basic Tab</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#2-integration-tab">2. Integration Tab</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#3-advanced-tab">3. Advanced Tab</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#firmware-update">Firmware Update</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#links-and-resources">Links and Resources</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../api/">API Reference</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Archived</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../archive/">Previous Manuals and API docs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">OpenGarage Documentation</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Firmware v1.2.4</li>
+      <li class="breadcrumb-item active">User Manual</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/OpenGarage/OpenGarage-Firmware/edit/master/docs/1.2.4/manual.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h2 id="firmware-124-user-manual-oct-6-2025">Firmware 1.2.4 User Manual [Oct 6, 2025]</h2>
+<p>OpenGarage is a fully open-source product. Hardware and software details are all published at the <a href="https://github.com/opengarage">OpenGarage Github repository</a>. For additional details, video tutorials, technical support, and user forum, visit <a href="https://opengarage.io">https://opengarage.io</a>.</p>
+<h3 id="whats-new-in-firmware-124">What's New in Firmware 1.2.4?</h3>
+<p>This firmware introduces support for <strong>OpenGarage v2.3+</strong>, a new hardware version that can natively communicate with <strong>Security+ 2.0 and 1.0</strong> openers. This direct communication enables a range of new features, including richer door status reporting and control over the opener's light and remote lock. Here is a detailed list:</p>
+<ul>
+<li>Auto-detection of Security+ 2.0/1.0.</li>
+<li>Reporting a complete list of door states: closed, open, stopped (partially open), closing, opening.</li>
+<li>Control opener's light and remote lock.</li>
+<li>Obstruction sensor reporting.</li>
+<li>Wall-panel emulation for Security+ 1.0.</li>
+<li>Redesigned AP-mode WiFi setup page with a sleek new appearance.</li>
+<li>Built-in web UI now serves minified and compressed assets for quicker loads and reduced flash usage.</li>
+<li>Firmware update progress indicator.</li>
+<li>MQTT integration and Blynk UI updated to include the extended door states, light, and remote lock controls.</li>
+<li>Backward compatibility with older OpenGarage hardware that does not have native support for Security+.</li>
+</ul>
+<hr class="double">
+
+<h3 id="hardware-setup">Hardware Setup</h3>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>OpenGarage is <strong>not waterproof</strong>. If installing outdoors, place it inside a <strong>waterproof enclosure</strong>.</p>
+</div>
+<p>OpenGarage has a built-in ultrasonic distance sensor for detecting door status and car presence, a pushbutton, and a microUSB connector for power.</p>
+<p><img alt="OG Hardware" class="center" src="../images/og_hardware.jpg" /></p>
+<h4 id="step-1-locate-door-button-terminals">Step 1: Locate Door-Button Terminals</h4>
+<p><img alt="Opener Terminals" class="center" src="../images/opener_terminals.jpg" /></p>
+<p>On <strong>your garage opener's motor unit</strong>, locate the terminals that connect to the <strong>wall button</strong> (also called console or door control). OpenGarage communicates with the opener through these terminals. Most openers have <strong>four</strong> terminals:</p>
+<ul>
+<li>Two for the <strong>wall-button</strong> — typically colored <span class="hl_red">Red</span> (Signal) and <span class="hl_white">White</span> (Ground). These are the ones OpenGarage connects to.</li>
+<li>Two for the <strong>safety sensor</strong> — typically colored <span class="hl_gray">Gray</span> (Signal) and <span class="hl_white">White</span> (Ground).</li>
+</ul>
+<p>If you are unsure, or your terminals don't have these colors: simply identify which terminals are connected to your existing wall button, or refer to your opener’s user manual.</p>
+<h4 id="step-2-wiring">Step 2: Wiring</h4>
+<p><img alt="OG Terminals" class="center_wider" src="../images/og_terminals.jpg" /></p>
+<p>OpenGarage v2.x has four integrated screw terminals. Flip the device over to identify the terminals on the back:</p>
+<ul>
+<li>The <strong>bottom</strong> two connect to your opener's <strong>wall-button</strong> terminals. These are <strong>required</strong>.</li>
+<li>The <strong>top</strong> two are optional: they can be connected to a magnetic switch sensor, or your opener's safety sensor (for sensing obstruction status).</li>
+</ul>
+<p>Use the two-wire cable from your OpenGarage package to connect the <strong>bottom</strong> two screws to your opener's <strong>wall-button</strong> terminals identified in Step 1 above:</p>
+<ul>
+<li>On OpenGarage <strong>v2.0—2.2</strong>, the terminals are labeled <strong>Door Button Wire1</strong> and <strong>Door Button Wire2</strong>. They are <strong>non-polarized</strong>, so can be connected in either orientation.</li>
+<li>On OpenGarage <strong>v2.3+</strong>, they are labeled <span class="hl_red"><strong>Red/Pink (CTRL)</strong></span> and <span class="hl_white"><strong>White/Green (GND)</strong></span> respectively. These are <u><strong>polarized</strong></u>:<ul>
+<li><strong>CTRL</strong> must go to your opener's <span class="hl_red">Red</span> (Signal) terminal</li>
+<li><strong>GND</strong> must go to your opener's <span class="hl_white">White</span> (Ground) terminal.</li>
+<li>The included cable uses Pink and Green for internal wire colors. Use <strong>Pink as Red</strong>, and <strong>Green as White</strong>. If using your own cable, they are typically colored Red and White.</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>v2.3+ is designed primarily for LiftMaster, Chamberlain, and Craftsman brands, which operate their wall-buttons at 12V DC. If you plan to use it with other brands, make sure your wall-button terminals output <strong>DC only</strong>, and that the voltage is <strong>below 20 V</strong>. Applying AC voltage or DC voltage above 20 V can permanently damage the v2.3+ circuit.</p>
+</div>
+</li>
+</ul>
+<p>To connect the wires:</p>
+<p><img alt="Screw Wiring" class="center_wider" src="../images/screw_wiring.jpg" /></p>
+<ul>
+<li>Loosen the screws on the bottom two terminals.</li>
+<li>Strip the wire ends to an appropriate length. Then insert the stripped copper wire through the enclosure hole.</li>
+<li>Using tweezers, a small screwdriver, or needle-nose pliers, wrap the wire <strong>around the screw at least one full turn</strong>.</li>
+<li>Tighten the screw securely.</li>
+<li>Repeat for the second terminal.</li>
+<li>Trim any excess wire to ensure it doesn't touch nearby solder joints.</li>
+<li>Finally, strip the other ends of the cable and insert them into your opener's wall-button terminals, following the color guide.</li>
+</ul>
+<h4 id="step-3-mounting">Step 3: Mounting</h4>
+<p>The best location to mount OpenGarage is on the <strong>ceiling</strong>, with the distance sensor facing down. The ideal position depends on how the device senses the door status:</p>
+<ul>
+<li><strong>For OpenGarage v2.0—2.2</strong>, or <strong>v2.3+ with Security+ set to <code>None</code></strong>: The device uses the distance sensor to detect the door's open status. Therefore, position the device so it has an <strong>unobstructed view of</strong> your garage <strong>door</strong> when it's <strong>open</strong>, and the top of your <strong>car</strong> when the door is <strong>closed</strong>.<ul>
+<li><u><strong>NOTE</strong></u>: When the door is open, the car status is unavailable, as the door blocks the sensor's view of the car.</li>
+</ul>
+</li>
+</ul>
+<p><img alt="Mounting NoSecurity+" class="center_wider" src="../images/og_mounting_nosecurity%2B.jpg" /></p>
+<ul>
+<li><strong>For OpenGarage v2.3+</strong> with <strong>Security+ set to <code>2.0</code> or <code>1.0</code></strong>: The device obtains the door status directly via the Security+ protocol. The distance sensor is used solely for detecting car presence. Therefore, position the device such that it has an <strong>unobstructed view of your car</strong> at all times, regardless of the door's position.<ul>
+<li><u><strong>NOTE</strong></u>: Car status remains available whether the door is open or closed.</li>
+</ul>
+</li>
+</ul>
+<p><img alt="Mounting Security+" class="center_wider" src="../images/og_mounting_security%2B.jpg" /></p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><strong>Areas to Avoid</strong>: Do <strong>NOT</strong> mount the device directly above or too close to the metal garage door rail or chain. These objects can interfere with distance sensor readings.</p>
+</div>
+<p>Once you've chosen a good location, use <strong>screws</strong> or <strong>strong double-sided tape</strong> to mount the device securely.</p>
+<hr class="double">
+
+<h3 id="software-setup">Software Setup</h3>
+<p>This section walks you through powering on your OpenGarage, connecting it to your WiFi network, and accessing its web interface for the first time.</p>
+<h4 id="step-1-power-up-and-ap-mode">Step 1: Power-Up and AP Mode</h4>
+<ul>
+<li>
+<p>Plug a microUSB cable into the device and connect it to a USB power adapter.</p>
+</li>
+<li>
+<p>The first time it powers on (or after a WiFi/factory reset), the device creates an open WiFi Access Point (AP) named: <code>OG_</code> followed by the last 6 digits of its MAC address. For example: <code>OG_67FG8A</code>. Use your phone, tablet, or computer to find this network and connect to it.</p>
+</li>
+</ul>
+<h4 id="step-2-wifi-configuration">Step 2: WiFi Configuration</h4>
+<ul>
+<li>After connecting to the <code>OG_</code> network, most smart devices will automatically prompt you to "Sign In".<ul>
+<li>If you don't see this prompt or "Sign In" page, manually open a web browser and go to <code>192.168.4.1</code>.</li>
+</ul>
+</li>
+<li>Follow the on-screen instructions (see the attached screenshot below):<ul>
+<li><strong>Either select or enter</strong> your WiFi router's name (SSID) and type its password.</li>
+<li><strong>Host Name</strong> <em>(Optional)</em> : Enter a custom hostname (e.g. <code>myog</code>). This makes it easy to access the device later using a domain name like <code>http://myog.local</code>.</li>
+<li><strong>Security+ Detection</strong> <em>(Optional, OpenGarage v2.3+ only)</em> : If you have wired your v2.3+ it to your garage opener, click <strong>Detect</strong> to automatically detect the Security+ protocol version. This feature is hidden on OpenGarage v2.2 and earlier as they do not support Security+.</li>
+<li><strong>Cloud Token</strong> <em>(Optional)</em> : If you already have a Blynk or OTC token (see the <a href="#step-5-cloud-connection">Cloud Connection</a> section), enter it here. Otherwise, select <code>No</code> and you can configure it later.</li>
+</ul>
+</li>
+<li>Click <strong>Submit</strong>. Upon a successful connection, you will hear a short tune from the buzzer. Your WiFi credentials are saved and the device reboots into WiFi <strong>Client Mode</strong>, where it automatically obtains a <strong>Device IP</strong> address from your router. This device IP is typically displayed at the bottom of the screen upon the completion of this step.</li>
+</ul>
+<p><img alt="AP homepage" class="center" src="../screenshots/1_ap.jpg" /></p>
+<h4 id="step-3-access-the-device-locally-on-your-network">Step 3: Access the Device Locally on Your Network</h4>
+<p>Now that OpenGarage is connected to your home network, you can access it locally using its device IP.</p>
+<ul>
+<li>Open a browser on a smart device or computer that is connected to the same home WiFi network as OpenGarage, and enter the device IP.</li>
+<li>
+<p><strong>Device Key</strong>: To perform certain actions like triggering the door or changing settings, you need to enter a Device Key.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>The default Device Key is: <strong><u>opendoor</u></strong></p>
+</div>
+</li>
+</ul>
+<p></p>
+
+<p><strong>Finding the Device IP</strong>: If you don't know your OpenGarage's device IP, there are several ways to find it:</p>
+<ul>
+<li>Check your router's <strong>Client List</strong>: Log in to your WiFi router's administration page and look for a list of connected devices. The OpenGarage should appear there with its assigned IP address.</li>
+<li><strong>mDNS</strong>: If you entered a custom <strong>Host Name</strong> during WiFi configuration (e.g. <code>myog</code>), you can access it using the mDNS name <code>http://myog.local/</code> (i.e. the host name followed by <code>.local/</code>). If you left the host name empty, it uses the default host name, which is <code>OG_</code> followed by the last 6 digits of its MAC address (same as AP-mode SSID). In the example above, it will be <code>http://OG_67FG8A.local/</code>.</li>
+<li><strong>Audible IP</strong>: Press and hold the onboard pushbutton for <strong>2 to 4 seconds</strong>, then release. The device will beep out its IP address using tones (see <a href="#step-4-button-actions">Button Actions</a> below).</li>
+</ul>
+<h4 id="step-4-button-actions">Step 4: Button Actions</h4>
+<p>The pushbutton on OpenGarage has several useful functions depending on how long you press it:</p>
+<ul>
+<li><strong>Trigger Relay</strong>: A short click (less than 2 sec) → triggers the onboard relay and consequently garage door action. This is similar to a typical garage door wall button.</li>
+<li><strong>Report IP</strong>: Hold 2-4 sec and release → the device IP is reported as sequences of rising notes, pauses, and high-pitch tones for dots. For example: <code>192.168.1.10</code> is beeped out as a <code>C4</code> (the leading <code>1</code>), followed by a pause; then sequence <code>C4, C#4, D4...</code> continuously until <code>G#5</code>, indicating digit <code>9</code>, followed by a pause; then <code>C4, C#4</code> and pause, indicating <code>2</code>; then a high-pitch tone, indicating a dot; and so on. Count the number of notes in each sequence to determine the digit.</li>
+<li><strong>Reset to AP Mode</strong>: Hold 5-9 sec until the LED toggles state (from off to on), then release → resets the device to WiFi AP Mode. This allows you to reconfigure WiFi without losing settings and log data.</li>
+<li><strong>Factory Reset</strong>: Hold 10+ sec until the LED turns on and then off → resets the device back to factory default. This erases all settings and data, restoring the device to its original state.</li>
+</ul>
+<h4 id="step-5-cloud-connection">Step 5: Cloud Connection</h4>
+<p>To control and monitor your OpenGarage remotely from anywhere, you'll need to set up a cloud connection. OpenGarage supports two cloud services:</p>
+<ul>
+<li><strong>OTC</strong> (OpenThings Cloud): Allows full remote access to the built-in web UI. All features are supported except firmware upgrade.</li>
+<li><strong>Blynk</strong>: Allows remote status checks and door control through the Blynk legacy app, but does <strong>not</strong> allow settings, logs, or firmware upgrade.</li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>For detailed instructions on setting up and using cloud services, refer to the <strong><a href="https://openthings.freshdesk.com/a/solutions/articles/5000878722">Cloud Connection Support Article</a></strong>.</p>
+</div>
+<h4 id="step-6-browser-mobile-app-and-home-assistant-integration">Step 6: Browser, Mobile App, and Home Assistant Integration</h4>
+<ul>
+<li><strong>Browser Access</strong><ul>
+<li>OpenGarage provides a <a href="#built-in-web-interface">built-in web UI</a> accessible directly from any browser using the device's local IP or hostname.</li>
+<li>Remote access via browser is also supported through the OTC cloud connection using the <a href="../api/#otc-openthings-token">OTC base url</a>.</li>
+</ul>
+</li>
+<li><strong>Web App</strong><ul>
+<li>A lightweight <a href="https://raysfiles.com/og/og_devices.html"><strong>OpenGarage Web App</strong></a> is available for conveniently managing <strong>multiple OpenGarage devices</strong>.</li>
+<li>It supports both local access (via device IP) and remote access (via Blynk or OTC), and runs entirely in your browser — no installation required.</li>
+</ul>
+</li>
+<li><strong>Native App</strong><ul>
+<li>The OpenGarage Mobile App is available for installation in both the iOS App Store and Google Play. It provides a native app interface for door control, status, and multiple device management.</li>
+</ul>
+</li>
+<li><strong>Home Assistant Integration</strong><ul>
+<li>OpenGarage has an official <a href="https://www.home-assistant.io/integrations/opengarage/">Home Assistant integration</a> that adds the device as a cover entity. It allows door control, status monitoring, and automation within Home Assistant.</li>
+</ul>
+</li>
+<li><strong>API and MQTT</strong><ul>
+<li>OpenGarage exposes a simple, well-documented <a href="../api/">HTTP API</a> as well as MQTT support. You can use these to write custom scripts, integrate with third-party apps, or connect through any MQTT client.</li>
+</ul>
+</li>
+</ul>
+<hr class="double">
+
+<h3 id="built-in-web-interface">Built-in Web Interface</h3>
+<h4 id="homepage">Homepage</h4>
+<p>The homepage displays a real-time overview of your device's status including:</p>
+<ul>
+<li><strong>Door</strong> status</li>
+<li><strong>Vehicle</strong> detection status</li>
+<li><strong>Distance</strong> sensor value</li>
+<li><strong>Switch</strong> sensor state (<em>if enabled</em>)</li>
+<li><strong>Obstruction</strong> sensor status (<em>Security+ 2.0/1.0 only</em>)</li>
+<li><strong>Panel Emulation</strong> mode (<em>Security+ 1.0 only</em>)</li>
+<li><strong>WiFi Signal</strong> strength</li>
+<li><strong>Cloud</strong> connection status</li>
+<li><strong>Temperature/Humidity</strong> sensor readings (<em>if enabled</em>)</li>
+</ul>
+<p>You can also perform several key operations including:</p>
+<ul>
+<li><strong>Open/Close/Toggle door</strong></li>
+<li><strong>Reboot Device</strong></li>
+<li><strong>Reset WiFi</strong></li>
+<li><strong>Clear Log</strong>.</li>
+<li><strong>Toggle Light and Remote Lock</strong> (<em>Security+ 2.0/1.0 only</em>)</li>
+</ul>
+<p>All of these actions require the <strong>Device Key</strong> (default: <code>opendoor</code>), except when accessed remotely via OTC token, where the key is not required. For convenience, the key is cached in your browser and can be cleared by clicking the ✖ icon next to it.</p>
+<p><img alt="Homepage" class="center" src="../screenshots/2_home.jpg" /></p>
+<p>The homepage also provides navigation links to <strong>Edit Options</strong>, <strong>Show Log</strong>, <strong>Firmware Update</strong>, and the <strong>User Manual</strong>.</p>
+<h4 id="edit-options">Edit Options</h4>
+<p>Editing any option requires the Device Key (except when accessed remotely via OTC token). Some options take effect only after a reboot — these are marked <code>[Effective after reboot]</code>. The options are divided into three tabs:</p>
+<h5 id="1-basic-tab">1. Basic Tab</h5>
+<p><img alt="Basic Tab" class="center" src="../screenshots/4_options_basic.jpg" /></p>
+<ul>
+<li><strong>Device Name</strong>: A custom name shown on the homepage.</li>
+<li><strong>Distance Sensor</strong>: How the device is mounted:<ul>
+<li><strong>Ceiling Mount</strong> (default): The most common use, where the device is mounted on the ceiling with the ultrasonic distance sensor facing down.</li>
+<li><strong>Side Mount</strong>: For roll-up doors or when ceiling mount is not feasible: mount the device on the side of the door facing outward.</li>
+</ul>
+</li>
+<li>
+<p><strong>Security+ Version</strong>: <span class="hl">Available only on <strong>OpenGarage v2.3+</strong> and applies to <strong>LiftMaster, Chamberlain, and Craftsman</strong> brands</span>. You can typically identify the version by the color of the <strong>Learn</strong> button or <strong>antenna wire</strong> on the motor unit:</p>
+<ul>
+<li><strong>2.0</strong>: <span class="hl_yellow"><strong>Yellow</strong></span></li>
+<li><strong>1.0</strong>: <span class="hl_purple">Purple</span>, <span class="hl_orange">Orange</span>, or <span class="hl_red">Red</span></li>
+<li><strong>None</strong>: <span class="hl_green">Green</span>, or any brand not listed above</li>
+<li>
+<p><strong>Detect</strong>: If you're unsure of your version, click <strong>Detect</strong> to automatically probe and select the correct type.</p>
+<div class="admonition danger">
+<p class="admonition-title">Danger</p>
+<p>The detection can take up to 15 seconds, and <strong>the door may activate or move</strong> during this time. Ensure the door's path is clear before proceeding.</p>
+</div>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Door Threshold</strong>: Distance (in <code>cm</code>) used to determine if the door is open.</p>
+<ul>
+<li>Set it larger than the distance from the ceiling to the door when fully open, but smaller than the ceiling-to-car distance.</li>
+<li>Example: if the distance from ceiling to the fully-open door is 30 cm, set the threshold to <code>50 cm</code> to provide a reliable margin.</li>
+<li>This option is <u>only available</u> if <strong>Security+ Version</strong> is <strong>None</strong>. For Security+ 2.0/1.0, the door status is obtained from the Security+ protocol and not by the distance sensor.</li>
+</ul>
+</li>
+<li><strong>Car Threshold</strong>: Distance (in <code>cm</code>) used to determine if a car is detected.<ul>
+<li>Set it larger than the ceiling-to-car distance, but smaller than ceiling-to-ground distance.</li>
+<li>The diagram below illustrates how to set the Door and Car thresholds.</li>
+</ul>
+</li>
+</ul>
+<p><img alt="Set Thresholds" class="center" src="../images/set_thresholds.jpg" /></p>
+<ul>
+<li><strong>Status Check Interval</strong>: How often (in <code>seconds</code>) the device checks all sensors. Default: <code>1</code>.</li>
+<li><strong>Click Time</strong>: Duration (in <code>ms</code>) the relay is held when triggered. Default: <code>1000 ms</code>.</li>
+<li>
+<p><strong>Switch Sensor</strong>: (<u>only available</u> if <strong>Security+ Version</strong> is <strong>None</strong>) Configure an optional magnetic sensor (connected between pin <code>G04</code> and <code>GND</code>) for door detection. Options:</p>
+<ul>
+<li><strong>Normally Closed</strong>: most common type; switch is closed/shorted when door is closed</li>
+<li><strong>Normally Open</strong>: switch is open when door is closed</li>
+</ul>
+</li>
+<li>
+<p><strong>Sensor Logic</strong>: (<u>only available</u> if <strong>Security+ Version</strong> is <strong>None</strong>) If a switch sensor is enabled, you can define how the distance and switch sensors together determine the door status:</p>
+<ul>
+<li>Distance Sensor Only</li>
+<li>Switch Sensor Only</li>
+<li>Distance <code>AND</code> Switch — door considered open only if both sensors report open</li>
+<li>Distance <code>OR</code> Switch — door considered open if either reports open</li>
+</ul>
+</li>
+<li>
+<p><strong>T/H Sensor</strong> <code>[Effective after reboot]</code>: Select the type of optional temperature/humidity sensor (requires soldering). Supported sensors:</p>
+<ul>
+<li>DHT11/DHT22 (data pin on <code>G05</code>)</li>
+<li>DS18B20 (data pin on <code>G05</code>, requires <code>10 kΩ</code> pull-up resistor)</li>
+<li>The sensor must be powered by <code>VCC</code> (3.3 V) and <code>GND</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Sound Alarm</strong>: Set the duration for the audible alarm before each door movement.</p>
+<ul>
+<li>Includes an option to disable the alarm specifically for door opening.</li>
+</ul>
+</li>
+<li><strong>Log Size</strong>: Number of log records to retain.<ul>
+<li>After changing, go to the homepage and click <strong>Clear Log</strong> for it to take effect.</li>
+</ul>
+</li>
+</ul>
+<h5 id="2-integration-tab">2. Integration Tab</h5>
+<p><img alt="Integration Tab" class="center" src="../screenshots/5_options_integration.jpg" /></p>
+<ul>
+<li>
+<p><strong>Enable Cloud Connection</strong>: Select <strong>Blynk</strong> or <strong>OTC</strong> for cloud service, and enter the <strong>Cloud Token</strong>. The default <strong>Cloud Server / Port</strong> are:</p>
+<ul>
+<li>Blynk: <code>blynk.openthings.io</code>, port <code>8080</code></li>
+<li>OTC: <code>ws.cloud.openthings.io</code>, port <code>80</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Enable MQTT</strong>: Enable MQTT communication by provide the MQTT server URL, port, credentials (optional), and a custom MQTT topic.</p>
+<ul>
+<li>If topic is left blank, the device name is used.</li>
+</ul>
+</li>
+<li>
+<p><strong>Enable Email Notifications</strong>: Set up email notifications by providing an SMTP server, credentials, and recipient address.</p>
+<ul>
+<li>
+<p>For detailed instructions, refer to the <a href="https://openthings.freshdesk.com/support/solutions/articles/5000889759">Setting Up Email Notifications Support Article</a>.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>When using MQTT or Email Notifications, please ensure all fields are correct. Empty or incorrect values may cause the device to become unresponsive.</p>
+</div>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>IFTTT Key</strong>: Webhook service key for IFTTT integration.</p>
+<ul>
+<li>Create an <a href="https://ifttt.com/">IFTTT</a> account, search "Webhook" service and create a key, then copy your key here. You can then create <strong>applets</strong> triggered by the <code>opengarage</code> event name, with SMS, email, or push notification as the action. The notification message is passed via parameter <code>value1</code>.</li>
+</ul>
+</li>
+<li>
+<p><strong>Choose Notification Events</strong>: Select which events generate notifications. Applies to all of Blynk, Email, IFTTT, and MQTT.</p>
+</li>
+<li>
+<p><strong>Automation</strong>: Set up rules to automatically notify you or close the door if it has been left open beyond a certain amount of time, or past a specific UTC time.</p>
+<ul>
+<li>Time is in UTC, as the controller does not know your local timezone. Example: to close at 6 PM local (UTC-4), set 22 (6 PM + 4 h = 22 UTC).</li>
+<li>A minimum 5-second sound alarm is enforced before auto-close.</li>
+</ul>
+</li>
+</ul>
+<h5 id="3-advanced-tab">3. Advanced Tab</h5>
+<p><img alt="Advanced Tab" class="center" src="../screenshots/6_options_advanced.jpg" /></p>
+<ul>
+<li>
+<p><strong>Read Interval</strong> <code>[effective after reboot]</code>: Time (in <code>ms</code>) between ultrasonic distance sensor readings. Default: <code>500 ms</code>.</p>
+<ul>
+<li>Increasing this value can help reduce noise.</li>
+</ul>
+</li>
+<li>
+<p><strong>Sensor Filter</strong> method:</p>
+<ul>
+<li><strong>Median</strong>: Use median of the last 7 readings.</li>
+<li><strong>Consensus</strong>: Average the last 7 readings if their range <code>(max–min) ≤ margin</code>; otherwise ignores until stable. <strong>Margin</strong> defines the range tolerance (default: <code>10 cm</code>).</li>
+<li>If Consensus fails often, increase margin (e.g. <code>20 cm</code>) or switch to Median filter.</li>
+</ul>
+</li>
+<li>
+<p><strong>Distance Timeout</strong>: How to handle ultrasonic sensor timeout:</p>
+<ul>
+<li><strong>Ignore</strong> (default): Ignore invalid readings to reduce noise.</li>
+<li><strong>Cap</strong> at the maximum which is <code>450 cm</code>.</li>
+</ul>
+</li>
+<li>
+<p><strong>HTTP Port</strong> <code>[effective after reboot]</code>: Custom web server port (default: <code>80</code>).</p>
+</li>
+<li>
+<p><strong>Hostname</strong>: Custom local hostname.</p>
+<ul>
+<li>If left blank, defaults to the WiFi AP name (refer to <a href="#step-2-wifi-configuration">WiFi configuration</a>).</li>
+<li>Allows access via <code>http://&lt;hostname&gt;.local/</code> instead of numeric IP.</li>
+</ul>
+</li>
+<li>
+<p><strong>NTP Server</strong>: Custom time server; defaults to <code>pool.ntp.org</code> if blank.</p>
+</li>
+<li>
+<p><strong>Use Static IP</strong> <code>[effective after reboot]</code>: Manually assign a fixed IP instead of DHCP.</p>
+<ul>
+<li>Requires manual entry of <strong>Device IP</strong>, <strong>Gateway IP</strong>, <strong>Subnet</strong>, and <strong>DNS1</strong>.</li>
+</ul>
+</li>
+<li>
+<p><strong>Device Key</strong>: Change the Device Key from the default <code>opendoor</code> to your own password.</p>
+</li>
+</ul>
+<hr class="double">
+
+<h3 id="firmware-update">Firmware Update</h3>
+<p>To update OpenGarage to a new firmware:</p>
+<ul>
+<li><strong>Download</strong> the firmware file (<code>.bin</code> format) from the <a href="https://github.com/opengarage">OpenGarage Github repository</a>.</li>
+<li><strong>Open</strong> the device homepage and click the <strong>Firmware Update</strong> button at the bottom of the page. Follow the instructions to upload the new firmware.</li>
+</ul>
+<p>If the device is in WiFi AP mode, you can perform the firmware update by connecting your computer or phone to the device's AP SSID, then navigate to <code>http://192.168.4.1/update</code>.</p>
+<hr class="double">
+
+<h3 id="links-and-resources">Links and Resources</h3>
+<ul>
+<li><a href="https://opengarage.io/">OpenGarage Homepage</a></li>
+<li><a href="https://github.com/opengarage">OpenGarage Github Repository</a></li>
+<li>[OpenGarage Documentation]</li>
+<li><a href="https://rayshobby.net/introducing-opengarage/">OpenGarage Blog Post</a></li>
+</ul>
+<hr class="double">
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../.." class="btn btn-neutral float-left" title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../api/" class="btn btn-neutral float-right" title="API Reference">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/OpenGarage/OpenGarage-Firmware" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../.." style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../api/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="description" content="None" /><link rel="canonical" href="https://OpenGarage.github.io/OpenGarage-Firmware/" />
+      <link rel="shortcut icon" href="img/favicon.ico" />
+    <title>OpenGarage Documentation</title>
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="custom.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Home";
+        var mkdocs_page_input_path = "index.md";
+        var mkdocs_page_url = "/OpenGarage-Firmware/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="." class="icon icon-home"> OpenGarage Documentation
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href=".">Home</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#opengarages-built-in-web-ui">OpenGarage's Built-in Web UI</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#firmware-compilation-instructions">Firmware Compilation Instructions</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#environment-setup">Environment Setup</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#building-the-firmware">Building the Firmware</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#making-changes-to-the-ui">Making Changes to the UI</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#firmware-update-instructions">Firmware Update Instructions</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#update-steps">Update Steps</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#troubleshooting">Troubleshooting</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Firmware v1.2.4</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="1.2.4/manual/">User Manual</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="1.2.4/api/">API Reference</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Archived</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="archive/">Previous Manuals and API docs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href=".">OpenGarage Documentation</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">Home</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/OpenGarage/OpenGarage-Firmware/edit/master/docs/index.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="opengarage-firmware-and-documentation">OpenGarage Firmware and Documentation</h1>
+<p>This Github repository contains the firmware source code and documentation for OpenGarage. For product details, visit <a href="https://opengarage.io">https://opengarage.io</a>.</p>
+<p>For official firmware release notes, please go to the <a href="https://github.com/OpenGarage/OpenGarage-Firmware/releases">OpenGarage Firmware Releases</a> page on GitHub.</p>
+<h2 id="opengarages-built-in-web-ui">OpenGarage's Built-in Web UI</h2>
+<p><img alt="AP homepage" src="1.2.4/screenshots/1_ap.jpg" width="220" /> <img alt="Homepage" src="1.2.4/screenshots/2_home.jpg" width="220" /> <img alt="Log" src="1.2.4/screenshots/3_log.jpg" width="220" />
+<img alt="Basic Options" src="1.2.4/screenshots/4_options_basic.jpg" width="220" /> <img alt="Integration" src="1.2.4/screenshots/5_options_integration.jpg" width="220" /> <img alt="Advanced Options" src="1.2.4/screenshots/6_options_advanced.jpg" width="220" />
+<img alt="Firmware Update" src="1.2.4/screenshots/7_update.jpg" width="220" /> <img alt="Webapp" src="1.2.4/screenshots/9_webapp.jpg" width="220" /> <img alt="Blynk" src="1.2.4/screenshots/8_blynk_app.jpg" width="220" /></p>
+<hr />
+<h2 id="firmware-compilation-instructions">Firmware Compilation Instructions</h2>
+<h3 id="environment-setup">Environment Setup</h3>
+<ol>
+<li>Download and unzip (or git clone) this (<code>OpenGarage-Firmware</code>) repository.</li>
+<li>Install the latest LTS version of Node.js from <a href="https://nodejs.org/">https://nodejs.org/</a> if you don't already have it.</li>
+<li>In your terminal, navigate to the <code>OpenGarage-Firmware/OpenGarage</code> folder (the source code folder) and run <code>npm install html-minifier-terser</code>.</li>
+<li>Install Visual Studio Code (VS Code) from <a href="https://code.visualstudio.com/">https://code.visualstudio.com/</a>, if you don't already have it.</li>
+<li>Launch VS Code and install the <strong>PlatformIO</strong> extension.</li>
+</ol>
+<h3 id="building-the-firmware">Building the Firmware</h3>
+<ol>
+<li>In VS Code, click <code>File -&gt; Open Folder</code> and select the <code>OpenGarage-Firmware/OpenGarage</code> folder.</li>
+<li>PlatformIO will recognize the <code>platformio.ini</code> file in that folder, which contains all the libraries and settings needed to compile the firmware.</li>
+<li>Click the <strong>PlatformIO: Build</strong> button (with the checkmark icon ✓) in the blue status bar at the bottom of the screen to build the firmware.</li>
+</ol>
+<h3 id="making-changes-to-the-ui">Making Changes to the UI</h3>
+<ul>
+<li>The built-in web UI files are located in the <code>html</code> subfolder.</li>
+<li>You do not need to run any scripts manually. When you build the project, a Python script (<code>run_prebuild.py</code>) automatically calls the <code>compress_htmls.mjs</code> script to minify, compress, and convert the HTML files into firmware program strings stored in <code>htmls.h</code>, which are then compiled into the final firmware.</li>
+<li>After editing any files in the <code>html</code> folder, simply build the project again.</li>
+</ul>
+<hr />
+<h2 id="firmware-update-instructions">Firmware Update Instructions</h2>
+<p>OpenGarage firmware supports OTA (over-the-air) updates, allowing you to upload the firmware directly through the web UI.</p>
+<h3 id="update-steps">Update Steps</h3>
+<ol>
+<li>Download a firmware file (e.g. <code>og_x.x.x.bin</code> where <code>x.x.x</code> is the firmware version).</li>
+<li>Before starting, close the Blynk and OpenGarage mobile apps to prevent them from interfering with the update process.</li>
+<li>On your OpenGarage's web UI, click the <code>Firmware Update</code> button at the bottom of the homepage.<ul>
+<li>If your OpenGarage is in WiFi AP (Access Point) mode, the update page is available at <code>http://192.168.4.1/update</code>.</li>
+</ul>
+</li>
+<li>Select the firmware file your downloaded, enter your device key, and click <code>Submit</code>.</li>
+<li>Wait for the process to finish. If the upload fails, you can try again. If the device hangs, unplug and replug the power, then try again.</li>
+</ol>
+<h3 id="troubleshooting">Troubleshooting</h3>
+<ul>
+<li><strong>Firmware Corruption</strong>: If the firmware upload fails and the device no longer boots, you'll need to re-flash the firmware using a <a href="https://opensprinkler.com/product/usb-programmer/">USB-serial programmer</a>.</li>
+<li><strong>Flash Memory Requirement</strong>: Early OpenGarage units (v1.0, v1.1, v1.2, made before 2018) have only 2MB of flash memory. These cannot be upgraded to firmware 1.2.0 or later, which require 4MB. All newer versions (v1.3 and above) include 4MB flash and support the latest firmware.</li>
+<li><strong>Checking Flash Size</strong>: If you are unsure how much flash memory is available on your OpenGarage, you can first update to firmware 1.1.3. After the update, open a browser and go to <code>http://&lt;your_og_ip&gt;/db</code>. This will display a JSON string. Look for the <code>flash_size</code> value: if it's <code>4194304</code>, you have 4MB of flash and can upgrade. If it is <code>2097152</code>, your device is not upgradeable to firmware 1.2.0 and beyond.</li>
+<li><strong>Factory Reset Warning</strong>: Upgrading from an early firmware to version 1.2.0 will <strong>erase all setings</strong> due to changes in the flash memory layout. Be sure to write down your configuration before proceeding.</li>
+</ul>
+<hr />
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="1.2.4/manual/" class="btn btn-neutral float-right" title="User Manual">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/OpenGarage/OpenGarage-Firmware" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+    
+      <span><a href="1.2.4/manual/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = ".";</script>
+    <script src="js/theme_extra.js"></script>
+    <script src="js/theme.js"></script>
+      <script src="search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
+
+<!--
+MkDocs version : 1.5.3
+Build Date UTC : 2025-10-05 22:08:50.757488+00:00
+-->
