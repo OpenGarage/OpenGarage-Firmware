@@ -21,8 +21,8 @@ This firmware introduces support for **OpenGarage v2.3+**, a new hardware versio
 
 ### Hardware Setup
 
-!!! warning
-    OpenGarage is **not waterproof**. If installing outdoors, place it inside a **waterproof enclosure**.
+!!! warning "OpenGarage is **not waterproof**"
+    If installing outdoors, place it inside a **waterproof enclosure**.
 
 OpenGarage has a built-in ultrasonic distance sensor for detecting door status and car presence, a pushbutton, and a microUSB connector for power.
 
@@ -55,8 +55,8 @@ Use the two-wire cable from your OpenGarage package to connect the **bottom** tw
       * **CTRL** must go to your opener's <span class="hl_red">Red</span> (Signal) terminal
       * **GND** must go to your opener's <span class="hl_white">White</span> (Ground) terminal.
       * The included cable uses Pink and Green for internal wire colors. Use **Pink as Red**, and **Green as White**. If using your own cable, they are typically colored Red and White.
-    !!! warning
-        v2.3+ is designed primarily for LiftMaster, Chamberlain, and Craftsman brands, which operate their wall-buttons at 12V DC. If you plan to use it with other brands, make sure your wall-button terminals output **DC only**, and that the voltage is **below 20 V**. Applying AC voltage or DC voltage above 20 V can permanently damage the v2.3+ circuit.
+    !!! warning "Voltage Compliance"
+        v2.3+ is designed primarily for **LiftMaster, Chamberlain, and Craftsman** brands, which operate their wall-buttons at 12VDC. If you plan to use it with other brands, make sure your wall-button terminals output **DC only**, and **below 20 VDC**. Applying AC voltage or DC voltage above 20V can permanently damage the v2.3+ circuit. Use v2.2 instead.
 
 To connect the wires:
 
@@ -85,8 +85,8 @@ The best location to mount OpenGarage is on the **ceiling**, with the distance s
 
 ![Mounting Security+](images/og_mounting_security+.jpg){: .center_wider }
 
-!!! warning
-    **Areas to Avoid**: Do **NOT** mount the device directly above or too close to the metal garage door rail or chain. These objects can interfere with distance sensor readings.
+!!! warning "**Areas to Avoid**"
+    Do **NOT** mount the device directly above or too close to the metal garage door rail or chain. These objects can interfere with distance sensor readings.
 
 Once you've chosen a good location, use **screws** or **strong double-sided tape** to mount the device securely.
 
@@ -122,8 +122,8 @@ Now that OpenGarage is connected to your home network, you can access it locally
 * Open a browser on a smart device or computer that is connected to the same home WiFi network as OpenGarage, and enter the device IP.
 * **Device Key**: To perform certain actions like triggering the door or changing settings, you need to enter a Device Key.
 
-    !!! info
-        The default Device Key is: <strong><u>opendoor</u></strong>
+    !!! info "The Default Device Key is:"
+        <strong>opendoor</strong>
 
 <p></p>
 
@@ -218,8 +218,11 @@ Editing any option requires the Device Key (except when accessed remotely via OT
     * **None**: <span class="hl_green">Green</span>, or any brand not listed above
     * **Detect**: If you're unsure of your version, click **Detect** to automatically probe and select the correct type.
 
-        !!! danger
-            The detection can take up to 15 seconds, and **the door may activate or move** during this time. Ensure the door's path is clear before proceeding.
+    !!! danger
+        The detection can take up to 15 seconds, and **the door may activate or move** during this time. Ensure the door's path is clear before proceeding.
+
+    !!! warning "Note on Security+ 1.0"
+        In **Security+ 1.0** mode, the device **emulates a smart wall panel** by sending rapid probing signals needed to obtain door status (unless an existing smart wall panel is detected). This disables traditional, non-smart wall-buttons. If this restriction is undesirable, please disable Security+ mode by setting it to `None`.<br>**NOTE**: Security+ 2.0 systems are not affected as they do not require panel emulation.
 
 * **Door Threshold**: Distance (in `cm`) used to determine if the door is open.
     * Set it larger than the distance from the ceiling to the door when fully open, but smaller than the ceiling-to-car distance.
