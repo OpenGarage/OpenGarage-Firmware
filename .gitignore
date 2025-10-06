@@ -1,2 +1,6 @@
 .DS_Store
 docs/site/
+OpenGarage/node_modules/
+OpenGarage/package-lock.json
+docs/docs/assets/bins/flash.sh
+
