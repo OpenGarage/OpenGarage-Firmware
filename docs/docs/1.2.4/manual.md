@@ -8,7 +8,7 @@ This firmware introduces support for **OpenGarage v2.3+**, a new hardware versio
 
 * Auto-detection of Security+ 2.0/1.0.
 * Reporting a complete list of door states: closed, open, stopped (partially open), closing, opening.
-* Control opener's light and remote lock.
+* Control opener's light and remote lock (enable/disable garage remotes).
 * Obstruction sensor reporting.
 * Wall-panel emulation for Security+ 1.0.
 * Redesigned AP-mode WiFi setup page with a sleek new appearance.
@@ -147,7 +147,7 @@ The pushbutton on OpenGarage has several useful functions depending on how long 
 To control and monitor your OpenGarage remotely from anywhere, you'll need to set up a cloud connection. OpenGarage supports two cloud services:
 
 * **OTC** (OpenThings Cloud): Allows full remote access to the built-in web UI. All features are supported except firmware upgrade.
-* **Blynk**: Allows remote status checks and door control through the Blynk legacy app, but does **not** allow settings, logs, or firmware upgrade.
+* **Blynk**: Allows remote status checks and door control, but does **not** allow settings, logs, or firmware upgrade.
 
 !!! info
     For detailed instructions on setting up and using cloud services, refer to the **[Cloud Connection Support Article](https://openthings.freshdesk.com/a/solutions/articles/5000878722)**.
@@ -162,6 +162,7 @@ To control and monitor your OpenGarage remotely from anywhere, you'll need to se
     * It supports both local access (via device IP) and remote access (via Blynk or OTC), and runs entirely in your browser — no installation required.
 * **Native App**
     * The OpenGarage Mobile App is available for installation in both the iOS App Store and Google Play. It provides a native app interface for door control, status, and multiple device management.
+    * The firmware still works with the Blynk legacy app (officially discontinued but may still be available on third-party websites). Instructions can be [found here](../archive.md#blynk-legacy-app).
 * **Home Assistant Integration**
     * OpenGarage has an official [Home Assistant integration](https://www.home-assistant.io/integrations/opengarage/) that adds the device as a cover entity. It allows door control, status monitoring, and automation within Home Assistant.
 * **API and MQTT**
@@ -311,12 +312,7 @@ Editing any option requires the Device Key (except when accessed remotely via OT
 
 ### Firmware Update
 
-To update OpenGarage to a new firmware:
-
-* **Download** the firmware file (`.bin` format) from the [OpenGarage Github repository](https://github.com/opengarage).
-* **Open** the device homepage and click the **Firmware Update** button at the bottom of the page. Follow the instructions to upload the new firmware.
-
-If the device is in WiFi AP mode, you can perform the firmware update by connecting your computer or phone to the device's AP SSID, then navigate to `http://192.168.4.1/update`.
+Follow the [firmware update instructions](../index.md#firmware-update-instructions).
 
 <hr class="double">
 

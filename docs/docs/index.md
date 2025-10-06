@@ -37,10 +37,10 @@ For official firmware release notes, please go to the [OpenGarage Firmware Relea
 OpenGarage firmware supports OTA (over-the-air) updates, allowing you to upload the firmware directly through the web UI.
 
 ### Update Steps
-1.  Download a firmware file (e.g. `og_x.x.x.bin` where `x.x.x` is the firmware version).
+1.  [Download a firmware file](#list-of-opengarage-firmwares) (e.g. `og_x.x.x.bin` where `x.x.x` is the firmware version).
 2.  Before starting, close the Blynk and OpenGarage mobile apps to prevent them from interfering with the update process.
-3.  On your OpenGarage's web UI, click the `Firmware Update` button at the bottom of the homepage.
-    - If your OpenGarage is in WiFi AP (Access Point) mode, the update page is available at `http://192.168.4.1/update`.
+3.  Open your OpenGarage's homepage, click `Firmware Update` at the bottom of the page.
+    - *If your OpenGarage is in WiFi AP (Access Point) mode, the update page is available at `http://192.168.4.1/update`.*
 4.  Select the firmware file your downloaded, enter your device key, and click `Submit`.
 5.  Wait for the process to finish. If the upload fails, you can try again. If the device hangs, unplug and replug the power, then try again.
 
@@ -49,5 +49,29 @@ OpenGarage firmware supports OTA (over-the-air) updates, allowing you to upload 
 * **Flash Memory Requirement**: Early OpenGarage units (v1.0, v1.1, v1.2, made before 2018) have only 2MB of flash memory. These cannot be upgraded to firmware 1.2.0 or later, which require 4MB. All newer versions (v1.3 and above) include 4MB flash and support the latest firmware.
 * **Checking Flash Size**: If you are unsure how much flash memory is available on your OpenGarage, you can first update to firmware 1.1.3. After the update, open a browser and go to `http://<your_og_ip>/db`. This will display a JSON string. Look for the `flash_size` value: if it's `4194304`, you have 4MB of flash and can upgrade. If it is `2097152`, your device is not upgradeable to firmware 1.2.0 and beyond.
 * **Factory Reset Warning**: Upgrading from an early firmware to version 1.2.0 will **erase all setings** due to changes in the flash memory layout. Be sure to write down your configuration before proceeding.
+
+### List of OpenGarage Firmwares
+
+The release notes of each firmware can be found on [github](https://github.com/OpenGarage/OpenGarage-Firmware/releases).
+
+| Download | Documentation |
+|:------- |:---------------|
+| [**`1.2.4.bin`**](assets/bins/og_1.2.4.bin) | [[Manual](1.2.4/manual.md)], [[API](1.2.4/api.md)] |
+| [`1.2.3.bin`](assets/bins/og_1.2.3.bin) | [Docs](archive.md) |
+| [`1.2.1.bin`](assets/bins/og_1.2.1.bin) | |
+| [`1.2.0.bin`](assets/bins/og_1.2.0.bin) | [Archive](archive.md) |
+| [`1.1.3.bin`](assets/bins/og_1.1.3.bin) | |
+| [`1.1.2.bin`](assets/bins/og_1.1.2.bin) | [Archive](archive.md) |
+| [`1.1.1.bin`](assets/bins/og_1.1.1.bin) | |
+| [`1.1.0.bin`](assets/bins/og_1.1.0.bin) | |
+| [`1.0.9.bin`](assets/bins/og_1.0.9.bin) | [Archive](archive.md) |
+| [`1.0.8.bin`](assets/bins/og_1.0.8.bin) | |
+| [`1.0.7.bin`](assets/bins/og_1.0.7.bin) | [Archive](archive.md) |
+| [`1.0.6.bin`](assets/bins/og_1.0.6.bin) | [Archive](archive.md) |
+| [`1.0.5.bin`](assets/bins/og_1.0.5.bin) | [Archive](archive.md) |
+| [`1.0.4.bin`](assets/bins/og_1.0.4.bin) | [Archive](archive.md) |
+| [`1.0.3.bin`](assets/bins/og_1.0.3.bin) | |
+
+
 
 ---
