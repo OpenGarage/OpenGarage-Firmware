@@ -260,7 +260,7 @@ Editing any option requires the Device Key (except when accessed remotely via OT
 
 ![Integration Tab](screenshots/5_options_integration.jpg){: .center }
 
-* **Enable Cloud Connection**: Select **Blynk** or **OTC** for cloud service, and enter the **Cloud Token**. The default **Cloud Server / Port** are:
+* **Enable Cloud Connection** `[effective after reboot]`: Select **Blynk** or **OTC** for cloud service, and enter the **Cloud Token**. The default **Cloud Server / Port** are:
     * Blynk: `blynk.openthings.io`, port `8080`
     * OTC: `ws.cloud.openthings.io`, port `80`
 
@@ -300,11 +300,11 @@ Editing any option requires the Device Key (except when accessed remotely via OT
 
 * **HTTP Port** ` [effective after reboot]`: Custom web server port (default: `80`).
 
-* **Hostname**: Custom local hostname.
+* **Hostname** `[effective after reboot]`: Custom local hostname.
     * If left blank, defaults to the WiFi AP name (refer to [WiFi configuration](#step-2-wifi-configuration)).
     * Allows access via `http://<hostname>.local/` instead of numeric IP.
 
-* **NTP Server**: Custom time server; defaults to `pool.ntp.org` if blank.
+* **NTP Server** `[effective after reboot]`: Custom time server; defaults to `pool.ntp.org` if blank.
 
 * **Use Static IP** `[effective after reboot]`: Manually assign a fixed IP instead of DHCP.
     * Requires manual entry of **Device IP**, **Gateway IP**, **Subnet**, and **DNS1**.
