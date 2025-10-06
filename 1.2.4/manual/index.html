@@ -151,8 +151,8 @@
 
 <h3 id="hardware-setup">Hardware Setup</h3>
 <div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>OpenGarage is <strong>not waterproof</strong>. If installing outdoors, place it inside a <strong>waterproof enclosure</strong>.</p>
+<p class="admonition-title">OpenGarage is <strong>not waterproof</strong></p>
+<p>If installing outdoors, place it inside a <strong>waterproof enclosure</strong>.</p>
 </div>
 <p>OpenGarage has a built-in ultrasonic distance sensor for detecting door status and car presence, a pushbutton, and a microUSB connector for power.</p>
 <p><img alt="OG Hardware" class="center" src="../images/og_hardware.jpg" /></p>
@@ -180,8 +180,8 @@
 <li>The included cable uses Pink and Green for internal wire colors. Use <strong>Pink as Red</strong>, and <strong>Green as White</strong>. If using your own cable, they are typically colored Red and White.</li>
 </ul>
 <div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>v2.3+ is designed primarily for LiftMaster, Chamberlain, and Craftsman brands, which operate their wall-buttons at 12V DC. If you plan to use it with other brands, make sure your wall-button terminals output <strong>DC only</strong>, and that the voltage is <strong>below 20 V</strong>. Applying AC voltage or DC voltage above 20 V can permanently damage the v2.3+ circuit.</p>
+<p class="admonition-title">Voltage Compliance</p>
+<p>v2.3+ is designed primarily for <strong>LiftMaster, Chamberlain, and Craftsman</strong> brands, which operate their wall-buttons at 12VDC. If you plan to use it with other brands, make sure your wall-button terminals output <strong>DC only</strong>, and <strong>below 20 VDC</strong>. Applying AC voltage or DC voltage above 20V can permanently damage the v2.3+ circuit. Use v2.2 instead.</p>
 </div>
 </li>
 </ul>
@@ -213,8 +213,8 @@
 </ul>
 <p><img alt="Mounting Security+" class="center_wider" src="../images/og_mounting_security%2B.jpg" /></p>
 <div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p><strong>Areas to Avoid</strong>: Do <strong>NOT</strong> mount the device directly above or too close to the metal garage door rail or chain. These objects can interfere with distance sensor readings.</p>
+<p class="admonition-title"><strong>Areas to Avoid</strong></p>
+<p>Do <strong>NOT</strong> mount the device directly above or too close to the metal garage door rail or chain. These objects can interfere with distance sensor readings.</p>
 </div>
 <p>Once you've chosen a good location, use <strong>screws</strong> or <strong>strong double-sided tape</strong> to mount the device securely.</p>
 <hr class="double">
@@ -253,8 +253,8 @@
 <li>
 <p><strong>Device Key</strong>: To perform certain actions like triggering the door or changing settings, you need to enter a Device Key.</p>
 <div class="admonition info">
-<p class="admonition-title">Info</p>
-<p>The default Device Key is: <strong><u>opendoor</u></strong></p>
+<p class="admonition-title">The Default Device Key is:</p>
+<p><strong>opendoor</strong></p>
 </div>
 </li>
 </ul>
@@ -354,14 +354,16 @@
 <li><strong>2.0</strong>: <span class="hl_yellow"><strong>Yellow</strong></span></li>
 <li><strong>1.0</strong>: <span class="hl_purple">Purple</span>, <span class="hl_orange">Orange</span>, or <span class="hl_red">Red</span></li>
 <li><strong>None</strong>: <span class="hl_green">Green</span>, or any brand not listed above</li>
-<li>
-<p><strong>Detect</strong>: If you're unsure of your version, click <strong>Detect</strong> to automatically probe and select the correct type.</p>
+<li><strong>Detect</strong>: If you're unsure of your version, click <strong>Detect</strong> to automatically probe and select the correct type.</li>
+</ul>
 <div class="admonition danger">
 <p class="admonition-title">Danger</p>
 <p>The detection can take up to 15 seconds, and <strong>the door may activate or move</strong> during this time. Ensure the door's path is clear before proceeding.</p>
 </div>
-</li>
-</ul>
+<div class="admonition warning">
+<p class="admonition-title">Note on Security+ 1.0</p>
+<p>In <strong>Security+ 1.0</strong> mode, the device <strong>emulates a smart wall panel</strong> by sending rapid probing signals needed to obtain door status (unless an existing smart wall panel is detected). This disables traditional, non-smart wall-buttons. If this restriction is undesirable, please disable Security+ mode by setting it to <code>None</code>.<br><strong>NOTE</strong>: Security+ 2.0 systems are not affected as they do not require panel emulation.</p>
+</div>
 </li>
 <li>
 <p><strong>Door Threshold</strong>: Distance (in <code>cm</code>) used to determine if the door is open.</p>
@@ -420,7 +422,7 @@
 <p><img alt="Integration Tab" class="center" src="../screenshots/5_options_integration.jpg" /></p>
 <ul>
 <li>
-<p><strong>Enable Cloud Connection</strong>: Select <strong>Blynk</strong> or <strong>OTC</strong> for cloud service, and enter the <strong>Cloud Token</strong>. The default <strong>Cloud Server / Port</strong> are:</p>
+<p><strong>Enable Cloud Connection</strong> <code>[effective after reboot]</code>: Select <strong>Blynk</strong> or <strong>OTC</strong> for cloud service, and enter the <strong>Cloud Token</strong>. The default <strong>Cloud Server / Port</strong> are:</p>
 <ul>
 <li>Blynk: <code>blynk.openthings.io</code>, port <code>8080</code></li>
 <li>OTC: <code>ws.cloud.openthings.io</code>, port <code>80</code></li>
@@ -489,14 +491,14 @@
 <p><strong>HTTP Port</strong> <code>[effective after reboot]</code>: Custom web server port (default: <code>80</code>).</p>
 </li>
 <li>
-<p><strong>Hostname</strong>: Custom local hostname.</p>
+<p><strong>Hostname</strong> <code>[effective after reboot]</code>: Custom local hostname.</p>
 <ul>
 <li>If left blank, defaults to the WiFi AP name (refer to <a href="#step-2-wifi-configuration">WiFi configuration</a>).</li>
 <li>Allows access via <code>http://&lt;hostname&gt;.local/</code> instead of numeric IP.</li>
 </ul>
 </li>
 <li>
-<p><strong>NTP Server</strong>: Custom time server; defaults to <code>pool.ntp.org</code> if blank.</p>
+<p><strong>NTP Server</strong> <code>[effective after reboot]</code>: Custom time server; defaults to <code>pool.ntp.org</code> if blank.</p>
 </li>
 <li>
 <p><strong>Use Static IP</strong> <code>[effective after reboot]</code>: Manually assign a fixed IP instead of DHCP.</p>
