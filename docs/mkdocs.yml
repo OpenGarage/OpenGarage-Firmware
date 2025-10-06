@@ -6,6 +6,7 @@ theme: readthedocs
 
 nav:
   - 'Home': 'index.md'
+  - 'FAQ': 'faq.md'
   - 'Firmware v1.2.4':
     - 'User Manual': '1.2.4/manual.md'
     - 'API Reference': '1.2.4/api.md'
