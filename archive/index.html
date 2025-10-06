@@ -65,7 +65,19 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#firmware-107">Firmware 1.0.7</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#others">Others</a>
+    <li class="toctree-l2"><a class="reference internal" href="#other-docs">Other Docs</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#blynk-legacy-app">Blynk Legacy App</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#v13">v1.3</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#v12">v1.2</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#v11">v1.1</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#v10">v1.0</a>
+    </li>
+        </ul>
     </li>
     </ul>
                   </li>
@@ -128,12 +140,103 @@
 <li><a href="../assets/pdfs/OGAPI1.0.7.pdf">API Reference (PDF)</a></li>
 </ul>
 <hr />
-<h3 id="others">Others</h3>
+<h3 id="other-docs">Other Docs</h3>
 <ul>
 <li><a href="../assets/pdfs/OGAPI1.0.9.pdf">Firmware 1.0.9 API</a></li>
 <li><a href="../assets/pdfs/OGAPI1.0.6.pdf">Firmware 1.0.6 API</a></li>
 <li><a href="../assets/pdfs/OGAPI1.0.5.pdf">Firmware 1.0.5 API</a></li>
 <li><a href="../assets/pdfs/OGAPI1.0.4.pdf">Firmware 1.0.4 API</a></li>
+</ul>
+<hr />
+<h3 id="blynk-legacy-app">Blynk Legacy App</h3>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>The instructions below apply only to the Blynk <strong>legacy app</strong> and will <strong>NOT</strong> work with the new Blynk IoT app.</p>
+</div>
+<p>The Blynk <strong>legacy app</strong> is discontinued and no longer available in the official app stores. On Android phones, you may still find the legacy <code>.apk</code> from third-party websites and install it manually. To use it:</p>
+<ul>
+<li>
+<p>Follow the <a href="https://openthings.freshdesk.com/a/solutions/articles/5000872170">Blynk (Legacy) App Support Article</a> to request a Blynk account on the <code>openthings.io</code> cloud server.</p>
+</li>
+<li>
+<p>Launch the app, sign in with your account credentials, tap the <strong>QR code</strong> icon, and scan the appropriate QR code below. This creates a project in the app, and the Blynk token will be emailed to you (you can copy the token manually from the Project Settings in the app).</p>
+</li>
+</ul>
+<h5 id="v13"><strong>v1.3</strong></h5>
+<ul>
+<li>Requires firmware <code>1.2.4</code> or newer</li>
+<li>Door status LED uses distinct colors for each state</li>
+<li>Added light and lock toggles
+<img alt="Blynk App v1.3" class="center_wider" src="../assets/blynk_qrs/og_blynk_1.3.png" /></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Virtual pin</th>
+<th style="text-align: left;">Used for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>V0</code></td>
+<td style="text-align: left;">Door status (binary)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>V1</code></td>
+<td style="text-align: left;">Trigger relay</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>V2</code></td>
+<td style="text-align: left;">Door status (complete: including stopped, opening, closing)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>V3</code></td>
+<td style="text-align: left;">Distance value</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>V4</code></td>
+<td style="text-align: left;">Car status</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>V6</code></td>
+<td style="text-align: left;">Temperature (if temperature sensor is enabled)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>V7</code></td>
+<td style="text-align: left;">Humidity (if humidity sensor is enabled)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>V8</code></td>
+<td style="text-align: left;">Toggle light</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>V9</code></td>
+<td style="text-align: left;">Toggle remote lock</td>
+</tr>
+</tbody>
+</table>
+<p></p>
+
+<h5 id="v12"><strong>v1.2</strong></h5>
+<ul>
+<li>Requires firmware <code>1.1.2</code> or newer</li>
+<li>Added temperature and humidity history (if the sensors are enabled)
+<img alt="Blynk App v1.2" class="center" src="../assets/blynk_qrs/og_blynk_1.2.png" /></li>
+</ul>
+<p></p>
+
+<h5 id="v11"><strong>v1.1</strong></h5>
+<ul>
+<li>Requires firmware <code>1.0.9</code> or newer</li>
+<li>Added Car Status LED
+<img alt="Blynk App v1.1" class="center" src="../assets/blynk_qrs/og_blynk_1.1.png" /></li>
+</ul>
+<p></p>
+
+<h5 id="v10"><strong>v1.0</strong></h5>
+<ul>
+<li>The original version
+<img alt="Blynk App v1.0" class="center" src="../assets/blynk_qrs/og_blynk_1.0.png" /></li>
 </ul>
 <hr />
               

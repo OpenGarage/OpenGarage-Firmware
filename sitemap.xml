@@ -2,22 +2,22 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://OpenGarage.github.io/OpenGarage-Firmware/</loc>
-         <lastmod>2025-10-05</lastmod>
+         <lastmod>2025-10-06</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://OpenGarage.github.io/OpenGarage-Firmware/archive/</loc>
-         <lastmod>2025-10-05</lastmod>
+         <lastmod>2025-10-06</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://OpenGarage.github.io/OpenGarage-Firmware/1.2.4/api/</loc>
-         <lastmod>2025-10-05</lastmod>
+         <lastmod>2025-10-06</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://OpenGarage.github.io/OpenGarage-Firmware/1.2.4/manual/</loc>
-         <lastmod>2025-10-05</lastmod>
+         <lastmod>2025-10-06</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>

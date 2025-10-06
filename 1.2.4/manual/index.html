@@ -138,7 +138,7 @@
 <ul>
 <li>Auto-detection of Security+ 2.0/1.0.</li>
 <li>Reporting a complete list of door states: closed, open, stopped (partially open), closing, opening.</li>
-<li>Control opener's light and remote lock.</li>
+<li>Control opener's light and remote lock (enable/disable garage remotes).</li>
 <li>Obstruction sensor reporting.</li>
 <li>Wall-panel emulation for Security+ 1.0.</li>
 <li>Redesigned AP-mode WiFi setup page with a sleek new appearance.</li>
@@ -231,6 +231,7 @@
 </li>
 </ul>
 <h4 id="step-2-wifi-configuration">Step 2: WiFi Configuration</h4>
+<p><img alt="AP homepage" class="center" src="../screenshots/1_ap.jpg" /></p>
 <ul>
 <li>After connecting to the <code>OG_</code> network, most smart devices will automatically prompt you to "Sign In".<ul>
 <li>If you don't see this prompt or "Sign In" page, manually open a web browser and go to <code>192.168.4.1</code>.</li>
@@ -245,7 +246,6 @@
 </li>
 <li>Click <strong>Submit</strong>. Upon a successful connection, you will hear a short tune from the buzzer. Your WiFi credentials are saved and the device reboots into WiFi <strong>Client Mode</strong>, where it automatically obtains a <strong>Device IP</strong> address from your router. This device IP is typically displayed at the bottom of the screen upon the completion of this step.</li>
 </ul>
-<p><img alt="AP homepage" class="center" src="../screenshots/1_ap.jpg" /></p>
 <h4 id="step-3-access-the-device-locally-on-your-network">Step 3: Access the Device Locally on Your Network</h4>
 <p>Now that OpenGarage is connected to your home network, you can access it locally using its device IP.</p>
 <ul>
@@ -278,7 +278,7 @@
 <p>To control and monitor your OpenGarage remotely from anywhere, you'll need to set up a cloud connection. OpenGarage supports two cloud services:</p>
 <ul>
 <li><strong>OTC</strong> (OpenThings Cloud): Allows full remote access to the built-in web UI. All features are supported except firmware upgrade.</li>
-<li><strong>Blynk</strong>: Allows remote status checks and door control through the Blynk legacy app, but does <strong>not</strong> allow settings, logs, or firmware upgrade.</li>
+<li><strong>Blynk</strong>: Allows remote status checks and door control, but does <strong>not</strong> allow settings, logs, or firmware upgrade.</li>
 </ul>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
@@ -298,6 +298,7 @@
 </li>
 <li><strong>Native App</strong><ul>
 <li>The OpenGarage Mobile App is available for installation in both the iOS App Store and Google Play. It provides a native app interface for door control, status, and multiple device management.</li>
+<li>The firmware still works with the Blynk legacy app (officially discontinued but may still be available on third-party websites). Instructions can be <a href="../../archive/#blynk-legacy-app">found here</a>.</li>
 </ul>
 </li>
 <li><strong>Home Assistant Integration</strong><ul>
@@ -313,6 +314,7 @@
 
 <h3 id="built-in-web-interface">Built-in Web Interface</h3>
 <h4 id="homepage">Homepage</h4>
+<p><img alt="Homepage" class="center" src="../screenshots/2_home.jpg" /></p>
 <p>The homepage displays a real-time overview of your device's status including:</p>
 <ul>
 <li><strong>Door</strong> status</li>
@@ -334,7 +336,6 @@
 <li><strong>Toggle Light and Remote Lock</strong> (<em>Security+ 2.0/1.0 only</em>)</li>
 </ul>
 <p>All of these actions require the <strong>Device Key</strong> (default: <code>opendoor</code>), except when accessed remotely via OTC token, where the key is not required. For convenience, the key is cached in your browser and can be cleared by clicking the ✖ icon next to it.</p>
-<p><img alt="Homepage" class="center" src="../screenshots/2_home.jpg" /></p>
 <p>The homepage also provides navigation links to <strong>Edit Options</strong>, <strong>Show Log</strong>, <strong>Firmware Update</strong>, and the <strong>User Manual</strong>.</p>
 <h4 id="edit-options">Edit Options</h4>
 <p>Editing any option requires the Device Key (except when accessed remotely via OTC token). Some options take effect only after a reboot — these are marked <code>[Effective after reboot]</code>. The options are divided into three tabs:</p>
@@ -510,19 +511,14 @@
 <hr class="double">
 
 <h3 id="firmware-update">Firmware Update</h3>
-<p>To update OpenGarage to a new firmware:</p>
-<ul>
-<li><strong>Download</strong> the firmware file (<code>.bin</code> format) from the <a href="https://github.com/opengarage">OpenGarage Github repository</a>.</li>
-<li><strong>Open</strong> the device homepage and click the <strong>Firmware Update</strong> button at the bottom of the page. Follow the instructions to upload the new firmware.</li>
-</ul>
-<p>If the device is in WiFi AP mode, you can perform the firmware update by connecting your computer or phone to the device's AP SSID, then navigate to <code>http://192.168.4.1/update</code>.</p>
+<p>Follow the <a href="../../#firmware-update-instructions">firmware update instructions</a>.</p>
 <hr class="double">
 
 <h3 id="links-and-resources">Links and Resources</h3>
 <ul>
 <li><a href="https://opengarage.io/">OpenGarage Homepage</a></li>
 <li><a href="https://github.com/opengarage">OpenGarage Github Repository</a></li>
-<li>[OpenGarage Documentation]</li>
+<li><a href="https://opengarage.github.io/OpenGarage-Firmware/">OpenGarage Documentation</a></li>
 <li><a href="https://rayshobby.net/introducing-opengarage/">OpenGarage Blog Post</a></li>
 </ul>
 <hr class="double">

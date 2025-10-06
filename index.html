@@ -61,6 +61,8 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#troubleshooting">Troubleshooting</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#list-of-opengarage-firmwares">List of OpenGarage Firmwares</a>
+    </li>
         </ul>
     </li>
     </ul>
@@ -136,10 +138,10 @@
 <p>OpenGarage firmware supports OTA (over-the-air) updates, allowing you to upload the firmware directly through the web UI.</p>
 <h3 id="update-steps">Update Steps</h3>
 <ol>
-<li>Download a firmware file (e.g. <code>og_x.x.x.bin</code> where <code>x.x.x</code> is the firmware version).</li>
+<li><a href="#list-of-opengarage-firmwares">Download a firmware file</a> (e.g. <code>og_x.x.x.bin</code> where <code>x.x.x</code> is the firmware version).</li>
 <li>Before starting, close the Blynk and OpenGarage mobile apps to prevent them from interfering with the update process.</li>
-<li>On your OpenGarage's web UI, click the <code>Firmware Update</code> button at the bottom of the homepage.<ul>
-<li>If your OpenGarage is in WiFi AP (Access Point) mode, the update page is available at <code>http://192.168.4.1/update</code>.</li>
+<li>Open your OpenGarage's homepage, click <code>Firmware Update</code> at the bottom of the page.<ul>
+<li><em>If your OpenGarage is in WiFi AP (Access Point) mode, the update page is available at <code>http://192.168.4.1/update</code>.</em></li>
 </ul>
 </li>
 <li>Select the firmware file your downloaded, enter your device key, and click <code>Submit</code>.</li>
@@ -152,6 +154,78 @@
 <li><strong>Checking Flash Size</strong>: If you are unsure how much flash memory is available on your OpenGarage, you can first update to firmware 1.1.3. After the update, open a browser and go to <code>http://&lt;your_og_ip&gt;/db</code>. This will display a JSON string. Look for the <code>flash_size</code> value: if it's <code>4194304</code>, you have 4MB of flash and can upgrade. If it is <code>2097152</code>, your device is not upgradeable to firmware 1.2.0 and beyond.</li>
 <li><strong>Factory Reset Warning</strong>: Upgrading from an early firmware to version 1.2.0 will <strong>erase all setings</strong> due to changes in the flash memory layout. Be sure to write down your configuration before proceeding.</li>
 </ul>
+<h3 id="list-of-opengarage-firmwares">List of OpenGarage Firmwares</h3>
+<p>The release notes of each firmware can be found on <a href="https://github.com/OpenGarage/OpenGarage-Firmware/releases">github</a>.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Download</th>
+<th style="text-align: left;">Documentation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.2.4.bin"><strong><code>1.2.4.bin</code></strong></a></td>
+<td style="text-align: left;">[<a href="1.2.4/manual/">Manual</a>], [<a href="1.2.4/api/">API</a>]</td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.2.3.bin"><code>1.2.3.bin</code></a></td>
+<td style="text-align: left;"><a href="archive/">Docs</a></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.2.1.bin"><code>1.2.1.bin</code></a></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.2.0.bin"><code>1.2.0.bin</code></a></td>
+<td style="text-align: left;"><a href="archive/">Archive</a></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.1.3.bin"><code>1.1.3.bin</code></a></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.1.2.bin"><code>1.1.2.bin</code></a></td>
+<td style="text-align: left;"><a href="archive/">Archive</a></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.1.1.bin"><code>1.1.1.bin</code></a></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.1.0.bin"><code>1.1.0.bin</code></a></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.0.9.bin"><code>1.0.9.bin</code></a></td>
+<td style="text-align: left;"><a href="archive/">Archive</a></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.0.8.bin"><code>1.0.8.bin</code></a></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.0.7.bin"><code>1.0.7.bin</code></a></td>
+<td style="text-align: left;"><a href="archive/">Archive</a></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.0.6.bin"><code>1.0.6.bin</code></a></td>
+<td style="text-align: left;"><a href="archive/">Archive</a></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.0.5.bin"><code>1.0.5.bin</code></a></td>
+<td style="text-align: left;"><a href="archive/">Archive</a></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.0.4.bin"><code>1.0.4.bin</code></a></td>
+<td style="text-align: left;"><a href="archive/">Archive</a></td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.0.3.bin"><code>1.0.3.bin</code></a></td>
+<td style="text-align: left;"></td>
+</tr>
+</tbody>
+</table>
 <hr />
               
             </div>
@@ -205,5 +279,5 @@
 
 <!--
 MkDocs version : 1.5.3
-Build Date UTC : 2025-10-05 22:42:38.371804+00:00
+Build Date UTC : 2025-10-06 02:48:00.826437+00:00
 -->
