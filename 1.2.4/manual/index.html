@@ -173,7 +173,7 @@
 <p>OpenGarage v2.x has four integrated screw terminals. Flip the device over to identify the terminals on the back:</p>
 <ul>
 <li>The <strong>bottom</strong> two connect to your opener's <strong>wall-button</strong> terminals. These are <strong>required</strong>.</li>
-<li>The <strong>top</strong> two are optional: they can be connected to a magnetic switch sensor, or your opener's safety sensor (for sensing obstruction status).</li>
+<li>The <strong>top</strong> two are optional: they can be connected to a magnetic switch sensor.</li>
 </ul>
 <p>Use the two-wire cable from your OpenGarage package to connect the <strong>bottom</strong> two screws to your opener's <strong>wall-button</strong> terminals identified in Step 1 above:</p>
 <ul>
@@ -406,10 +406,14 @@
 <li>
 <p><strong>T/H Sensor</strong> <code>[Effective after reboot]</code>: Select the type of optional temperature/humidity sensor (requires soldering). Supported sensors:</p>
 <ul>
-<li>DHT11/DHT22 (data pin on <code>G05</code>)</li>
-<li>DS18B20 (data pin on <code>G05</code>, requires <code>10 kΩ</code> pull-up resistor)</li>
+<li>DHT11/DHT22 (data pin on <code>G04</code>)</li>
+<li>DS18B20 (data pin on <code>G04</code>, requires <code>10 kΩ</code> pull-up resistor)</li>
 <li>The sensor must be powered by <code>VCC</code> (3.3 V) and <code>GND</code></li>
 </ul>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>Because <code>G04</code> is a shared pin for sensors, it can be assigned to <strong>either</strong> a switch sensor <strong>or</strong> a temperature/humidity sensor, but <strong>NOT both simultaneously</strong>.</p>
+</div>
 </li>
 <li>
 <p><strong>Sound Alarm</strong>: Set the duration for the audible alarm before each door movement.</p>
@@ -441,14 +445,12 @@
 <li>
 <p><strong>Enable Email Notifications</strong>: Set up email notifications by providing an SMTP server, credentials, and recipient address.</p>
 <ul>
-<li>
-<p>For detailed instructions, refer to the <a href="https://openthings.freshdesk.com/support/solutions/articles/5000889759">Setting Up Email Notifications Support Article</a>.</p>
+<li>For detailed instructions, refer to the <a href="https://openthings.freshdesk.com/support/solutions/articles/5000889759">Setting Up Email Notifications Support Article</a>.</li>
+</ul>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
 <p>When using MQTT or Email Notifications, please ensure all fields are correct. Empty or incorrect values may cause the device to become unresponsive.</p>
 </div>
-</li>
-</ul>
 </li>
 <li>
 <p><strong>IFTTT Key</strong>: Webhook service key for IFTTT integration.</p>
