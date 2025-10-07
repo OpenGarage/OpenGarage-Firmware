@@ -17,6 +17,8 @@ This firmware introduces support for **OpenGarage v2.3+**, a new hardware versio
 * MQTT integration and Blynk UI updated to include the extended door states, light, and remote lock controls.
 * Backward compatibility with older OpenGarage hardware that does not have native support for Security+.
 
+**NOTE**: This firmware reserves `G05` for Security+ protocol, so it's no longer available for sensors. `G04` is a shared pin that can be assigned as either a switch sensor or a temperature/humidity sensor, but **not both simultaneously**.
+
 <hr class="double">
 
 ### Hardware Setup
