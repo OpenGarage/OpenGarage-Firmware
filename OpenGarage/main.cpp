@@ -359,6 +359,8 @@ void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
 	json += (uint16_t)ESP.getFreeHeap();
 	json += F(",\"flash_size\":");
 	json += (uint32_t)ESP.getFlashChipRealSize();
+	json += F(",\"has_swrx\":");
+	json += og.has_swrx;
 	json += F("}");
 	otf_send_json(res, json);
 }
@@ -933,6 +935,8 @@ void on_ap_debug(const OTF::Request &req, OTF::Response &res) {
 	json += og.read_distance();
 	json += F(",\"fwv\":");
 	json += og.options[OPTION_FWV].ival;
+	json += F(",\"has_swrx\":");
+	json += og.has_swrx;
 	json += F("}");
 	otf_send_json(res, json);
 }
@@ -1142,6 +1146,9 @@ void check_status_ap() {
 		Serial.print(og.read_distance());
 		Serial.print("/");
 		Serial.println(OG_FWV);
+		if(og.has_swrx) {
+			Serial.println(F("secplus"));
+		}
 		cs_timeout = millis() + 2000;
 	}
 }
