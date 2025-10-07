@@ -24,18 +24,20 @@
 #define _DEFINES_H
 
 /** Firmware version, hardware version, and maximal values */
-#define OG_FWV     123 // Firmware version: 123 means 1.2.3
+#define OG_FWV     124 // Firmware version: 124 means 1.2.4
 
 /** GPIO pins */
-#define PIN_RELAY  15 // D8 on nodemcu
+#define PIN_RELAY  15 // NodeMCU D8. Relay for triggering door action (for non-Security+).
 #define PIN_BUTTON  0
-#define PIN_TRIG   12 // D6 on nodemcu
-#define PIN_ECHO   14 // D5 on nodemcu
+#define PIN_TRIG   12 // NodeMCU D6. Distance sensor trigger.
+#define PIN_ECHO   14 // NodeMCU D5. Distance sensor echo.
 #define PIN_LED     2
-#define PIN_RESET  16
-#define PIN_BUZZER 13 // D7 on nodemcu
-#define PIN_SWITCH  4 // switch sensor: D2 on nodemcu
-#define PIN_TH      5 // temperature sensor: D1 on nodemcu
+#define PIN_SW_TX  15 // NodeMCU D8. Software serial output (for Security+).
+#define PIN_SW_RX   5 // NodeMCU D1. Software serial input (for Security+).
+#define PIN_BUZZER 13 // NodeMCU D7. Buzzer.
+#define PIN_SWITCH  4 // NodeMCU D2. Optional switch sensor.
+#define PIN_TH      4 // NodeMCU D2. Optional temperature sensor.
+#define PIN_SWRX_DETECT 10 // Hardware version detect (if software rx exists)
 
 // Default device name
 #define DEFAULT_NAME    "My OpenGarage"
@@ -60,96 +62,147 @@
 #define DEFAULT_SMTP_SERVER "smtp.gmail.com"
 #define DEFAULT_SMTP_PORT   465
 
-#define OG_SN1_CEILING  0x00 // SN1 is built-in ultrasonic sensor
-#define OG_SN1_SIDE     0x01
+#define STRING_RESERVE_SIZE 400
 
-#define OG_SN2_NONE     0x00 // SN2 is optional switch sensor
-#define OG_SN2_NC       0x01 // NC: normally closed
-#define OG_SN2_NO       0x02 // NO: normally open
+enum { // SN1 is built-in ultrasonic sensor
+	OG_SN1_CEILING = 0,
+	OG_SN1_SIDE,
+};
 
-#define OG_SNO_1ONLY    0x00 // use SN1 only
-#define OG_SNO_2ONLY    0x01 // use SN2 only
-#define OG_SNO_AND      0x02 // SN1 AND SN2
-#define OG_SNO_OR       0x03 // SN1 OR SN2
+enum { // SN2 is optional switch sensor
+	OG_SN2_NONE = 0,
+	OG_SN2_NC, // NC: normally closed
+	OG_SN2_NO, // NO: normally open
+};
 
-#define OG_SFI_MEDIAN    0x00 // sensor filter: median method
-#define OG_SFI_CONSENSUS 0x01 // concensus method
+enum {
+	OG_SNO_1ONLY = 0, // use SN1 only
+	OG_SNO_2ONLY, // use SN2 only
+	OG_SNO_AND,   // SN1 AND SN2
+	OG_SNO_OR,    // SN1 OR SN2
+};
 
-#define OG_VEH_ABSENT   0x00
-#define OG_VEH_PRESENT  0x01
-#define OG_VEH_UNKNOWN  0x02
-#define OG_VEH_NOTAVAIL 0x03
+enum { // sensor filter
+	OG_SFI_MEDIAN = 0, // median method
+	OG_SFI_CONSENSUS,  // concensus method
+};
 
-#define OG_ALM_NONE     0x00
-#define OG_ALM_5        0x01
-#define OG_ALM_10       0x02
+enum { // vehicle status
+	OG_VEH_ABSENT = 0,
+	OG_VEH_PRESENT,
+	OG_VEH_UNKNOWN,
+	OG_VEH_NOTAVAIL,
+};
 
-#define OG_TSN_NONE     0x00
-#define OG_TSN_AM2320   0x01
-#define OG_TSN_DHT11    0x02
-#define OG_TSN_DHT22    0x03
-#define OG_TSN_DS18B20  0x04
+enum { // sound alarm setting
+	OG_ALM_NONE = 0,
+	OG_ALM_5,
+	OG_ALM_10,
+};
 
-#define OG_MOD_AP       0xA9
-#define OG_MOD_STA      0x2A
+enum { // temperature/humidity sensor
+	OG_TSN_NONE = 0,
+	OG_TSN_AM2320_RETIRED, // AM2320 is no longer supported due to pin 5 used for swrx
+	OG_TSN_DHT11,
+	OG_TSN_DHT22,
+	OG_TSN_DS18B20,
+};
 
-#define OG_AUTO_NONE    0x00
-#define OG_AUTO_NOTIFY  0x01
-#define OG_AUTO_CLOSE   0x02
+enum {
+	OG_MOD_AP = 0xA9,
+	OG_MOD_STA = 0x2A,
+};
 
-//Automation Option C - Notify settings
-#define OG_NOTIFY_NONE  0x00
-#define OG_NOTIFY_DO    0x01
-#define OG_NOTIFY_DC    0x02
-#define OG_NOTIFY_VL    0x04
-#define OG_NOTIFY_VA    0x08
+enum { // automation actions
+	OG_AUTO_NONE   = 0,
+	OG_AUTO_NOTIFY = 1, // send notification
+	OG_AUTO_CLOSE  = 2, // auto close
+};
 
-#define OG_STATE_INITIAL        0
-#define OG_STATE_CONNECTING     1
-#define OG_STATE_CONNECTED      2
-#define OG_STATE_TRY_CONNECT    3
-#define OG_STATE_WAIT_RESTART   4
-#define OG_STATE_RESET          9
+enum { // automation notification options
+	OG_NOTIFY_NONE = 0x00,
+	OG_NOTIFY_DO   = 0x01, // door open
+	OG_NOTIFY_DC   = 0x02, // door close
+	OG_NOTIFY_DS   = 0x04, // door stop
+	OG_NOTIFY_VL   = 0x08,
+	OG_NOTIFY_VA   = 0x10,
+};
+
+enum {
+	OG_STATE_INITIAL = 0,
+	OG_STATE_CONNECTING,
+	OG_STATE_CONNECTED,
+	OG_STATE_TRY_CONNECT,
+	OG_STATE_WAIT_RESTART,
+	OG_STATE_RESET = 9,
+};
 
 #define OG_LIGHT_BLINK_FOREVER  0
 #define OG_LIGHT_BLINK_MAX      99	// limited by rcnt to 99
-#define OG_LIGHT_BLINK_TIME		25
-#define OG_LIGHT_BLINK_NOTIFY	2000 // specifies how long the last blink should last before blinking turns off
+#define OG_LIGHT_BLINK_TIME     1
+#define OG_LIGHT_BLINK_NOTIFY   2000 // specifies how long the last blink should last before blinking turns off
 
-#define CLOUD_NONE  0
-#define CLOUD_BLYNK 1
-#define CLOUD_OTC   2
+enum { // cloud settings
+	CLOUD_NONE = 0,
+	CLOUD_BLYNK,
+	CLOUD_OTC,
+};
 
 #define BLYNK_PIN_DOOR  V0
 #define BLYNK_PIN_RELAY V1
-#define BLYNK_PIN_LCD   V2
+#define BLYNK_PIN_DVAL  V2
 #define BLYNK_PIN_DIST  V3
 #define BLYNK_PIN_CAR   V4
 #define BLYNK_PIN_IP    V5
 #define BLYNK_PIN_TEMP  V6
 #define BLYNK_PIN_HUMID V7
+#define BLYNK_PIN_LIGHT V8
+#define BLYNK_PIN_LOCK  V9
 
 #define DEFAULT_LOG_SIZE  100
 #define MAX_LOG_SIZE      500
 #define ALARM_FREQ       1000
-// door status histogram
-// number of values (maximum is 8)
-#define DOOR_STATUS_HIST_K        4
-#define DOOR_STATUS_REMAIN_CLOSED 0
-#define DOOR_STATUS_REMAIN_OPEN   1
-#define DOOR_STATUS_JUST_OPENED   2
-#define DOOR_STATUS_JUST_CLOSED   3
-#define DOOR_STATUS_MIXED         4
 
-#define CLD_NONE  0
-#define CLD_BLYNK 1
-#define CLD_OTC   2
+// door status
+enum {
+	DOOR_STATUS_CLOSED = 0,
+	DOOR_STATUS_OPEN,
+	DOOR_STATUS_STOPPED,
+	DOOR_STATUS_CLOSING,
+	DOOR_STATUS_OPENING,
+	DOOR_STATUS_UNKNOWN,
+};
+
+// door events
+#define DOOR_STATUS_HIST_K        4
+enum {
+	DOOR_EVENT_REMAIN_CLOSED = 0,
+	DOOR_EVENT_REMAIN_OPEN,
+	DOOR_EVENT_JUST_OPENED,
+	DOOR_EVENT_JUST_CLOSED,
+	DOOR_EVENT_NONE,
+	DOOR_EVENT_REMAIN_STOPPED,
+	DOOR_EVENT_JUST_STOPPED,
+	DOOR_EVENT_STILL_OPENING,
+	DOOR_EVENT_START_OPENING,
+	DOOR_EVENT_STILL_CLOSING,
+	DOOR_EVENT_START_CLOSING,
+};
+
+// door actions
+enum {
+	ACTION_TOGGLE = 0,
+	ACTION_CLOSE,
+	ACTION_OPEN
+};
+
 
 typedef enum {
 	OPTION_FWV = 0, // firmware version
 	OPTION_SN1,     // distance sensor mounting method
 	OPTION_SN2,     // switch sensor type
 	OPTION_SNO,     // sensor logic
+	OPTION_SECV,    // security+ version (2.0, 1.0, or none)
 	OPTION_DTH,     // distance threshold for door
 	OPTION_VTH,     // distance threshold for vehicle
 	OPTION_RIV,     // status check interval
@@ -215,9 +268,8 @@ typedef enum {
 
 #define TMP_BUFFER_SIZE 100
 
-/** Serial debug functions */
 //#define SERIAL_DEBUG
-
+/** Serial debug functions */
 #if defined(SERIAL_DEBUG)
 	#define DEBUG_PRINT(x)   Serial.print(x)
 	#define DEBUG_PRINTLN(x) Serial.println(x)

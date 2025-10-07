@@ -26,8 +26,6 @@
 #include <time.h>
 #include <FS.h>
 
-#include <OpenGarage.h>
-
 struct tcp_pcb;
 extern struct tcp_pcb* tcp_tw_pcbs;
 extern "C" void tcp_abort (struct tcp_pcb* pcb);
@@ -44,5 +42,5 @@ void setup() {
 
 void loop() {
   do_loop();
-  tcpCleanup();       
+  tcpCleanup();
 }

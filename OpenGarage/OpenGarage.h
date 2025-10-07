@@ -28,10 +28,9 @@
 #include <ESP8266WiFi.h>
 #include <Ticker.h>
 #include <DHTesp.h>
-#include <AM2320.h>
 #include <DallasTemperature.h>
 #include <EMailSender.h>
-
+#include <garagelib.cpp>
 #include "defines.h"
 
 struct OptionStruct {
@@ -42,10 +41,10 @@ struct OptionStruct {
 };
 
 struct LogStruct {
-	ulong tstamp;	// time stamp
-	uint status;	// door status
-	uint dist;		// distance
-	byte sn2;			// switch sensor value
+	ulong tstamp; // time stamp
+	uint status;  // door status
+	uint dist;    // distance
+	byte sn2;     // switch sensor value
 };
 
 class OpenGarage {
@@ -53,13 +52,15 @@ public:
 	static OptionStruct options[];
 	static byte state;
 	static byte alarm;
+	static byte alarm_action;
 	static byte led_reverse;
+	static byte has_swrx;
 	static void begin();
 	static void options_setup();
 	static void options_load();
 	static void options_save();
 	static void options_reset();
-	static void restart() { ESP.restart();} //digitalWrite(PIN_RESET, LOW); }
+	static void restart() { ESP.restart();}
 	static uint read_distance(); // centimeter
 	static void init_sensors(); // initialize all sensor
 	static void read_TH_sensor(float& C, float &H);
@@ -81,11 +82,12 @@ public:
 	static bool read_log_next(LogStruct& data);
 	static bool read_log_end();
 	static void play_note(uint freq);
-	static void set_alarm(byte ov=0) { // ov = override value
+	static void set_alarm(byte ov=0, byte action=ACTION_TOGGLE) { // ov = override value //action (0: toggle, 1: close, 2: open)
 		if(ov) alarm = ov*10+1;
 		else alarm = options[OPTION_ALM].ival * 10 + 1;
+		alarm_action = action;
 	}
-	static void reset_alarm() { alarm = 0; }
+	static void reset_alarm() { alarm = 0; alarm_action = 0; }
 	static void reset_to_ap() {
 		options[OPTION_MOD].ival = OG_MOD_AP;
 		options_save();
@@ -99,7 +101,6 @@ public:
 	static void led_handler();
 
 	static DallasTemperature *ds18b20;
-	static AM2320* am2320;
 	static DHTesp* dht;
 };
 

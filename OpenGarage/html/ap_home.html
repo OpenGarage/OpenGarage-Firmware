@@ -1,112 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	<title>OpenGarage</title>
-	<meta name='viewport' content='width=device-width, initial-scale=1'>
+    <title>OpenGarage Setup</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <style>
+        :root{
+          --bg:#f6f7fb; --fg:#0f172a; --muted:#586380;
+          --card:#fff; --border:#cdd5e0;
+          --accent:#2563eb;
+        }
+        @media (prefers-color-scheme: dark){
+          :root{
+            --bg:#0b1220; --fg:#e6eaff; --muted:#a3acc7;
+            --card:#0f172a; --border:#334155;
+            --accent:#60a5fa;
+          }
+        }
+        /* --- General Body & Typography --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            color: var(--fg);
+        }
+
+        /* --- Main Content Container --- */
+        main {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: var(--card);
+            padding: 25px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--fg);
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
+
+        /* --- Form Elements & Inputs --- */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        input:not([type]),input[type="text"],input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            box-sizing: border-box;
+            background-color: transparent;
+            color: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:not([type]):focus,input[type="text"]:focus,input[type="password"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent);
+            outline: none;
+        }
+
+        /* --- Buttons --- */
+        button {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            background-color: var(--accent);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* --- Responsive Table Container --- */
+        .table-container {
+            overflow-x: auto; /* Makes the container scrollable horizontally */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
+        /* --- WiFi Network List Table --- */
+        #rd {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #rd th, #rd td {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap; /* Prevents columns from wrapping */
+        }
+
+        #rd tr:last-child td {
+            border-bottom: none; /* remove border from the last row */
+        }
+
+        #rd th {
+            font-weight: 600;
+            color: var(--muted);
+            background-color: color-mix(in oklab, var(--border) 20%, transparent);
+        }
+
+        /* --- Radio Button Styling --- */
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            font-weight: normal;
+            margin-bottom: 8px;
+        }
+
+        .radio-group input[type="radio"] {
+            margin-right: 10px;
+        }
+
+        /* --- Security+ Radio Button Styling --- */
+        .sec-radio-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .sec-radio-group input[type="radio"] {
+            display: none;
+        }
+
+        .sec-radio-label {
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            text-align: center;
+            flex-grow: 1;
+            border: 2px solid var(--border);
+            background-color: color-mix(in oklab, var(--border) 40%, transparent);
+            color: var(--muted);
+            transition: all 0.2s ease-in-out;
+        }
+
+        .sec-radio-group input[type="radio"]:not(:checked) + .sec-radio-label:hover {
+            border-color: var(--muted);
+        }
+
+        /* MODIFIED: Changed yellow color */
+        .sec-radio-group input[type="radio"]:checked + .sec-yellow {
+            background-color: #eeee00;
+            color: #111;
+            border-color: #e6e600;
+        }
+
+        /* MODIFIED: Reverted to solid purple color */
+        .sec-radio-group input[type="radio"]:checked + .sec-purple {
+            background-color: #6f42c1;
+            color: white;
+            border-color: #59359a;
+        }
+
+        .sec-radio-group input[type="radio"]:checked + .sec-green {
+            background-color: #28a745; color: white; border-color: #208637;
+        }
+
+        /* --- Hidden Cloud Section --- */
+        #tb_cld {
+            padding-left: 24px;
+            border-left: 3px solid var(--accent);
+            margin-top: 10px;
+        }
+
+        /* --- Message Area --- */
+        #msg {
+            text-align: left;
+            font-weight: 600;
+            margin: 20px 0;
+            min-height: 20px;
+        }
+    </style>
 </head>
 <body>
-<style>
-	table, th, td {border: 0px solid black; border-collapse: collapse;}
-	table#rd th {border: 1px solid black;}
-	table#rd td {border: 1px solid black; border-collapse: collapse;}
-	th, td {padding: 2px;}
-	input[type=text] {font-size: 12pt; height:28px;}
-	input[type=password] {font-size: 12pt; height:28px;}
-</style>
-<caption><b>OpenGarage WiFi Config</b></caption><br><br>
-<table id='rd'>
-	<tr><td>SSID</td><td>Strength</td><td>Power Level</td></tr>
-	<tr><td>(Scanning...)</td></tr>
-</table><br><br>
-<div id='div_input'>
-<table>
-	<tr><td><b>WiFi SSID</b>:</td><td><input type='text' id='ssid'></td></tr>
-	<tr><td><b>WiFi Password</b>:</td><td><input type='password' id='pass'></td></tr>
-	<tr><td><b>Host Name:</b></td><td><input type='text' size=15 maxlength=32 id='host' data-mini='true' placeholder='(optional)'></td></tr>
-</table>
-<br>
-<b>Enable Cloud Connection</b>?<br>
-<table>
-	<tr><td><input type='radio' id='none' name='token' onclick='toggle_cld()' checked><label for='none'>No. I will configure this later.</label></td></tr>
-	<tr><td><input type='radio' id='blynk' name='token' onclick='toggle_cld()'><label for='blynk'>Use Blynk Token.</label></td></tr>
-	<tr><td><input type='radio' id='otc' name='token' onclick='toggle_cld()'><label for='otc'>Use OpenThings Cloud (OTC) Token.</label></td></tr>
-</table>
-<table id='tb_cld' hidden>
-	<tr><td></td><td>Token:</td><td><input type='text' id='auth'></td></tr>
-	<tr><td></td><td>Server:</td><td><input type='text' id='bdmn'></td></tr>
-	<tr><td></td><td>Port:</td><td><input type='text' id='bprt'></td></tr>
-</table>
-</div>
-<p id='msg'></p>
-<button type='button' id='butt' onclick='sf()' style='height:36px;width:180px'>Submit</button>
+
+<main>
+    <h1>OpenGarage WiFi Setup</h1>
+
+    <div class="form-group">
+        <label>Available Networks</label>
+        <div class="table-container">
+            <table id='rd'>
+                <thead>
+                    <tr>
+                        <th>SSID</th>
+                        <th>Strength</th>
+                        <th>Power Level</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="3">(Scanning...)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id='div_input'>
+        <div class="form-group">
+            <label for="ssid">WiFi SSID</label>
+            <input type='text' id='ssid'>
+        </div>
+        <div class="form-group">
+            <label for="pass">WiFi Password</label>
+            <input type='password' id='pass'>
+        </div>
+        <div class="form-group">
+            <label for="host">Host Name (Optional)</label>
+            <input type='text' id='host' placeholder='e.g., my-garage'>
+        </div>
+
+        <div id="secv_section" class="form-group" hidden>
+            <label>Security+ Version</label>
+            <div class="sec-radio-group">
+                <input type="radio" id="secv2" name="secv" value="2">
+                <label for="secv2" class="sec-radio-label sec-yellow">2.0</label>
+                <input type="radio" id="secv1" name="secv" value="1">
+                <label for="secv1" class="sec-radio-label sec-purple">1.0</label>
+                <input type="radio" id="secv0" name="secv" value="0" checked>
+                <label for="secv0" class="sec-radio-label sec-green">None</label>
+            </div>
+            <button type="button" id="btn_autodetect">Detect</button>
+        </div>
+
+        <div class="form-group">
+            <label>Cloud Connection</label>
+            <div class="radio-group">
+                <label><input type='radio' id='none' name='token' onclick='toggle_cld()' checked>No, configure later.</label>
+                <label><input type='radio' id='blynk' name='token' onclick='toggle_cld()'>Use Blynk Token.</label>
+                <label><input type='radio' id='otc' name='token' onclick='toggle_cld()'>Use OpenThings Cloud (OTC) Token.</label>
+            </div>
+        </div>
+
+        <div id='tb_cld' hidden>
+            <div class="form-group">
+                <label for="auth">Token</label>
+                <input type='text' id='auth'>
+            </div>
+            <div class="form-group">
+                <label for="bdmn">Server</label>
+                <input type='text' id='bdmn'>
+            </div>
+            <div class="form-group">
+                <label for="bprt">Port</label>
+                <input type='text' id='bprt'>
+            </div>
+        </div>
+    </div>
+
+    <p id='msg'></p>
+    <button type='button' id='butt' onclick='sf()'>Submit</button>
+</main>
+
 <script>
 function id(s){return document.getElementById(s);}
-function sel(i){id('ssid').value=id('rd'+i).value;}
+function sel(i){id('ssid').value=document.querySelector('input[name="ssids"][id="rd'+i+'"]').value;}
 function eval_cb(n){return id(n).checked;}
 function dis_config(x){let a = document.querySelectorAll('#div_input input');for(let e of a){e.disabled = x;}}
 function show_msg(s,c){id('msg').innerHTML='<font color='+c+'>'+s+'</font>';}
 var tci;
 function toggle_cld(){
-	id('tb_cld').hidden=true;
-	if(eval_cb('blynk')) {id('tb_cld').hidden=false;id('bdmn').value='blynk.openthings.io';id('bprt').value='8080';}
-	if(eval_cb('otc')) {id('tb_cld').hidden=false;id('bdmn').value='ws.cloud.openthings.io';id('bprt').value='80';}
+  id('tb_cld').hidden=true;
+  if(eval_cb('blynk')) {id('tb_cld').hidden=false;id('bdmn').value='blynk.openthings.io';id('bprt').value='8080';}
+  if(eval_cb('otc')) {id('tb_cld').hidden=false;id('bdmn').value='ws.cloud.openthings.io';id('bprt').value='80';}
 }
 function tryConnect(){
-	var xhr=new XMLHttpRequest();
-	xhr.onreadystatechange=function() {
-		if(xhr.readyState==4 && xhr.status==200) {
-		var jd=JSON.parse(xhr.responseText);
-		if(jd.ip==0) return;
-		var ip=''+(jd.ip%256)+'.'+((jd.ip/256>>0)%256)+'.'+(((jd.ip/256>>0)/256>>0)%256)+'.'+(((jd.ip/256>>0)/256>>0)/256>>0);
-		show_msg('Connected! Device IP: '+ip+'</font></b><br>Device is rebooting. Switch back to<br>the above WiFi network, and then<br>click the button below to redirect.', 'green');
-		id('butt').innerHTML='Go to '+ip;
-		id('butt').disabled=false;
-		id('butt').onclick=function rd(){window.open('http://'+ip);}
-		clearInterval(tci);
-		}
-	}
-	xhr.open('GET', 'jt', true); xhr.send();
+  var xhr=new XMLHttpRequest();
+  xhr.onreadystatechange=function() {
+    if(xhr.readyState==4 && xhr.status==200) {
+    var jd=JSON.parse(xhr.responseText);
+    if(jd.ip==0) return;
+    var ip=''+(jd.ip%256)+'.'+((jd.ip/256>>0)%256)+'.'+(((jd.ip/256>>0)/256>>0)%256)+'.'+(((jd.ip/256>>0)/256>>0)/256>>0);
+    show_msg('<b>Connected! Device IP: '+ip+'</b><br>Device is rebooting. Switch back to your<br>regular WiFi and click the button to connect.', 'green');
+    id('butt').innerHTML='Go to '+ip;
+    id('butt').disabled=false;
+    id('butt').onclick=function rd(){window.open('http://'+ip);}
+    clearInterval(tci);
+    }
+  }
+  xhr.open('GET', 'jt', true); xhr.send();
 }
 function sf(){
   show_msg('','black');
-	if(!id('ssid').value) {show_msg('WiFi SSID cannot be empty!','red');return;}
-	var xhr=new XMLHttpRequest();
-	xhr.onreadystatechange=function() {
-		if(xhr.readyState==4 && xhr.status==200) {
-			var jd=JSON.parse(xhr.responseText);
-			if(jd.result==1) { id('butt').innerHTML='Connecting...'; show_msg('Connecting, please wait...','gray'); tci=setInterval(tryConnect, 2000); return;}
-			show_msg('Error code: '+jd.result+', item: '+jd.item,'red');
-			id('butt').innerHTML='Submit';
-			dis_config(false);
-		}
-	};
-	var comm='cc?ssid='+encodeURIComponent(id('ssid').value)+'&pass='+encodeURIComponent(id('pass').value)+'&host='+encodeURIComponent(id('host').value);
-	if(eval_cb('otc')||eval_cb('blynk')){
-		if(id('auth').value.length<32) {show_msg('Cloud token is too short!','red');return;}
-		comm+='&cld='+(eval_cb('blynk')?'blynk':'otc');
-		comm+='&auth='+encodeURIComponent(id('auth').value);
-		comm+='&bdmn='+id('bdmn').value;
-		comm+='&bprt='+id('bprt').value;
-	}
-	xhr.open('GET', comm, true);
-	xhr.send();
-	id('butt').disabled=true;
-	dis_config(true);
+  if(!id('ssid').value) {show_msg('WiFi SSID cannot be empty!','red');return;}
+  var xhr=new XMLHttpRequest();
+  xhr.onreadystatechange=function() {
+    if(xhr.readyState==4 && xhr.status==200) {
+      var jd=JSON.parse(xhr.responseText);
+      if(jd.result==1) { id('butt').innerHTML='Connecting...'; show_msg('Connecting, please wait...','gray'); tci=setInterval(tryConnect, 2000); return;}
+      show_msg('Error code: '+jd.result+', item: '+jd.item,'red');
+      id('butt').innerHTML='Submit';
+      dis_config(false);
+    }
+  };
+    var secv_val = document.querySelector('input[name="secv"]:checked').value;
+  var comm='cc?ssid='+encodeURIComponent(id('ssid').value)+'&pass='+encodeURIComponent(id('pass').value)+'&host='+encodeURIComponent(id('host').value)+'&secv='+secv_val;
+  if(eval_cb('otc')||eval_cb('blynk')){
+    if(id('auth').value.length<32) {show_msg('Cloud token is too short!','red');return;}
+    comm+='&cld='+(eval_cb('blynk')?'blynk':'otc');
+    comm+='&auth='+encodeURIComponent(id('auth').value);
+    comm+='&bdmn='+id('bdmn').value;
+    comm+='&bprt='+id('bprt').value;
+  }
+  xhr.open('GET', comm, true);
+  xhr.send();
+  id('butt').disabled=true;
+  dis_config(true);
 }
+id('btn_autodetect').addEventListener('click', function() {
+  if (!confirm('Auto-detecting Security+ version may take up to 15 seconds, and the door may move during this process. Continue?')) {
+    return;
+  }
+
+  const detectButton = this;
+  const msgElement = id('msg');
+  let dotAnimation;
+
+  // Show a message and disable the button
+  detectButton.disabled = true;
+  show_msg('Detecting', 'gray');
+
+  // Start the animated ellipsis in the message area
+  let dotCount = 0;
+  dotAnimation = setInterval(function() {
+    dotCount = (dotCount + 1) % 4;
+    let dots = ".".repeat(dotCount);
+    msgElement.innerHTML = '<font color=gray>Detecting ' + dots + '</font>';
+  }, 500);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
+
+  fetch('/ad', { signal: controller.signal })
+    .then(response => response.json())
+    .then(data => {
+      const resultText = data.version > 0 ? `Found Security+ v${data.version}.` : 'No supported protocol was found.';
+      show_msg(resultText + ' The version has been selected for you.', 'green');
+
+      // Automatically check the correct radio button
+      document.querySelector('input[name="secv"][value="' + data.version + '"]').checked = true;
+    })
+    .catch(error => {
+      if (error.name === 'AbortError') {
+        show_msg('Detection timed out after 20 seconds.', 'red');
+      } else {
+        show_msg('An error occurred during detection.', 'red');
+      }
+      console.error('Detection error:', error);
+    })
+    .finally(() => {
+      clearTimeout(timeoutId);
+      clearInterval(dotAnimation);
+      detectButton.disabled = false;
+    });
+});
+
 function loadSSIDs(){
-	var xhr=new XMLHttpRequest();
-	xhr.onreadystatechange=function() {
-		if(xhr.readyState==4 && xhr.status==200) {
-			id('rd').deleteRow(1);
-			var i, jd=JSON.parse(xhr.responseText);
-			for(i=0;i<jd.ssids.length;i++) {
-				var signalstrength=jd.rssis[i]>-71?'Ok':(jd.rssis[i]>-81?'Weak':'Poor');
-				var row=id('rd').insertRow(-1);
-				row.innerHTML ="<tr><td><input name='ssids' id='rd"+i+"' onclick='sel("+i+")' type='radio' value='"+jd.ssids[i]+"'>"+jd.ssids[i]+"</td>"+"<td align='center'>"+signalstrength+"</td>"+"<td align='center'>("+jd.rssis[i]+" dbm)</td>"+"</tr>";
-			}
-		};
-	}
-	xhr.open('GET','js',true);
-	xhr.send();
+    var xhr=new XMLHttpRequest();
+  xhr.onreadystatechange=function() {
+    if(xhr.readyState==4 && xhr.status==200) {
+            var jd=JSON.parse(xhr.responseText);
+            if (jd.has_swrx && jd.has_swrx == 1) {
+                id('secv_section').hidden = false;
+                if (typeof jd.secv !== 'undefined') {
+                    id('secv0').checked = false;
+                    if (jd.secv == 2) {
+                        id('secv2').checked = true;
+                    } else if (jd.secv == 1) {
+                        id('secv1').checked = true;
+                    } else {
+                        id('secv0').checked = true;
+                    }
+                }
+            }
+            var tableBody = document.querySelector("#rd tbody");
+            tableBody.innerHTML = '';
+            if (!jd || !jd.ssids || jd.ssids.length === 0) {
+                tableBody.innerHTML = "<tr><td colspan='3'>No networks found.</td></tr>";
+                return;
+            }
+            for(var i=0; i<jd.ssids.length; i++) {
+                var signalstrength = jd.rssis[i] > -71 ? 'Ok' : (jd.rssis[i] > -81 ? 'Weak' : 'Poor');
+                var row = tableBody.insertRow(-1);
+                var cell1 = row.insertCell(0);
+                var cell2 = row.insertCell(1);
+                var cell3 = row.insertCell(2);
+                cell1.innerHTML = "<label style='display:flex; align-items:center; font-weight:normal; margin:0;'><input name='ssids' id='rd"+i+"' onclick='sel("+i+")' type='radio' value='"+jd.ssids[i]+"' style='margin-right: 8px;'>" + jd.ssids[i] + "</label>";
+                cell2.innerHTML = signalstrength;
+                cell3.innerHTML = "(" + jd.rssis[i] + " dBm)";
+            }
+    };
+  }
+  xhr.open('GET','js',true);
+  xhr.send();
 }
-setTimeout(loadSSIDs, 1000);
+setTimeout(loadSSIDs, 500);
 </script>
+
 </body>
+</html>

@@ -19,10 +19,8 @@
  * along with this program.  If not, see
  * <http://www.gnu.org/licenses/>.
  */
- 
-#include "espconnect.h"
 
-//const char html_ap_redirect[] PROGMEM = "<h3>WiFi config saved. Now switching to station mode.</h3>";
+#include "espconnect.h"
 
 String scan_network() {
 	DEBUG_PRINTLN(F("scan network"));
@@ -31,8 +29,9 @@ String scan_network() {
 	byte n = WiFi.scanNetworks();
 	String wirelessinfo;
 	if (n>32) n = 32; // limit to 32 ssids max
+	wirelessinfo.reserve(STRING_RESERVE_SIZE); // pre-reserve memory to reduce the overhead of String's +=
 	//Maintain old format of wireless network JSON for mobile app compat
-	wirelessinfo = "{\"ssids\":["; 
+	wirelessinfo = "{\"ssids\":[";
 	for(int i=0;i<n;i++) {
 		wirelessinfo += "\"";
 		wirelessinfo += WiFi.SSID(i);
@@ -40,14 +39,14 @@ String scan_network() {
 		if(i<n-1) wirelessinfo += ",\r\n";
 	}
 	wirelessinfo += "],";
-	wirelessinfo += "\"rssis\":["; 
+	wirelessinfo += "\"rssis\":[";
 	for(int i=0;i<n;i++) {
 		wirelessinfo += "\"";
 		wirelessinfo += WiFi.RSSI(i);
 		wirelessinfo += "\"";
 		if(i<n-1) wirelessinfo += ",\r\n";
 	}
-	wirelessinfo += "]}";
+	wirelessinfo += "]";
 	return wirelessinfo;
 }
 
@@ -68,8 +67,8 @@ void start_network_sta(const char *ssid, const char *pass, const char *hostname,
 	if(staonly){
 		DEBUG_PRINTLN(F("Setting STA mode"));
 		//WiFi.mode(WIFI_OFF); //Fix for bug in 2.3 on connect after SoftAP mode
-		if(WiFi.getMode() != WIFI_STA)  WiFi.mode(WIFI_STA); 
-	}else{ 
+		if(WiFi.getMode() != WIFI_STA)  WiFi.mode(WIFI_STA);
+	}else{
 		//WiFi.mode(WIFI_OFF);
 		if(WiFi.getMode() != WIFI_AP_STA) WiFi.mode(WIFI_AP_STA);
 		DEBUG_PRINTLN(F("Setting to AP+STA mode"));
@@ -78,6 +77,9 @@ void start_network_sta(const char *ssid, const char *pass, const char *hostname,
 		WiFi.hostname(hostname);
 	}
 	WiFi.begin(ssid, pass);
+	WiFi.setSleep(false); // work-around for ARP issue: disable sleep mode
+	WiFi.setOutputPower(20.5);
+	WiFi.setAutoReconnect(true); // enable auto reconnect
 }
 
 void start_network_sta_with_ap(const char *ssid, const char *pass, const char *hostname) {

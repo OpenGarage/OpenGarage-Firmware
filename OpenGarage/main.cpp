@@ -20,7 +20,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#if defined(SERIAL_DEBUG)
+ #if defined(SERIAL_DEBUG)
 	#define BLYNK_DEBUG
 	#define BLYNK_PRINT Serial
 #endif
@@ -43,6 +43,7 @@ DNSServer *dns = NULL;
 
 WidgetLED blynk_door(BLYNK_PIN_DOOR);
 WidgetLED blynk_car(BLYNK_PIN_CAR);
+WidgetLED blynk_dval(BLYNK_PIN_DVAL);
 
 static Ticker aux_ticker;
 static Ticker ip_ticker;
@@ -60,7 +61,14 @@ static uint distance = 0;
 static byte sn2_value = 0;
 static float tempC = 0;
 static float humid = 0;
-static byte door_status = 0; //0: closed, 1: open
+static byte door_status = DOOR_STATUS_UNKNOWN; //door_status enum
+static byte last_door_status = DOOR_STATUS_UNKNOWN;
+static byte secplus_door_status = DOOR_STATUS_UNKNOWN;
+static byte door_status_hist = 0;
+static bool light_status = 0;
+static bool lock_status = 0;
+static bool obstruction_status = 0;
+static uint16_t opening_count = 0;
 static int vehicle_status = OG_VEH_ABSENT;
 static uint led_blink_ms = LED_FAST_BLINK;
 static ulong justopen_timestamp = 0;
@@ -68,12 +76,14 @@ static byte curr_mode;
 extern bool fullbuffer;
 // this is one byte storing the door status histogram
 // maximum 8 bits
-static byte door_status_hist = 0;
 static ulong start_utc_time = 0;
 static ulong curr_utc_time = 0;
 static ulong curr_utc_hour= 0;
 static HTTPClient http;
 static bool light_blink_enabled = true;
+// security+ objects
+SecPlus1::Garage secplus1_garage(PIN_SW_RX, PIN_SW_TX);
+SecPlus2::Garage secplus2_garage(0x777, PIN_SW_RX, PIN_SW_TX);
 
 void do_setup();
 
@@ -83,9 +93,22 @@ void otf_send_html_P(OTF::Response &res, const __FlashStringHelper *content) {
 	res.writeHeader(F("Access-Control-Allow-Origin"), F("*")); // from esp8266 2.4 this has to be sent explicitly
 	res.writeHeader(F("Content-Length"), strlen_P((char *) content));
 	res.writeHeader(F("Connection"), F("close"));
-	//res.writeBodyChunk((char *) "%s", content);
 	res.writeBodyData(content, strlen_P((char*)content));
 	DEBUG_PRINT(strlen_P((char *) content));
+	DEBUG_PRINTLN(F(" bytes sent."));
+}
+
+void otf_send_compressed_P(OTF::Response& res, const __FlashStringHelper* content, size_t len) {
+	res.writeStatus(200, F("OK"));
+	res.writeHeader(F("Content-Type"), F("text/html; charset=utf-8"));
+	res.writeHeader(F("Access-Control-Allow-Origin"), F("*")); // from esp8266 2.4 this has to be sent explicitly
+	res.writeHeader(F("Content-Length"), len);
+	res.writeHeader(F("Vary"), F("Accept-Encoding"));
+	res.writeHeader(F("Content-Encoding"), F("gzip"));
+	res.writeHeader(F("Cache-Control"), F("public, max-age=86400"));
+	res.writeHeader(F("Connection"), F("close"));
+	res.writeBodyData(content, len);
+	DEBUG_PRINT(len);
 	DEBUG_PRINTLN(F(" bytes sent."));
 }
 
@@ -95,7 +118,6 @@ void otf_send_json(OTF::Response &res, String json) {
 	res.writeHeader(F("Access-Control-Allow-Origin"), F("*")); // from esp8266 2.4 this has to be sent explicitly
 	res.writeHeader(F("Content-Length"), json.length());
 	res.writeHeader(F("Connection"), F("close"));
-	//res.writeBodyChunk((char *) "%s",json.c_str());
 	res.writeBodyData(json.c_str(), json.length());
 }
 
@@ -175,21 +197,20 @@ void restart_in(uint32_t ms) {
 	}
 }
 
-void on_home(const OTF::Request &req, OTF::Response &res)
-{
+void on_home(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_AP) {
-		otf_send_html_P(res, (const __FlashStringHelper *) ap_home_html);
+		otf_send_compressed_P(res, (const __FlashStringHelper*)ap_home_html_gz, ap_home_html_gz_len);
 	} else {
-		otf_send_html_P(res, (const __FlashStringHelper *) sta_home_html);
+	otf_send_compressed_P(res, (const __FlashStringHelper*)sta_home_html_gz, sta_home_html_gz_len);
 	}
 }
 
 void on_sta_view_options(const OTF::Request &req, OTF::Response &res) {
-	otf_send_html_P(res, (const __FlashStringHelper *) sta_options_html);
+	otf_send_compressed_P(res, (const __FlashStringHelper*)sta_options_html_gz, sta_options_html_gz_len);
 }
 
 void on_sta_view_logs(const OTF::Request &req, OTF::Response &res) {
-	otf_send_html_P(res, (const __FlashStringHelper *) sta_logs_html);
+	otf_send_compressed_P(res, (const __FlashStringHelper*)sta_logs_html_gz, sta_logs_html_gz_len);
 }
 
 char dec2hexchar(byte dec) {
@@ -238,7 +259,8 @@ String get_ip() {
 	return ip;
 }
 
-void sta_controller_fill_json(String& json, bool fullversion=true) {
+void sta_controller_fill_json(String& json) {
+	json.reserve(STRING_RESERVE_SIZE);
 	json = "";
 	json += F("{\"dist\":");
 	json += distance;
@@ -246,32 +268,52 @@ void sta_controller_fill_json(String& json, bool fullversion=true) {
 		json += F(",\"sn2\":");
 		json += sn2_value;
 	}
+	json += F(",\"secv\":");
+	json += og.options[OPTION_SECV].ival;
 	json += F(",\"door\":");
 	json += door_status;
 	json += F(",\"vehicle\":");
 	json += vehicle_status;
 	json += F(",\"rcnt\":");
 	json += read_cnt;
-	if(fullversion) {
-		json += F(",\"fwv\":");
-		json += og.options[OPTION_FWV].ival;
-		json += F(",\"name\":\"");
-		json += og.options[OPTION_NAME].sval;
-		json += F("\",\"mac\":\"");
-		json += get_mac();
-		json += F("\",\"cid\":");
-		json += ESP.getChipId();
-		json += F(",\"rssi\":");
-		json += (int16_t)WiFi.RSSI();
-		json += F(",\"cld\":");
-		byte cld = og.options[OPTION_CLD].ival;
-		json += cld;
-		if(cld>CLD_NONE) {
-			json += F(",\"clds\":");
-			if(cld==CLD_BLYNK) json += (Blynk.connected()?1:0);
-			else if(cld==CLD_OTC) json += (otf->getCloudStatus());
-			else json += "0";
+json += F(",\"fwv\":");
+	json += og.options[OPTION_FWV].ival;
+	json += F(",\"has_swrx\":");
+	json += og.has_swrx;
+	if(og.has_swrx) {
+		if(og.options[OPTION_SECV].ival>=1) {
+			json += F(",\"light\":");
+			json += light_status;
+			json += F(",\"lock\":");
+			json += lock_status;
+			json += F(",\"obstruct\":");
+			json += obstruction_status;
+			if(og.options[OPTION_SECV].ival==2) {
+				json += F(",\"nopenings\":");
+				json += opening_count;
+			}
+			if(og.options[OPTION_SECV].ival==1) {
+				json += F(",\"pemu\":");
+				json += secplus1_garage.get_panel_emu_status();
+			}
 		}
+	}
+	json += F(",\"name\":\"");
+	json += og.options[OPTION_NAME].sval;
+	json += F("\",\"mac\":\"");
+	json += get_mac();
+	json += F("\",\"cid\":");
+	json += ESP.getChipId();
+	json += F(",\"rssi\":");
+	json += (int16_t)WiFi.RSSI();
+	json += F(",\"cld\":");
+	byte cld = og.options[OPTION_CLD].ival;
+	json += cld;
+	if(cld>CLOUD_NONE) {
+		json += F(",\"clds\":");
+		if(cld==CLOUD_BLYNK) json += (Blynk.connected()?1:0);
+		else if(cld==CLOUD_OTC) json += (otf->getCloudStatus());
+		else json += "0";
 	}
 	if(og.options[OPTION_TSN].ival) {
 		json += F(",\"temp\":");
@@ -291,6 +333,7 @@ void on_sta_controller(const OTF::Request &req, OTF::Response &res) {
 
 void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
 	String json = "";
+	json.reserve(STRING_RESERVE_SIZE);
 	json += F("{");
 	json += F("\"rcnt\":");
 	json += read_cnt;
@@ -316,12 +359,15 @@ void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
 	json += (uint16_t)ESP.getFreeHeap();
 	json += F(",\"flash_size\":");
 	json += (uint32_t)ESP.getFlashChipRealSize();
+	json += F(",\"has_swrx\":");
+	json += og.has_swrx;
 	json += F("}");
 	otf_send_json(res, json);
 }
 
 void sta_logs_fill_json(String& json, OTF::Response &res) {
 	json = "";
+	json.reserve(2048); // reserve capacity to reduce the overhead of String's +=
 	json += F("{\"name\":\"");
 	json += og.options[OPTION_NAME].sval;
 	json += F("\",\"starttime\":");
@@ -333,7 +379,6 @@ void sta_logs_fill_json(String& json, OTF::Response &res) {
 	json += F(",\"logs\":[");
 	if(!og.read_log_start()) {
 		json += F("]}");
-		//otf_send_json(res, json);
 		return;
 	}
 	LogStruct l;
@@ -393,6 +438,147 @@ void on_clear_log(const OTF::Request &req, OTF::Response &res) {
 	otf_send_result(res, HTML_SUCCESS, nullptr);
 }
 
+void secplus_update_door(SecPlusCommon::DoorStatus door_state) {
+	switch (door_state) {
+		case SecPlusCommon::DoorStatus::OPEN:
+			secplus_door_status = DOOR_STATUS_OPEN;
+			break;
+		case SecPlusCommon::DoorStatus::CLOSED:
+			secplus_door_status = DOOR_STATUS_CLOSED;
+			break;
+		case SecPlusCommon::DoorStatus::STOPPED:
+			secplus_door_status = DOOR_STATUS_STOPPED;
+			break;
+		case SecPlusCommon::DoorStatus::OPENING:
+			secplus_door_status = DOOR_STATUS_OPENING;
+			break;
+		case SecPlusCommon::DoorStatus::CLOSING:
+			secplus_door_status = DOOR_STATUS_CLOSING;
+			break;
+		default:
+			secplus_door_status = DOOR_STATUS_UNKNOWN;
+	}
+}
+
+void secplus1_state_callback(SecPlus1::state_struct_t state) {
+	secplus_update_door(state.door_state);
+	light_status = state.light_state;
+	lock_status = state.lock_state;
+	obstruction_status = state.obstruction_state;
+}
+
+void secplus2_state_callback(SecPlus2::state_struct_t state) {
+	secplus_update_door(state.door_state);
+	light_status = state.light_state;
+	lock_status = state.lock_state;
+	obstruction_status = state.obstruction_state;
+	opening_count = state.openings;
+}
+
+int run_auto_detect() {
+	// Try Sec+ 2.0 first
+	if (secplus2_garage.detect()) {
+		return 2;
+	}
+	// If that fails, try Sec+ 1.0
+	if (secplus1_garage.detect()) {
+		return 1;
+	}
+	return 0; // Detected nothing
+}
+
+void on_auto_detect(const OTF::Request &req, OTF::Response &res) {
+	int detected_version = run_auto_detect();
+	String json = "{\"version\": " + String(detected_version) + "}";
+	otf_send_json(res, json);
+}
+
+void performDoorAction(uint8_t action, bool force_alarm_off = false) {
+	// Check if the requested action is valid based on the current door state
+	bool isValidAction = false;
+	if((og.options[OPTION_SECV].ival == 2) || // For Sec+ 2.0, open/close commands are always valid
+		(action == ACTION_TOGGLE) || // toggle action is always valid
+		(action == ACTION_OPEN && (door_status == DOOR_STATUS_CLOSED || door_status == DOOR_STATUS_CLOSING)) || // can only open from CLOSED or CLOSING states
+		(action == ACTION_CLOSE && (door_status == DOOR_STATUS_OPEN || door_status == DOOR_STATUS_STOPPED))) {
+			isValidAction = true;
+	}
+
+	if (!isValidAction) {
+		DEBUG_PRINTLN(F("Requested command not valid, or door already in requested state"));
+		return;
+	}
+
+	// This is the core logic for deciding whether to trigger the alarm or the door directly.
+	bool shouldTriggerAlarm = true;
+	if (force_alarm_off || // override is on
+		(!og.options[OPTION_ALM].ival) || // alarm not enabled
+		(og.options[OPTION_AOO].ival && (door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_CLOSING || door_status==DOOR_STATUS_OPENING))) { shouldTriggerAlarm = false;
+	}
+
+	if (shouldTriggerAlarm) { // if using alarm
+		if (og.options[OPTION_SECV].ival == 2) {
+			og.set_alarm(0, action);
+		} else {
+			og.set_alarm();
+		}
+		return;
+	}
+
+	// no alarm
+	switch (og.options[OPTION_SECV].ival) {
+		case 2: // SecPlus 2.0
+			if (action == ACTION_OPEN) secplus2_garage.open_door();
+			else if (action == ACTION_CLOSE) secplus2_garage.close_door();
+			else secplus2_garage.toggle_door();
+			break;
+		case 1: // SecPlus 1.0
+			secplus1_garage.toggle_door();
+			break;
+		default: // No SecPlus (standard relay)
+			og.click_relay();
+			break;
+	}
+}
+
+void performLightAction(uint8_t action) {
+	switch(action) {
+		case ACTION_TOGGLE:
+			switch (og.options[OPTION_SECV].ival) {
+				case 2: // SecPlus 2
+					secplus2_garage.toggle_light();
+					break;
+				case 1: // SecPlus 1
+					secplus1_garage.toggle_light();
+					break;
+				default: // No secplus
+					DEBUG_PRINTLN(F("Command request not valid, light requires secplus"));
+			}
+			break;
+		case ACTION_OPEN: // TODO
+		case ACTION_CLOSE:
+			break;
+	}
+}
+
+void performLockAction(uint8_t action) {
+	switch(action) {
+		case ACTION_TOGGLE:
+			switch (og.options[OPTION_SECV].ival) {
+				case 2: // SecPlus 2
+					secplus2_garage.toggle_lock();
+					break;
+				case 1: // SecPlus 1
+					secplus1_garage.toggle_lock();
+					break;
+				default: // No secplus
+					DEBUG_PRINTLN(F("Command request not valid, light requires secplus"));
+			}
+			break;
+		case ACTION_OPEN: // TODO
+		case ACTION_CLOSE:
+			break;
+	}
+}
 void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_AP) return;
 
@@ -401,34 +587,38 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 		return;
 	}
 
-	bool click = req.getQueryParameter("click");
-	bool close = req.getQueryParameter("close");
-	bool open = req.getQueryParameter("open");
+	uint8_t action = 255;
+	if((bool)req.getQueryParameter("click")) { action = ACTION_TOGGLE; }
+	else if((bool)req.getQueryParameter("close")) { action = ACTION_CLOSE; }
+	else if((bool)req.getQueryParameter("open")) { action = ACTION_OPEN; }
 
-	if(click || close || open) {
-		DEBUG_PRINTLN(F("Received button request (click, close, or open)"));
+	char* light = req.getQueryParameter("light");
+	char* lock = req.getQueryParameter("lock");
+
+	if(action < 255) {
 		otf_send_result(res, HTML_SUCCESS, nullptr);
-		//1 is open
-		if ((close && door_status) ||
-				(open && !door_status) ||
-				(click)) {
-			DEBUG_PRINTLN(F("Valid command recieved based on door status"));
-			if(!og.options[OPTION_ALM].ival) {
-				// if alarm is not enabled, trigger relay right away
-				og.click_relay();
-			} else if(og.options[OPTION_AOO].ival && !door_status) {
-				// if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
-				og.click_relay();
-			} else {
-				// else, set alarm
-				og.set_alarm();
-			}
-		}else{
-		  DEBUG_PRINTLN(F("Command request not valid, door already in requested state"));
+		performDoorAction(action);
+		return;
+	}
+
+	if(light) {
+		otf_send_result(res, HTML_SUCCESS, nullptr);
+		if(strcmp(light, "toggle")==0) {
+			performLightAction(ACTION_TOGGLE);
 		}
-	} else if(req.getQueryParameter("reboot") != NULL) {
+		return;
+	}
+
+	if(lock) {
 		otf_send_result(res, HTML_SUCCESS, nullptr);
-		//restart_ticker.once_ms(1000, og.restart);
+		if(strcmp(lock, "toggle")==0) {
+			performLockAction(ACTION_TOGGLE);
+		}
+		return;
+	}
+
+	if(req.getQueryParameter("reboot") != NULL) {
+		otf_send_result(res, HTML_SUCCESS, nullptr);
 		restart_in(1000);
 	} else if(req.getQueryParameter("apmode") != NULL) {
 		otf_send_result(res, HTML_SUCCESS, nullptr);
@@ -436,7 +626,6 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 	} else {
 		otf_send_result(res, HTML_NOT_PERMITTED, nullptr);
 	}
-
 }
 
 void on_sta_change_controller(const OTF::Request &req, OTF::Response &res) {
@@ -463,17 +652,21 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 		if(i==OPTION_FWV || i==OPTION_MOD  || i==OPTION_SSID ||
 			i==OPTION_PASS || i==OPTION_DKEY)
 			continue;
-		
+
 		if(o->max) {  // integer options
 			char *sval = req.getQueryParameter(key);
 			if(sval != NULL) {
 				uint ival = String(sval).toInt();
 				if(ival>o->max) {	// check max limit
-				  otf_send_result(res, HTML_DATA_OUTOFBOUND, key);
-				  return;
+					otf_send_result(res, HTML_DATA_OUTOFBOUND, key);
+					return;
 				}
 				// check min limit
 				if(i==OPTION_DRI && ival < 50) {
+					otf_send_result(res, HTML_DATA_OUTOFBOUND, key);
+					return;
+				}
+				if(i==OPTION_RIV && ival < 1) {
 					otf_send_result(res, HTML_DATA_OUTOFBOUND, key);
 					return;
 				}
@@ -554,6 +747,7 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 	}
 
 	// SECOND ROUND: change option values
+	uint old_secv = og.options[OPTION_SECV].ival;
 	o = og.options;
 	for(i=0;i<NUM_OPTIONS;i++,o++) {
 		const char *key = o->name.c_str();
@@ -589,6 +783,25 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 	}
 
 	og.options_save();
+
+	uint new_secv = og.options[OPTION_SECV].ival;
+	if(old_secv != new_secv) { // sec+ version changed
+		switch(new_secv) {
+			case 2:
+				secplus2_garage.begin();
+				secplus2_garage.reset_state();
+				secplus_door_status = DOOR_STATUS_UNKNOWN;
+				secplus2_garage.enable_callback(secplus2_state_callback);
+				break;
+			case 1:
+				secplus1_garage.begin();
+				secplus1_garage.reset_state();
+				secplus_door_status = DOOR_STATUS_UNKNOWN;
+				secplus1_garage.enable_callback(secplus1_state_callback);
+				break;
+		}
+	}
+
 	otf_send_result(res, HTML_SUCCESS, nullptr);
 }
 
@@ -597,6 +810,7 @@ void on_sta_change_options(const OTF::Request &req, OTF::Response &res) {
 }
 
 void sta_options_fill_json(String& json) {
+	json.reserve(STRING_RESERVE_SIZE*2); // reserve capacity to reduce the overhead of String's +=
 	json = "{";
 	OptionStruct *o = og.options;
 	for(byte i=0;i<NUM_OPTIONS;i++,o++) {
@@ -635,7 +849,9 @@ void sta_options_fill_json(String& json) {
 			json += ",";
 		}
 	}
-	json.remove(json.length()-1); // remove the extra ,
+	// append has_swrx variable
+	json += F("\"has_swrx\":");
+	json += og.has_swrx;
 	json += F("}");
 }
 
@@ -685,6 +901,13 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 				return;
 			}
 		}
+		// if secplus is provided
+		char *secv = req.getQueryParameter("secv");
+		if(og.has_swrx && secv != NULL && strlen(secv)!=0) {
+			uint8_t v = String(secv).toInt();
+			if(v>2) v=2;
+			og.options[OPTION_SECV].ival=v;
+		}
 		otf_send_result(res, HTML_SUCCESS, nullptr);
 		og.state = OG_STATE_TRY_CONNECT;
 	} else {
@@ -712,6 +935,8 @@ void on_ap_debug(const OTF::Request &req, OTF::Response &res) {
 	json += og.read_distance();
 	json += F(",\"fwv\":");
 	json += og.options[OPTION_FWV].ival;
+	json += F(",\"has_swrx\":");
+	json += og.has_swrx;
 	json += F("}");
 	otf_send_json(res, json);
 }
@@ -721,53 +946,33 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 	payload[length]=0;
 	String Payload((char*)payload);
 	String Topic(topic);
-	/*DEBUG_PRINT("MQTT Message Received: ");
-	DEBUG_PRINT(Topic);
-	DEBUG_PRINT(" Data: ");
-	DEBUG_PRINTLN(Payload);*/
 
 	//Accept button on any topic for backwards compat with existing code - use IN messages below if possible
 	if (Payload=="Button") {
 		DEBUG_PRINTLN(F("MQTT Button request received, change door state"));
-		if(!og.options[OPTION_ALM].ival) {
-			// if alarm is not enabled, trigger relay right away
-			og.click_relay();
-		} else if(og.options[OPTION_AOO].ival && !door_status) {
-			// if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
-			og.click_relay();
-		} else {
-			// else, set alarm
-			og.set_alarm();
-		}
+		performDoorAction(ACTION_TOGGLE);
+		return;
 	}
+
 	//Accept click for consistency with api, open and close should be used instead, use IN topic if possible
 	if (Topic==(mqtt_topic+"/IN/STATE")){
 		DEBUG_PRINT(F("MQTT IN Message detected, check data for action, Data:"));
 		DEBUG_PRINTLN(Payload);
-		if ( (Payload == "close" && door_status) || (Payload == "open" && !door_status) || Payload == "click") {
-			DEBUG_PRINTLN(F("Command is valid based on existing state, trigger change"));
-			if(!og.options[OPTION_ALM].ival) {
-				// if alarm is not enabled, trigger relay right away
-				og.click_relay();
-			} else if(og.options[OPTION_AOO].ival && !door_status) {
-				// if 'Do not alarm on open' is on, and door is about to be open, no alarm needed
-				og.click_relay();
-			} else {
-				// else, set alarm
-				og.set_alarm();
-			}
-		}else if ( (Payload=="close" && !door_status) || (Payload=="open" && door_status) ){
-			DEBUG_PRINTLN(F("Command request not valid, door already in requested state"));
-		}
+		if(Payload == "click")      { performDoorAction(ACTION_TOGGLE); }
+		else if(Payload == "close") { performDoorAction(ACTION_CLOSE); }
+		else if(Payload == "open")  { performDoorAction(ACTION_OPEN); }
+		else if(Payload == "togglelight") performLightAction(ACTION_TOGGLE);
+		else if(Payload == "togglelock") performLockAction(ACTION_TOGGLE);
 		else {
-		  DEBUG_PRINT(F("Unrecognized MQTT data/command:"));
+			DEBUG_PRINT(F("Payload command not recognized"));
 		}
+		return;
 	}
 }
 
-void do_setup()
-{
+void do_setup() {
 	Serial.begin(115200);
+	DEBUG_PRINTLN("started.");
 	if(otf) {
 		delete otf;
 		otf = NULL;
@@ -782,10 +987,25 @@ void do_setup()
 	og.init_sensors();
 	if(og.get_mode() == OG_MOD_AP) og.play_startup_tune();
 	curr_mode = og.get_mode();
+
+	// initialize secplus objects and enable callbacks
+	switch(og.options[OPTION_SECV].ival) {
+		case 2:
+			secplus2_garage.begin();
+			secplus2_garage.reset_state();
+			secplus2_garage.enable_callback(secplus2_state_callback);
+			break;
+		case 1:
+			secplus1_garage.begin();
+			secplus1_garage.reset_state();
+			secplus1_garage.enable_callback(secplus1_state_callback);
+			break;
+	}
+
 	if(!otf) {
 		const String otfDeviceKey = og.options[OPTION_AUTH].sval;
 
-		if((og.options[OPTION_CLD].ival==CLD_OTC) && (otfDeviceKey.length() >= 32)) {
+		if((og.options[OPTION_CLD].ival==CLOUD_OTC) && (otfDeviceKey.length() >= 32)) {
 			// Initialize with remote connection if a device key was specified.
 			otf = new OTF::OpenThingsFramework(og.options[OPTION_HTP].ival, og.options[OPTION_BDMN].sval, og.options[OPTION_BPRT].ival, otfDeviceKey, false);
 			DEBUG_PRINTLN(F("Started OTF with remote connection"));
@@ -805,8 +1025,7 @@ void do_setup()
 	led_blink_ms = LED_FAST_BLINK;
 }
 
-void process_ui()
-{
+void process_ui() {
 	// process button
 	static ulong button_down_time = 0;
 	if(og.get_button() == LOW) {
@@ -814,29 +1033,30 @@ void process_ui()
 			button_down_time = millis();
 		} else {
 			ulong curr = millis();
-			if(curr > button_down_time + BUTTON_FACRESET_TIMEOUT) {
+			long diff = (long)(curr - button_down_time);
+			if(diff > BUTTON_FACRESET_TIMEOUT) {
 				led_blink_ms = 0;
 				og.set_led(LOW);
-			} else if(curr > button_down_time + BUTTON_APRESET_TIMEOUT) {
+			} else if(diff > BUTTON_APRESET_TIMEOUT) {
 				led_blink_ms = 0;
 				og.set_led(HIGH);
 			}
 		}
-	}
-	else {
+	} else {
 		if (button_down_time > 0) {
 			ulong curr = millis();
-			if(curr > button_down_time + BUTTON_FACRESET_TIMEOUT) {
+			long diff = (long)(curr - button_down_time);
+			if(diff > BUTTON_FACRESET_TIMEOUT) {
 				og.state = OG_STATE_RESET;
-			} else if(curr > button_down_time + BUTTON_APRESET_TIMEOUT) {
+			} else if(diff > BUTTON_APRESET_TIMEOUT) {
 				og.reset_to_ap();
-			} else if(curr > button_down_time + BUTTON_REPORTIP_TIMEOUT) {        
+			} else if(diff > BUTTON_REPORTIP_TIMEOUT) {
 				// report IP
 				ipString = get_ip();
 				ipString.replace(".", ". ");
 				report_ip();
 			} else if(curr > button_down_time + 50) {
-				og.click_relay();
+				performDoorAction(ACTION_TOGGLE, true); // no alarm since manual operation
 			}
 			button_down_time = 0;
 		}
@@ -844,7 +1064,7 @@ void process_ui()
 	// process led
 	static ulong led_toggle_timeout = 0;
 	if(led_blink_ms) {
-		if(millis() > led_toggle_timeout) {
+		if((long)(millis() - led_toggle_timeout) > 0) {
 			// toggle led
 			og.set_led(1-og.get_led());
 			led_toggle_timeout = millis() + led_blink_ms;
@@ -852,32 +1072,16 @@ void process_ui()
 	}
 }
 
-byte check_door_status_hist() {
-	// perform pattern matching of door status histogram
-	// and return the corresponding results
-	const byte allones = (1<<DOOR_STATUS_HIST_K)-1;       // 0b1111
-	const byte lowones = (1<<(DOOR_STATUS_HIST_K/2))-1; // 0b0011
-	const byte highones= lowones << (DOOR_STATUS_HIST_K/2); // 0b1100
-
-	byte _hist = door_status_hist & allones;  // get the lowest K bits
-	if(_hist == 0) return DOOR_STATUS_REMAIN_CLOSED;
-	if(_hist == allones) return DOOR_STATUS_REMAIN_OPEN;
-	if(_hist == lowones) return DOOR_STATUS_JUST_OPENED;
-	if(_hist == highones) return DOOR_STATUS_JUST_CLOSED;
-
-	return DOOR_STATUS_MIXED;
+void on_update(const OTF::Request &req, OTF::Response &res) {
+	if(curr_mode == OG_MOD_AP) {
+		otf_send_compressed_P(res, (const __FlashStringHelper*)ap_update_html_gz, ap_update_html_gz_len);
+	} else {
+		if(req.isCloudRequest()) otf_send_result(res, HTML_NOT_PERMITTED, "fw update");
+		otf_send_compressed_P(res, (const __FlashStringHelper*)sta_update_html_gz, sta_update_html_gz_len);
+	}
 }
 
-void on_sta_update(const OTF::Request &req, OTF::Response &res) {
-	if(req.isCloudRequest()) otf_send_result(res, HTML_NOT_PERMITTED, "fw update");
-	else otf_send_html_P(res, (const __FlashStringHelper *) sta_update_html);
-}
-
-void on_ap_update(const OTF::Request &req, OTF::Response &res) {
-	otf_send_html_P(res, (const __FlashStringHelper *) ap_update_html);
-}
-
-void on_sta_upload_fin() {
+void on_firmware_upload_fin() {
 
 	// Verify the device key.
 	if(!(updateServer->hasArg("dkey") && (updateServer->arg("dkey") == og.options[OPTION_DKEY].sval))) {
@@ -899,15 +1103,23 @@ void on_sta_upload_fin() {
 	restart_in(1000);
 }
 
-void on_ap_upload_fin() { on_sta_upload_fin(); }
+void on_update_options() {
+	updateServer->sendHeader("Access-Control-Allow-Origin", "*");
+	updateServer->sendHeader("Access-Control-Max-Age", "10000");
+	updateServer->sendHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");
+	updateServer->sendHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+	updateServer->send(200, "text/plain", "");
+}
 
-void on_sta_upload() {
+void on_firmware_upload() {
 	HTTPUpload& upload = updateServer->upload();
 	if(upload.status == UPLOAD_FILE_START){
-		DEBUG_PRINTLN(F("Stopping all network clients"));
-		WiFiUDP::stopAll();
-		Blynk.disconnect(); // disconnect Blynk during firmware upload
-		mqttclient.disconnect();
+		if(curr_mode == OG_MOD_STA) {
+			DEBUG_PRINTLN(F("Stopping all network clients"));
+			WiFiUDP::stopAll();
+			Blynk.disconnect(); // disconnect Blynk during firmware upload
+			mqttclient.disconnect();
+		}
 		DEBUG_PRINT(F("prepare to upload: "));
 		DEBUG_PRINTLN(upload.filename);
 		uint32_t maxSketchSpace = (ESP.getFreeSketchSpace()-0x1000)&0xFFFFF000;
@@ -928,37 +1140,17 @@ void on_sta_upload() {
 	delay(0);
 }
 
-void on_ap_upload() {
-	HTTPUpload& upload = updateServer->upload();
-	if(upload.status == UPLOAD_FILE_START){
-		DEBUG_PRINTLN(F("prepare to upload: "));
-		DEBUG_PRINTLN(upload.filename);
-		uint32_t maxSketchSpace = (ESP.getFreeSketchSpace()-0x1000)&0xFFFFF000;
-		if(!Update.begin(maxSketchSpace)) {
-			DEBUG_PRINTLN(F("not enough space"));
-		}
-	} else if(upload.status == UPLOAD_FILE_WRITE) {
-		DEBUG_PRINT(".");
-		if(Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-			DEBUG_PRINTLN(F("size mismatch"));
-		}
-	} else if(upload.status == UPLOAD_FILE_END) {
-		DEBUG_PRINTLN(F("upload completed"));
-	} else if(upload.status == UPLOAD_FILE_ABORTED){
-		Update.end();
-		DEBUG_PRINTLN(F("upload aborted"));
-	}
-	delay(0);
-}
-
 void check_status_ap() {
-		static ulong cs_timeout = 0;
-		if(millis() > cs_timeout) {
-			Serial.print(og.read_distance());
-			Serial.print("/");
-			Serial.println(OG_FWV);
-			cs_timeout = millis() + 2000;
+	static ulong cs_timeout = 0;
+	if((long)(millis() - cs_timeout) > 0) {
+		Serial.print(og.read_distance());
+		Serial.print("/");
+		Serial.println(OG_FWV);
+		if(og.has_swrx) {
+			Serial.println(F("secplus"));
 		}
+		cs_timeout = millis() + 2000;
+	}
 }
 
 bool mqtt_connect_subscribe() {
@@ -972,7 +1164,7 @@ bool mqtt_connect_subscribe() {
 				ret = mqttclient.connect(mqtt_id.c_str(), og.options[OPTION_MQUR].sval.c_str(), og.options[OPTION_MQPW].sval.c_str(), (mqtt_topic+"/OUT/STATUS").c_str(), 1, true, "offline");
 			}
 			else {
-				DEBUG_PRINT(F(" [anonymous]"));      
+				DEBUG_PRINT(F(" [anonymous]"));
 				ret = mqttclient.connect(mqtt_id.c_str(), (mqtt_topic+"/OUT/STATUS").c_str(), 1, true, "offline");
 			}
 			if(ret) {
@@ -1036,7 +1228,7 @@ void emailNotify(String s){
 void mqttNotify(String s){
 	if (mqttclient.connected()) {
 		DEBUG_PRINTLN(" Sending MQTT Notification");
-		mqttclient.publish((mqtt_topic + "/OUT/NOTIFY").c_str(),s.c_str()); 
+		mqttclient.publish((mqtt_topic + "/OUT/NOTIFY").c_str(),s.c_str());
 	}
 }
 
@@ -1044,7 +1236,7 @@ void perform_notify(String s) {
 	DEBUG_PRINT(F("Sending Notify to connected systems, value:"));
 	DEBUG_PRINTLN(s);
 
-	if(og.options[OPTION_CLD].ival==CLD_BLYNK && Blynk.connected()){
+	if(og.options[OPTION_CLD].ival==CLOUD_BLYNK && Blynk.connected()){
 		blynkNotify(s);
 	}
 
@@ -1073,21 +1265,25 @@ void process_dynamics(byte event) {
 		justopen_timestamp = 0;
 		return;
 	}
-	if(event == DOOR_STATUS_JUST_OPENED) {
+	if(event == DOOR_EVENT_JUST_OPENED) {
 		justopen_timestamp = curr_utc_time; // record time stamp
 		if (noto & OG_NOTIFY_DO) { perform_notify(og.options[OPTION_NAME].sval + " just OPENED!");}
-		
-		//If the door is set to auto close at a certain hour, ensure if manually opened it doesn't autoshut
+
+		// If the door is set to auto close at a certain hour, ensure if manually opened it doesn't autoshut
 		if( (curr_utc_hour == og.options[OPTION_ATIB].ival) && (!automationclose_triggered) ){
 			DEBUG_PRINTLN(" Door opened during automation hour, set to not auto-close ");
 			automationclose_triggered=true;
 		}
 
-	} else if (event == DOOR_STATUS_JUST_CLOSED) {
+	} else if (event == DOOR_EVENT_JUST_CLOSED) {
 		justopen_timestamp = 0; // reset time stamp
 		if (noto & OG_NOTIFY_DC) { perform_notify(og.options[OPTION_NAME].sval + " just CLOSED!");}
 
-	} else if (event == DOOR_STATUS_REMAIN_OPEN) {
+	} else if (event == DOOR_EVENT_JUST_STOPPED) {
+		justopen_timestamp = 0; // reset time stamp
+		if (noto & OG_NOTIFY_DS) { perform_notify(og.options[OPTION_NAME].sval + " just STOPPED!");}
+
+	}	else if (event == DOOR_EVENT_REMAIN_OPEN) {
 		if (!justopen_timestamp) justopen_timestamp = curr_utc_time; // record time stamp
 		else {
 			if(curr_utc_time > justopen_timestamp + (ulong)og.options[OPTION_ATI].ival*60L) {
@@ -1134,14 +1330,11 @@ void process_dynamics(byte event) {
 					// auto close door
 					// alarm is mandatory in auto-close
 					if(!og.options[OPTION_ALM].ival) { og.set_alarm(OG_ALM_5); }
-					else { 
-					  og.set_alarm(); 
-					}
+					else { og.set_alarm(); }
 				}
 				justopen_timestamp = 0;
 			}
-			else if ((curr_utc_hour > og.options[OPTION_ATIB].ival) && (automationclose_triggered))
-			{
+			else if ((curr_utc_hour > og.options[OPTION_ATIB].ival) && (automationclose_triggered)) {
 				DEBUG_PRINTLN("Unlocking automation close function");
 				automationclose_triggered=false; //Unlock the hour after the setting
 			}
@@ -1151,15 +1344,64 @@ void process_dynamics(byte event) {
 	}
 }
 
+byte check_door_event() {
+	// perform pattern matching of door status histogram
+	// and return the corresponding results
+	const byte allones = (1<<DOOR_STATUS_HIST_K)-1;       // 0b1111
+	const byte lowones = (1<<(DOOR_STATUS_HIST_K/2))-1; // 0b0011
+	const byte highones= lowones << (DOOR_STATUS_HIST_K/2); // 0b1100
+
+	if (!og.options[OPTION_SECV].ival) { // non security+
+		byte _hist = door_status_hist & allones;  // get the lowest K bits
+		if(_hist == 0) return DOOR_EVENT_REMAIN_CLOSED;
+		if(_hist == allones) return DOOR_EVENT_REMAIN_OPEN;
+		if(_hist == lowones) return DOOR_EVENT_JUST_OPENED;
+		if(_hist == highones) return DOOR_EVENT_JUST_CLOSED;
+		return DOOR_EVENT_NONE;
+	} else { // security+
+		if(door_status<DOOR_STATUS_UNKNOWN && last_door_status<DOOR_STATUS_UNKNOWN) {
+			if(door_status == last_door_status) {
+				switch(door_status) {
+					case DOOR_STATUS_CLOSED:
+						return DOOR_EVENT_REMAIN_CLOSED;
+					case DOOR_STATUS_OPEN:
+						return DOOR_EVENT_REMAIN_OPEN;
+					case DOOR_STATUS_STOPPED:
+						return DOOR_EVENT_REMAIN_STOPPED;
+					case DOOR_STATUS_CLOSING:
+						return DOOR_EVENT_STILL_CLOSING;
+					case DOOR_STATUS_OPENING:
+						return DOOR_EVENT_STILL_OPENING;
+				}
+			} else {
+				switch(door_status) {
+					case DOOR_STATUS_CLOSED:
+						return DOOR_EVENT_JUST_CLOSED;
+					case DOOR_STATUS_OPEN:
+						return DOOR_EVENT_JUST_OPENED;
+					case DOOR_STATUS_STOPPED:
+						return DOOR_EVENT_JUST_STOPPED;
+					case DOOR_STATUS_CLOSING:
+						return DOOR_EVENT_START_CLOSING;
+					case DOOR_STATUS_OPENING:
+						return DOOR_EVENT_START_OPENING;
+				}
+			}
+		}
+		return DOOR_EVENT_NONE;
+	}
+}
+
 void check_status() {
 	static ulong checkstatus_timeout = 0;
-	static ulong checkstatus_report_timeout = 0; 
+
 	if((curr_utc_time > checkstatus_timeout) || (checkstatus_timeout == 0))  { //also check on first boot
+		last_door_status = door_status; // save the current status to last_door_status
 		if(light_blink_enabled) {
 			og.set_led(HIGH);
 			aux_ticker.once_ms(OG_LIGHT_BLINK_TIME, og.set_led, (byte)LOW);
 		}
-		
+
 		// Read SN1 -- ultrasonic sensor
 		uint dth = og.options[OPTION_DTH].ival;
 		uint vth = og.options[OPTION_VTH].ival;
@@ -1169,24 +1411,32 @@ void check_status() {
 			// invalid distance value or non full buffer, return immediately except if using SN2 only
 			DEBUG_PRINTLN(F("invalid distance or non-full buffer"));
 			checkstatus_timeout = curr_utc_time + og.options[OPTION_RIV].ival;
-			return; 
+			return;
 		}
-		
+
 		sn1_status = (distance>dth)?0:1;
 		if(og.options[OPTION_SN1].ival == OG_SN1_SIDE) {
 			sn1_status = 1-sn1_status; // reverse logic for side mount
 			// for side-mount, we can't decide vehicle status
 			vehicle_status = OG_VEH_NOTAVAIL;
 		} else {
-		  if (vth>0) {
-				if(!sn1_status) {
-					// if vehicle distance threshold is defined and door is closed (i.e. not blocking view of vehicle)
-					// vehicle status can be determined by checking if distance is within bracket [dth, vth]
+			vehicle_status = OG_VEH_NOTAVAIL;
+		  if (vth>0) { // if vehicle distance threshold is defined
+				if(og.options[OPTION_SECV].ival>0 || og.options[OPTION_SNO].ival==OG_SNO_2ONLY) {
+					// if door status is not determined using distance sensor (either using security+ or using SN2 only)
+					// vehicle status can be deduced by checking if distance is less than vth
+					vehicle_status = (distance <=vth) ? OG_VEH_PRESENT:OG_VEH_ABSENT;
+				} else if (!sn1_status) {
+					// if door is currently closed, vehicle status can be deduced by checking if distance is within bracket [dth, vth]
 					vehicle_status = ((distance>dth) && (distance <=vth)) ? OG_VEH_PRESENT:OG_VEH_ABSENT;
-				} else { vehicle_status = OG_VEH_UNKNOWN; }	// door is open, blocking view of vehicle
-			} else {vehicle_status = OG_VEH_NOTAVAIL;} // vth undefined
+				} else {
+					// otherwise, door status is determined by distance sensor and door is open, blocking its view
+					// so we can't deduce vehicle status
+					vehicle_status = OG_VEH_UNKNOWN;
+				}
+			}
 		}
-		
+
 		// Read SN2 -- optional switch sensor
 		sn2_value = og.get_switch();
 		byte sn2_status = 0;
@@ -1196,51 +1446,60 @@ void check_status() {
 			sn2_status = 1-sn2_value;
 		}
 
-		// Process Sensor Logic
-		if(og.options[OPTION_SN2].ival==OG_SN2_NONE || og.options[OPTION_SNO].ival==OG_SNO_1ONLY) {
-			// if SN2 not installed or logic is SN1 only
-			door_status = sn1_status;
-		} else if(og.options[OPTION_SNO].ival==OG_SNO_2ONLY) {
-			door_status = sn2_status;
-		} else if(og.options[OPTION_SNO].ival==OG_SNO_AND) {
-			door_status = sn1_status && sn2_status;
-		} else if(og.options[OPTION_SNO].ival==OG_SNO_OR) {
-			door_status = sn1_status || sn2_status;
+		switch (og.options[OPTION_SECV].ival) {
+			case 1: // SecPlus 1
+			case 2: // SecPlus 2
+				// Handled by the callback function
+				door_status = secplus_door_status;
+				break;
+			default: // No secplus
+				// Process Sensor Logic
+				bool status = false;
+				if(og.options[OPTION_SN2].ival==OG_SN2_NONE || og.options[OPTION_SNO].ival==OG_SNO_1ONLY) {
+					// if SN2 not installed or logic is SN1 only
+					status = sn1_status;
+				} else if(og.options[OPTION_SNO].ival==OG_SNO_2ONLY) {
+					status = sn2_status;
+				} else if(og.options[OPTION_SNO].ival==OG_SNO_AND) {
+					status = sn1_status && sn2_status;
+				} else if(og.options[OPTION_SNO].ival==OG_SNO_OR) {
+					status = sn1_status || sn2_status;
+				}
+				door_status = status ? DOOR_STATUS_OPEN : DOOR_STATUS_CLOSED;
+				break;
 		}
-		
+
+		if (checkstatus_timeout == 0){
+			DEBUG_PRINTLN(F("First time checking status don't trigger a status change, set full history to current value"));
+			if (door_status) { door_status_hist = B11111111; }
+			else { door_status_hist = B00000000; }
+			last_door_status = door_status;
+		} else {
+			door_status_hist = (door_status_hist<<1) | door_status;
+		}
+
 		// get temperature readings
 		og.read_TH_sensor(tempC, humid);
-		
+
 		read_cnt = (read_cnt+1)%100;
 
 		// once the light is disabled, quit blinking until a restart or a reset to 0.
 		byte blink_limit = og.options[OPTION_BAS].ival;
 		bool current_light_blink_enabled = light_blink_enabled;
 		light_blink_enabled = blink_limit == OG_LIGHT_BLINK_FOREVER || (light_blink_enabled && read_cnt <= blink_limit);
-		
+
 		// do a long blink to notify that we are turning the light off
 		if(current_light_blink_enabled && !light_blink_enabled){
 			og.set_led(HIGH);
 			aux_ticker.once_ms(OG_LIGHT_BLINK_NOTIFY, og.set_led, (byte)LOW);
 		}
-		
-		if (checkstatus_timeout == 0){
-			DEBUG_PRINTLN(F("First time checking status don't trigger a status change, set full history to current value"));
-			if (door_status) { door_status_hist = B11111111; }
-			else { door_status_hist = B00000000; }
-		}else{
-			 door_status_hist = (door_status_hist<<1) | door_status;
-		}
-		//DEBUG_PRINT(F("Histogram value:"));
-		//DEBUG_PRINTLN(door_status_hist);
-		//DEBUG_PRINT(F("Vehicle Status:"));
-		//DEBUG_PRINTLN(vehicle_status);
-		byte event = check_door_status_hist();
 
-		//Upon change
-		if(event == DOOR_STATUS_JUST_OPENED || event == DOOR_STATUS_JUST_CLOSED) {
+		byte event = check_door_event();
+
+		// Log door status changes (only record opened, closed, stopped status changes, as the other statuses are transient)
+		if(event == DOOR_EVENT_JUST_OPENED || event == DOOR_EVENT_JUST_CLOSED || event == DOOR_EVENT_JUST_STOPPED) {
 			// write log record
-			DEBUG_PRINTLN(" Update Local Log"); 
+			DEBUG_PRINTLN(" Update Local Log");
 			LogStruct l;
 			l.tstamp = curr_utc_time;
 			l.status = door_status;
@@ -1251,61 +1510,85 @@ void check_status() {
 
 		} //End state change updates
 
-		//Send current status only on change and longer interval
-		if ((curr_utc_time >checkstatus_report_timeout) || (event == DOOR_STATUS_JUST_OPENED || event == DOOR_STATUS_JUST_CLOSED) ){
-		#if 0
-			DEBUG_PRINT(curr_utc_time);
-			if(event == DOOR_STATUS_REMAIN_OPEN)  {	
-				DEBUG_PRINTLN(F(" Sending State Refresh to connected systems, value: OPEN")); }
-			else if(event == DOOR_STATUS_REMAIN_CLOSED) {	
-				DEBUG_PRINTLN(F(" Sending State Refresh to connected systems, value: CLOSED")); }
-#endif
-
-			//Mqtt update
+		static ulong force_mqtt_update_timeout = 0;
+		// Send current status on change, or on status_report interval
+		if ((curr_utc_time > force_mqtt_update_timeout) ||
+				(event == DOOR_EVENT_JUST_OPENED || event == DOOR_EVENT_JUST_CLOSED || event == DOOR_EVENT_JUST_STOPPED || event == DOOR_EVENT_START_OPENING || event == DOOR_EVENT_START_CLOSING) ){
+			// Mqtt update
 			if(og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval) && (mqttclient.connected())) {
-				DEBUG_PRINTLN(F(" Update MQTT (State Refresh)"));
-				if(door_status == DOOR_STATUS_REMAIN_OPEN)  {						// MQTT: If door open...
+				//DEBUG_PRINTLN(F(" Update MQTT (State Refresh)"));
+				if(event == DOOR_EVENT_REMAIN_OPEN) {
 					mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(),"OPEN");
 					mqttclient.publish(mqtt_topic.c_str(),"Open"); //Support existing mqtt code
-					//DEBUG_PRINTLN(curr_utc_time + " Sending MQTT State otification: OPEN");
-				} 
-				else if(door_status == DOOR_STATUS_REMAIN_CLOSED) {					// MQTT: If door closed...
+				} else if(event == DOOR_EVENT_REMAIN_CLOSED) {					// MQTT: If door closed...
 					mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(),"CLOSED");
 					mqttclient.publish(mqtt_topic.c_str(),"Closed"); //Support existing mqtt code
-					//DEBUG_PRINTLN(curr_utc_time + " Sending MQTT State Notification: CLOSED");
+				} else if (event == DOOR_EVENT_REMAIN_STOPPED) {					// MQTT: If door closed...
+					mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(),"STOPPED");
+					mqttclient.publish(mqtt_topic.c_str(),"Stopped"); //Support existing mqtt code
 				}
 				String msg;
-				sta_controller_fill_json(msg, false);
+				sta_controller_fill_json(msg);
 				mqttclient.publish((mqtt_topic + "/OUT/JSON").c_str(),msg.c_str());
 			}
 			// Send status report every 15 seconds: we don't need to send updates frequently if there is no status change.
-			checkstatus_report_timeout= curr_utc_time + 15; 
+			force_mqtt_update_timeout= curr_utc_time + 15;
 		}
-		
+
 		// Process dynamics: automation and notifications
 		// report status to Blynk
-		if(og.options[OPTION_CLD].ival==CLD_BLYNK && Blynk.connected()) {
+		if(og.options[OPTION_CLD].ival==CLOUD_BLYNK && Blynk.connected()) {
 			DEBUG_PRINTLN(F(" Update Blynk (State Refresh)"));
-			
+
 			static uint old_distance = 0;
 			static byte old_door_status = 0xff, old_vehicle_status = 0xff;
-			static String old_ip = "";
 			static float old_tempC = -100;
 			static float old_humid = -100;
-			
+			static byte old_light_status = 255;
+			static byte old_lock_status = 255;
+
 			// to reduce traffic, only send updated values
 			if(distance != old_distance) {  Blynk.virtualWrite(BLYNK_PIN_DIST, distance); old_distance = distance; }
-			if(door_status != old_door_status) { (door_status) ? blynk_door.on() : blynk_door.off(); old_door_status = door_status; }
+			if(door_status != old_door_status) {
+				switch(door_status) {
+					case DOOR_STATUS_OPEN:
+						blynk_door.setColor("#E02040"); // Red for Open
+						blynk_door.on();
+						break;
+					case DOOR_STATUS_STOPPED:
+						blynk_door.setColor("#E0E000"); // Yellow for Stopped
+						blynk_door.on();
+						break;
+					case DOOR_STATUS_OPENING:
+						blynk_door.setColor("#D000D0"); // Purple for Opening
+						blynk_door.on();
+						break;
+					case DOOR_STATUS_CLOSING:
+						blynk_door.setColor("#20A0E0"); // Cyan for Closing
+						blynk_door.on();
+						break;
+					case DOOR_STATUS_CLOSED:
+						//blynk_door.setColor("#20E080"); // Green for Closed
+						blynk_door.off();
+						break;
+					default:
+						blynk_door.setColor("#808080"); // Gray for Unknown
+						blynk_door.on();
+						break;
+				}
+				blynk_dval.setValue(door_status);
+				old_door_status = door_status;
+			}
 			if(vehicle_status != old_vehicle_status) { (vehicle_status==1) ? blynk_car.on() : blynk_car.off(); old_vehicle_status = vehicle_status; }
-			if(old_ip != get_ip()) { Blynk.virtualWrite(BLYNK_PIN_IP, get_ip()); old_ip = get_ip(); }
 			// hack to simulate temp humid changes
 			if(old_tempC != tempC) { Blynk.virtualWrite(BLYNK_PIN_TEMP, tempC); old_tempC = tempC; }
 			if(old_humid != humid) { Blynk.virtualWrite(BLYNK_PIN_HUMID,humid); old_humid = humid; }
+			if(old_light_status != light_status) { Blynk.virtualWrite(BLYNK_PIN_LIGHT, light_status); old_light_status = light_status; }
+			if(old_lock_status != lock_status) { Blynk.virtualWrite(BLYNK_PIN_LOCK, lock_status); old_lock_status = lock_status; }
 		}
-		
+
 		process_dynamics(event);
 		checkstatus_timeout = curr_utc_time + og.options[OPTION_RIV].ival;
-		
 	}
 }
 
@@ -1372,7 +1655,7 @@ void process_alarm() {
 	if(!og.alarm) return;
 	static ulong prev_half_sec = 0;
 	ulong curr_half_sec = millis()/500;
-	if(curr_half_sec != prev_half_sec) {  
+	if(curr_half_sec != prev_half_sec) {
 		prev_half_sec = curr_half_sec;
 		if(prev_half_sec % 2 == 0) {
 			og.play_note(ALARM_FREQ);
@@ -1382,20 +1665,40 @@ void process_alarm() {
 		og.alarm--;
 		if(og.alarm==0) {
 			og.play_note(0);
-			og.click_relay();
+			switch (og.options[OPTION_SECV].ival) {
+				case 2: // SecPlus 2
+					switch (og.alarm_action) {
+						case 1: // Close
+							secplus2_garage.close_door();
+							break;
+						case 2: // Open
+							secplus2_garage.open_door();
+							break;
+						default: // Toggle
+							secplus2_garage.toggle_door();
+					}
+					break;
+				case 1: // SecPlus 1
+					secplus1_garage.toggle_door();
+					break;
+				default: // No secplus
+					og.click_relay();
+			}
 		}
 	}
 }
 
-
 void do_loop() {
-
 	static ulong connecting_timeout;
-
 	switch(og.state) {
 	case OG_STATE_INITIAL:
 		if(curr_mode == OG_MOD_AP) {
 			scanned_ssids = scan_network();
+			scanned_ssids += F(",\"has_swrx\":");
+			scanned_ssids += og.has_swrx;
+			scanned_ssids += F(",\"secv\":");
+			scanned_ssids += og.options[OPTION_SECV].ival;
+			scanned_ssids += F("}");
 			String ap_ssid = get_ap_ssid();
 			start_network_ap(ap_ssid.c_str(), NULL);
 			delay(500);
@@ -1406,9 +1709,11 @@ void do_loop() {
 			otf->on("/cc", on_ap_change_config);
 			otf->on("/jt", on_ap_try_connect);
 			otf->on("/db", on_ap_debug);
+			otf->on("/ad", on_auto_detect);
 			// FIXME get update ap updates working.
-			otf->on("/update", on_ap_update, OTF::HTTP_GET);
-			updateServer->on("/update", HTTP_POST, on_ap_upload_fin, on_ap_upload);
+			otf->on("/update", on_update, OTF::HTTP_GET);
+			updateServer->on("/update", HTTP_POST, on_firmware_upload_fin, on_firmware_upload);
+			updateServer->on("/update", HTTP_OPTIONS, on_update_options);
 			otf->on("/resetall",on_reset_all);
 			otf->onMissingPage(on_home);
 			updateServer->begin();
@@ -1445,6 +1750,7 @@ void do_loop() {
 			og.state = OG_STATE_CONNECTED;
 			break;
 		}
+
 	case OG_STATE_CONNECTING:
 		if(WiFi.status() == WL_CONNECTED) {
 			DEBUG_PRINT(F("Wireless connected, IP: "));
@@ -1455,14 +1761,16 @@ void do_loop() {
 			otf->on("/jc", on_sta_controller);
 			otf->on("/jo", on_sta_options);
 			otf->on("/jl", on_sta_logs);
+			otf->on("/ad", on_auto_detect);
 			otf->on("/vo", on_sta_view_options);
 			otf->on("/vl", on_sta_view_logs);
 			otf->on("/cc", on_sta_change_controller);
 			otf->on("/co", on_sta_change_options);
 			otf->on("/db", on_sta_debug);
 			// FIXME get sta updates working.
-			otf->on("/update", on_sta_update, OTF::HTTP_GET);
-			updateServer->on("/update", HTTP_POST, on_sta_upload_fin, on_sta_upload);
+			otf->on("/update", on_update, OTF::HTTP_GET);
+			updateServer->on("/update", HTTP_POST, on_firmware_upload_fin, on_firmware_upload);
+			updateServer->on("/update", HTTP_OPTIONS, on_update_options);
 			otf->on("/clearlog", on_clear_log);
 			otf->on("/resetall",on_reset_all);
 			updateServer->begin();
@@ -1475,12 +1783,12 @@ void do_loop() {
 				DEBUG_PRINT(F("MDNS registered: "));
 				DEBUG_PRINT(host);
 				DEBUG_PRINTLN(F(".local"));
-				
+
 				MDNS.addService("http", "tcp", og.options[OPTION_HTP].ival);
 				//DEBUG_PRINTLN(og.options[OPTION_HTP].ival);
 			}
 
-			if(og.options[OPTION_CLD].ival==CLD_BLYNK) {
+			if(og.options[OPTION_CLD].ival==CLOUD_BLYNK) {
 				DEBUG_PRINTLN(F("Attempt to connect to Blynk:"));
 				DEBUG_PRINT(og.options[OPTION_BDMN].sval);
 				DEBUG_PRINT(":");
@@ -1494,9 +1802,9 @@ void do_loop() {
 			og.state = OG_STATE_CONNECTED;
 			connecting_timeout = 0;
 		} else {
-			if(millis() > connecting_timeout) {
-			  DEBUG_PRINTLN(F("Wifi Connecting timeout, restart"));
-			  og.restart();
+			if(connecting_timeout && millis() > connecting_timeout) {
+				DEBUG_PRINTLN(F("Wifi Connecting timeout, restart"));
+				og.restart();
 			}
 		}
 		break;
@@ -1507,13 +1815,13 @@ void do_loop() {
 		og.log_reset();
 		og.restart();
 		break;
-		
+
 	case OG_STATE_WAIT_RESTART:
-		if(dns) dns->processNextRequest();  
+		if(dns) dns->processNextRequest();
 		if(otf) otf->loop();
 		if(updateServer) updateServer->handleClient();
 		break;
-		
+
 	case OG_STATE_CONNECTED: //THIS IS THE MAIN LOOP
 		if(curr_mode == OG_MOD_AP) {
 			dns->processNextRequest();
@@ -1533,7 +1841,7 @@ void do_loop() {
 				//restart_ticker.once_ms(10000, og.restart);
 				restart_in(10000);
 			}
-			
+
 		} else {
 			if(WiFi.status() == WL_CONNECTED) {
 				MDNS.update();
@@ -1542,7 +1850,7 @@ void do_loop() {
 				otf->loop();
 				updateServer->handleClient();
 
-				if(og.options[OPTION_CLD].ival==CLD_BLYNK && Blynk.connected()) {
+				if(og.options[OPTION_CLD].ival==CLOUD_BLYNK) {
 					Blynk.run();
 				}
 
@@ -1553,53 +1861,58 @@ void do_loop() {
 						mqtt_topic = og.options[OPTION_MQTP].sval;
 						if(mqtt_topic.length()==0) mqtt_topic = og.options[OPTION_NAME].sval;
 						mqttclient.setServer(og.options[OPTION_MQTT].sval.c_str(), og.options[OPTION_MQPT].ival);
-						mqttclient.setCallback(mqtt_callback); 		
+						mqttclient.setCallback(mqtt_callback);
 						mqtt_connect_subscribe();
-						}
-						else {mqttclient.loop();} //Processes MQTT Pings/keep alives
 					}
-					connecting_timeout = 0;
-				} else {
-					//og.state = OG_STATE_INITIAL;
-					if(!connecting_timeout) {
-						DEBUG_PRINTLN(F("State is CONNECTED but WiFi is disconnected, start timeout counter."));
-						connecting_timeout = millis()+60000;
-					}
-					else if(millis() > connecting_timeout) {
-						DEBUG_PRINTLN(F("timeout reached, reboot"));
-						og.restart();
-					}
+					else {mqttclient.loop();} //Processes MQTT Pings/keep alives
 				}
+				connecting_timeout = 0;
+			} else {
+				//og.state = OG_STATE_INITIAL;
+				DEBUG_PRINTLN(F("WiFi connection lost."));
 			}
+		}
 		break;
 	}
 
-	//Nework independent functions, handle events like reset even when not connected
+	// secplus process loop
+	switch (og.options[OPTION_SECV].ival) {
+		case 2: // SecPlus 2
+			secplus2_garage.loop();
+			break;
+		case 1: // SecPlus 1
+			secplus1_garage.loop();
+			break;
+	}
+
 	process_ui();
+
 	if(og.alarm)
 		process_alarm();
 }
 
 BLYNK_WRITE(BLYNK_PIN_RELAY) {
-	DEBUG_PRINTLN(F("Received Blynk generated button request"));
-	if(!og.options[OPTION_ALM].ival) {
-		// if alarm is disabled, trigger right away
-		if(param.asInt()) {
-		  og.set_relay(HIGH);
-		} else {
-		  og.set_relay(LOW);
-		}
-	} else {
-		// otherwise, set alarm
-		if(param.asInt()) {
-			if(!og.options[OPTION_ALM].ival) {
-				og.set_alarm(OG_ALM_5);
-			} else if(og.options[OPTION_AOO].ival && !door_status) {
-				og.click_relay();
-			} else {
-				og.set_alarm();
-			}
-		}
+	static bool last_button_state = 0;
+	bool current_button_state = param.asInt();
+	if (last_button_state && !current_button_state) { // on button release
+		DEBUG_PRINTLN(F("Received Blynk generated button request"));
+		performDoorAction(ACTION_TOGGLE);
+	}
+	last_button_state = current_button_state;
+}
+
+BLYNK_WRITE(BLYNK_PIN_LIGHT) {
+	bool requested_light_state = param.asInt();
+	if (requested_light_state != light_status) {
+		DEBUG_PRINTLN(F("Received Blynk generated light change request"));
+		performLightAction(ACTION_TOGGLE);
 	}
 }
 
+BLYNK_WRITE(BLYNK_PIN_LOCK) {
+	bool requested_lock_state = param.asInt();
+	if (requested_lock_state != lock_status) {
+		DEBUG_PRINTLN(F("Received Blynk generated lock change request"));
+		performLockAction(ACTION_TOGGLE);
+	}
+}

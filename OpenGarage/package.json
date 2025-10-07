@@ -1,0 +1,18 @@
+{
+  "name": "opengarage",
+  "version": "1.0.0",
+  "description": "There are three methods to compile the firmware. You can choose any of them.",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "html-minifier-terser": "^7.2.0"
+  }
+}
