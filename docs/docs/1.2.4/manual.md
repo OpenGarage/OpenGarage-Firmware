@@ -46,7 +46,7 @@ If you are unsure, or your terminals don't have these colors: simply identify wh
 OpenGarage v2.x has four integrated screw terminals. Flip the device over to identify the terminals on the back:
 
 * The **bottom** two connect to your opener's **wall-button** terminals. These are **required**.
-* The **top** two are optional: they can be connected to a magnetic switch sensor, or your opener's safety sensor (for sensing obstruction status).
+* The **top** two are optional: they can be connected to a magnetic switch sensor.
 
 Use the two-wire cable from your OpenGarage package to connect the **bottom** two screws to your opener's **wall-button** terminals identified in Step 1 above:
 
@@ -247,9 +247,12 @@ Editing any option requires the Device Key (except when accessed remotely via OT
     * Distance `OR` Switch — door considered open if either reports open
 
 * **T/H Sensor** `[Effective after reboot]`: Select the type of optional temperature/humidity sensor (requires soldering). Supported sensors:
-    * DHT11/DHT22 (data pin on `G05`)
-    * DS18B20 (data pin on `G05`, requires `10 kΩ` pull-up resistor)
+    * DHT11/DHT22 (data pin on `G04`)
+    * DS18B20 (data pin on `G04`, requires `10 kΩ` pull-up resistor)
     * The sensor must be powered by `VCC` (3.3 V) and `GND`
+
+    !!! info
+        Because `G04` is a shared pin for sensors, it can be assigned to **either** a switch sensor **or** a temperature/humidity sensor, but **NOT both simultaneously**.
 
 * **Sound Alarm**: Set the duration for the audible alarm before each door movement.
     * Includes an option to disable the alarm specifically for door opening.
@@ -270,8 +273,8 @@ Editing any option requires the Device Key (except when accessed remotely via OT
 * **Enable Email Notifications**: Set up email notifications by providing an SMTP server, credentials, and recipient address.
     * For detailed instructions, refer to the [Setting Up Email Notifications Support Article](https://openthings.freshdesk.com/support/solutions/articles/5000889759).
 
-        !!! info
-            When using MQTT or Email Notifications, please ensure all fields are correct. Empty or incorrect values may cause the device to become unresponsive.
+    !!! info
+        When using MQTT or Email Notifications, please ensure all fields are correct. Empty or incorrect values may cause the device to become unresponsive.
 
 * **IFTTT Key**: Webhook service key for IFTTT integration.
     * Create an [IFTTT](https://ifttt.com/) account, search "Webhook" service and create a key, then copy your key here. You can then create **applets** triggered by the `opengarage` event name, with SMS, email, or push notification as the action. The notification message is passed via parameter `value1`.
