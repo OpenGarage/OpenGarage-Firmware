@@ -45,7 +45,7 @@
                 </li>
               </ul>
               <ul class="current">
-                <li class="toctree-l1 current"><a class="reference internal current" href="./">FAQ</a>
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">FAQ</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#general-questions">General Questions</a>
     </li>
@@ -162,6 +162,28 @@ v2.3+ can communicate directly with Security+ 2.0 and 1.0 systems (commonly used
 <p><strong>Q: Tell me more about Security+ and how v2.3+ handles it.</strong>
 <br>
 We have a <a href="https://opensprinkler.com/introducing-opengarage-2-3/">detailed blog post</a> explaining the technology.</p>
+<p><strong>Q: My OpenGarage fails to join or stay connected to my WiFi network.</strong></p>
+<ol>
+<li><strong>Check the mode:</strong> Is the unit still in <strong>AP</strong> (Access Point) mode (fast-blinking LED, twice a second)? If so, follow <a href="../1.2.4/manual/#step-2-wifi-configuration">WiFi Configuration</a> in the user manual.</li>
+<li><strong>Changed router/SSID/password recently?</strong> Follow the <a href="../1.2.4/manual/#step-4-button-actions">Reset WiFi</a> instructions. </li>
+<li><strong>Router compatibility checklist:</strong><ul>
+<li><strong>2.4 GHz only:</strong> The controller's ESP8266 chip is compatible with 2.4 GHz only. Make sure your router has 2.4 GHz enabled and uses a different SSID than 5 GHz.</li>
+<li><strong>Security:</strong> Use <strong>WPA2-PSK (AES)</strong> or WPA2/WPA mixed. <strong>Avoid WPA3-only</strong> and <strong>Enterprise</strong>.</li>
+<li><strong>Radio mode:</strong> Set 2.4 GHz to Wi-Fi mode to <strong>b/g/n (no ax)</strong>.</li>
+<li><strong>Channeling:</strong> <strong>20 MHz</strong> width; prefer channels <strong>1/6/11</strong>.</li>
+<li><strong>Band steering:</strong> <strong>Disable</strong> band steering / Smart Connect.</li>
+<li><strong>PMF/802.11w</strong> (if applicable): Set to <strong>Optional (not Required)</strong>.</li>
+<li><strong>Isolation/filters:</strong> <strong>Disable AP isolation</strong>, <strong>MAC filtering</strong>, and <strong>captive portal</strong> requirements.</li>
+<li>Turn on <strong>legacy mode</strong> on 2.4 GHz, <strong>disable WMM and airtime fairness</strong>.</li>
+<li>Ensure the controller isn’t blocked by firewall rules.</li>
+</ul>
+</li>
+<li><strong>Additional troubleshooting:</strong> If problems persist, there may be an ad-hoc compatibility issue between ESP8266 and your router. Try:<ul>
+<li>A different WiFi network (e.g. your phone's 2.4 GHz hotspot) to see if it works.</li>
+<li>Look up your router model + <code>ESP8266</code> for known issues and fixes. For example, if your router is Asus BE7200, search (or use generative AI) <code>ESP8266 issues Asus BE7200</code>.</li>
+</ul>
+</li>
+</ol>
 <hr />
               
             </div>
