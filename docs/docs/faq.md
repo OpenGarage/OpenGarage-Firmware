@@ -88,4 +88,22 @@ v2.3+ can communicate directly with Security+ 2.0 and 1.0 systems (commonly used
 <br>
 We have a [detailed blog post](https://opensprinkler.com/introducing-opengarage-2-3/) explaining the technology.
 
+**Q: My OpenGarage fails to join or stay connected to my WiFi network.**
+
+1. **Check the mode:** Is the unit still in **AP** (Access Point) mode (fast-blinking LED, twice a second)? If so, follow [WiFi Configuration](1.2.4/manual.md/#step-2-wifi-configuration) in the user manual.
+2. **Changed router/SSID/password recently?** Follow the [Reset WiFi](1.2.4/manual.md/#step-4-button-actions) instructions. 
+3. **Router compatibility checklist:**
+    * **2.4 GHz only:** The controller's ESP8266 chip is compatible with 2.4 GHz only. Make sure your router has 2.4 GHz enabled and uses a different SSID than 5 GHz.
+    * **Security:** Use **WPA2-PSK (AES)** or WPA2/WPA mixed. **Avoid WPA3-only** and **Enterprise**.
+    * **Radio mode:** Set 2.4 GHz to Wi-Fi mode to **b/g/n (no ax)**.
+    * **Channeling:** **20 MHz** width; prefer channels **1/6/11**.
+    * **Band steering:** **Disable** band steering / Smart Connect.
+    * **PMF/802.11w** (if applicable): Set to **Optional (not Required)**.
+    * **Isolation/filters:** **Disable AP isolation**, **MAC filtering**, and **captive portal** requirements.
+    * Turn on **legacy mode** on 2.4 GHz, **disable WMM and airtime fairness**.
+    * Ensure the controller isn’t blocked by firewall rules.
+4. **Additional troubleshooting:** If problems persist, there may be an ad-hoc compatibility issue between ESP8266 and your router. Try:
+    * A different WiFi network (e.g. your phone's 2.4 GHz hotspot) to see if it works.
+    * Look up your router model + `ESP8266` for known issues and fixes. For example, if your router is Asus BE7200, search (or use generative AI) `ESP8266 issues Asus BE7200`.
+
 ---
