@@ -160,10 +160,11 @@ To control and monitor your OpenGarage remotely from anywhere, you'll need to se
     * OpenGarage provides a [built-in web UI](#built-in-web-interface) accessible directly from any browser using the device's local IP or hostname.
     * Remote access via browser is also supported through the OTC cloud connection using the [OTC base url](api.md#otc-openthings-token).
 * **Web App**
-    * A lightweight [**OpenGarage Web App**](https://raysfiles.com/og/og_devices.html) is available for conveniently managing **multiple OpenGarage devices**.
-    * It supports both local access (via device IP) and remote access (via Blynk or OTC), and runs entirely in your browser — no installation required.
+    * A lightweight [**OpenGarage Web App**](https://raysfiles.com/og/og_devices.html) is available for conveniently managing **multiple OpenGarage devices**. It supports both local access (via device IP) and remote access (via Blynk or OTC), and runs entirely in your browser — no installation required.
+    * You can bookmark the link or use **Add to Home Screen** to install it as a standalone app. 
 * **Native App**
-    * The OpenGarage Mobile App is available for installation in both the iOS App Store and Google Play. It provides a native app interface for door control, status, and multiple device management.
+    ![OpenGarage App Icon](https://raysfiles.com/og/og_web_512.png){ align=right width=100 }
+    * The official **OpenGarage Web** app is available for installation in both the [iOS App Store](https://apps.apple.com/us/app/opengarage-web/id6758858574) and [Google Play Store](https://play.google.com/store/apps/details?id=io.opengarage.app). It provides a native app interface for door control, status, and multiple device management.
     * The firmware still works with the Blynk legacy app (officially discontinued but may still be available on third-party websites). Instructions can be [found here](../archive.md#blynk-legacy-app).
 * **Home Assistant Integration**
     * OpenGarage has an official [Home Assistant integration](https://www.home-assistant.io/integrations/opengarage/) that adds the device as a cover entity. It allows door control, status monitoring, and automation within Home Assistant.
@@ -275,8 +276,12 @@ Editing any option requires the Device Key (except when accessed remotely via OT
 * **Enable Email Notifications**: Set up email notifications by providing an SMTP server, credentials, and recipient address.
     * For detailed instructions, refer to the [Setting Up Email Notifications Support Article](https://openthings.freshdesk.com/support/solutions/articles/5000889759).
 
-    !!! info
+    !!! warning "Info"
         When using MQTT or Email Notifications, please ensure all fields are correct. Empty or incorrect values may cause the device to become unresponsive.
+
+    !!! tip "Optional: Push Notifications"
+        To receive dedicated push notifications beyond email, use a service like [Pushover](https://pushover.net). Sign up for Pushover and use its unique email gateway address as the recipient in your **Email** settings.
+
 
 * **IFTTT Key**: Webhook service key for IFTTT integration.
     * Create an [IFTTT](https://ifttt.com/) account, search "Webhook" service and create a key, then copy your key here. You can then create **applets** triggered by the `opengarage` event name, with SMS, email, or push notification as the action. The notification message is passed via parameter `value1`.
