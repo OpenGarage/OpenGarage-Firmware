@@ -738,6 +738,23 @@ void performDoorAction(uint8_t action, bool force_alarm_off = false) {
 		return;
 	}
 
+	// Immediately publish transitional MQTT state before hardware command executes
+	if(og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval) && mqttclient.connected()) {
+		const char* transition_state = nullptr;
+		const char* transition_legacy = nullptr;
+		if(action == ACTION_OPEN || (action == ACTION_TOGGLE && door_status == DOOR_STATUS_CLOSED)) {
+			transition_state = "OPENING";
+			transition_legacy = "Opening";
+		} else if(action == ACTION_CLOSE || (action == ACTION_TOGGLE && (door_status == DOOR_STATUS_OPEN || door_status == DOOR_STATUS_STOPPED))) {
+			transition_state = "CLOSING";
+			transition_legacy = "Closing";
+		}
+		if(transition_state) {
+			mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(), transition_state);
+			mqttclient.publish(mqtt_topic.c_str(), transition_legacy);
+		}
+	}
+
 	// no alarm
 	switch (og.options[OPTION_SECV].ival) {
 		case 2: // SecPlus 2.0
@@ -1946,15 +1963,21 @@ void check_status() {
 			// Mqtt update
 			if(WiFi.status() == WL_CONNECTED && og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval) && mqttclient.connected()) {
 				//DEBUG_PRINTLN(F(" Update MQTT (State Refresh)"));
-				if(event == DOOR_EVENT_REMAIN_OPEN) {
+				if(event == DOOR_EVENT_REMAIN_OPEN || event == DOOR_EVENT_JUST_OPENED) {
 					mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(),"OPEN");
 					mqttclient.publish(mqtt_topic.c_str(),"Open"); //Support existing mqtt code
-				} else if(event == DOOR_EVENT_REMAIN_CLOSED) {					// MQTT: If door closed...
+				} else if(event == DOOR_EVENT_REMAIN_CLOSED || event == DOOR_EVENT_JUST_CLOSED) {					// MQTT: If door closed...
 					mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(),"CLOSED");
 					mqttclient.publish(mqtt_topic.c_str(),"Closed"); //Support existing mqtt code
-				} else if (event == DOOR_EVENT_REMAIN_STOPPED) {					// MQTT: If door closed...
+				} else if (event == DOOR_EVENT_REMAIN_STOPPED || event == DOOR_EVENT_JUST_STOPPED) {					// MQTT: If door closed...
 					mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(),"STOPPED");
 					mqttclient.publish(mqtt_topic.c_str(),"Stopped"); //Support existing mqtt code
+				} else if (event == DOOR_EVENT_START_OPENING || event == DOOR_EVENT_STILL_OPENING) {
+					mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(),"OPENING");
+					mqttclient.publish(mqtt_topic.c_str(),"Opening"); //Support existing mqtt code
+				} else if (event == DOOR_EVENT_START_CLOSING || event == DOOR_EVENT_STILL_CLOSING) {
+					mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(),"CLOSING");
+					mqttclient.publish(mqtt_topic.c_str(),"Closing"); //Support existing mqtt code
 				}
 				String msg;
 				sta_controller_fill_json(msg);
