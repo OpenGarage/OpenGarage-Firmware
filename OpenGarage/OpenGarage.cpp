@@ -94,6 +94,8 @@ OptionStruct OpenGarage::options[] = {
 	{"dns1", 0, 0, "8.8.8.8"},
 	{"ntp1", 0, 0, ""},
 	{"host", 0, 0, ""},
+	{"ohwd", 0, 1, ""},
+	{"hwv", 0, 1, ""},
 };
 
 /* Variables and functions for handling Ultrasonic Distance sensor */
@@ -168,13 +170,6 @@ void OpenGarage::begin() {
 	digitalWrite(PIN_RELAY, LOW);
 	pinMode(PIN_RELAY, OUTPUT);
 
-	has_swrx = 0;
-	pinMode(PIN_SWRX_DETECT, INPUT_PULLUP);
-	if(digitalRead(PIN_SWRX_DETECT) == 0) {
-		digitalWrite(PIN_SW_RX, INPUT); // software rx exists, set it up
-		has_swrx = 1;
-	}
-
 	// detect LED logic
 	pinMode(PIN_LED, INPUT);
 	// use median filtering to detect led logic
@@ -206,6 +201,22 @@ void OpenGarage::begin() {
 
 	if(!FILESYS.begin()) {
 		DEBUG_PRINTLN(F("failed to mount file system!"));
+	}
+}
+
+void OpenGarage::swrx_setup() {
+	has_swrx = 0;
+	if(options[OPTION_OHWD].ival) {
+		if(options[OPTION_HWV].ival) {
+			digitalWrite(PIN_SW_RX, INPUT); // software rx exists, set it up
+			has_swrx = 1;
+		}
+	} else {
+		pinMode(PIN_SWRX_DETECT, INPUT_PULLUP);
+		if(digitalRead(PIN_SWRX_DETECT) == 0) {
+			digitalWrite(PIN_SW_RX, INPUT); // software rx exists, set it up
+			has_swrx = 1;
+		}
 	}
 }
 

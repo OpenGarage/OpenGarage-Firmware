@@ -56,6 +56,7 @@ public:
 	static byte led_reverse;
 	static byte has_swrx;
 	static void begin();
+	static void swrx_setup();
 	static void options_setup();
 	static void options_load();
 	static void options_save();

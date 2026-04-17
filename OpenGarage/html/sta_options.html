@@ -142,6 +142,13 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <tr><td><b>HTTP Port:</b></td><td><input type='text' size=5 maxlength=5 id='htp' value=0 data-mini='true'></td></tr>
 <tr><td><b>Host Name:</b></td><td><input type='text' size=15 maxlength=32 id='host' data-mini='true' placeholder='(optional)'></td></tr>
 <tr><td><b>NTP Server:</b></td><td><input type='text' size=15 maxlength=64 id='ntp1' data-mini='true' placeholder='(optional)'></td></tr>
+<tr><td colspan=2><input type='checkbox' id='ohwd' data-mini='true' onclick='update_ohwd()'><label for='ohwd' title='Warning: Only use this if you are absolutely sure you need it!'>Override Hardware Detection</label></td></tr>
+<tr class='hv'><td><b>HW Version:</b></td><td>
+<fieldset data-role='controlgroup' data-mini='true' data-type='horizontal'>
+<input type='radio' name='rd_hv' id='hv_2_2' value=0><label for='hv_2_2'>2.2</label>
+<input type='radio' name='rd_hv' id='hv_2_3' value=1><label for='hv_2_3'>2.3+</label>
+</fieldset>
+</td></tr>
 <tr><td colspan=2><input type='checkbox' id='usi' data-mini='true' onclick='update_usi()'><label for='usi'>Use Static IP</label></td></tr>
 <tr class='si'><td><b>Device IP:</b></td><td><input type='text' size=15 maxlength=15 id='dvip' data-mini='true'></td></tr>
 <tr class='si'><td><b>Gateway IP:</b></td><td><input type='text' size=15 maxlength=15 id='gwip' data-mini='true'></td></tr>
@@ -218,13 +225,17 @@ function update_usi(){
 if(eval_cb('#usi')) $('.si').show();
 else $('.si').hide();
 }
+function update_ohwd(){
+if(eval_cb('#ohwd')) $('.hv').show();
+else $('.hv').hide();
+}
 function toggle_opt() {
 $('#div_basic').hide();
 $('#div_cloud').hide();
 $('#div_other').hide();
 if(eval_cb('#basic')) $('#div_basic').show();
 if(eval_cb('#cloud')) {$('#div_cloud').show(); update_cld(); update_mqtt(); update_email();}
-if(eval_cb('#other')) {$('#div_other').show(); update_usi();}
+if(eval_cb('#other')) {$('#div_other').show(); update_usi(); update_ohwd(); }
 }
 $('#btn_back').click(function(e){
 e.preventDefault(); goback();
@@ -270,6 +281,12 @@ if(!$('#nkey').val()) {
 if(!confirm('New device key is empty. Are you sure?')) return;
 }
 bc('nkey',1);bc('ckey',1);
+}
+if($('#ohwd').is(':checked')) {
+comm+='&ohwd=1';
+comm+='&hwv='+eval_cb('#hv_2_3');
+} else {
+comm+='&ohwd=0';
 }
 if($('#usi').is(':checked')) {
 comm+='&usi=1';
@@ -402,6 +419,10 @@ $('#send').val(jd.send);
 $('#apwd').val(jd.apwd);
 $('#recp').val(jd.recp);
 update_email();
+if(jd.hwv) cbt('hv_2_3');
+else cbt('hv_2_2');
+if(jd.ohwd>0) cbt('ohwd');
+update_ohwd();
 $('#dvip').val(jd.dvip);
 $('#gwip').val(jd.gwip);
 $('#subn').val(jd.subn);
