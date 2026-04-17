@@ -206,8 +206,8 @@ void OpenGarage::begin() {
 
 void OpenGarage::swrx_setup() {
 	has_swrx = 0;
-	if (options[OPTION_OHWD].ival) {
-		if (options[OPTION_HWV].ival) {
+	if(options[OPTION_OHWD].ival) {
+		if(options[OPTION_HWV].ival) {
 			digitalWrite(PIN_SW_RX, INPUT); // software rx exists, set it up
 			has_swrx = 1;
 		}
