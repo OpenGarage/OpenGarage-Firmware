@@ -311,6 +311,9 @@ Editing any option requires the Device Key (except when accessed remotely via OT
 
 * **NTP Server** `[effective after reboot]`: Custom time server; defaults to `pool.ntp.org` if blank.
 
+* **Override Hardware Detection** `[effective after reboot]`: Manually specify the hardware version instead of automatically detecting it.
+    * This is useful if you have a modified device using an ESP-07S instead of an ESP-12F, as the automatic detection will report hardware version 2.2 even if it is version 2.3+.
+
 * **Use Static IP** `[effective after reboot]`: Manually assign a fixed IP instead of DHCP.
     * Requires manual entry of **Device IP**, **Gateway IP**, **Subnet**, and **DNS1**.
 
