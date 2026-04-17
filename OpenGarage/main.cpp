@@ -644,6 +644,7 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 	OptionStruct *o = og.options;
 
 	byte usi = 0;
+	byte ohwd = 0;
 	// FIRST ROUND: check option validity
 	// do not save option values yet
 	for(i=0;i<NUM_OPTIONS;i++,o++) {
@@ -683,6 +684,10 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 				if(i==OPTION_USI && ival==1) {
 					// mark device IP and gateway IP change
 					usi = 1;
+				}
+				if(i==OPTION_OHWD && ival==1) {
+					// mark hardware detection override change
+					ohwd = 1;
 				}
 			}
 		}
@@ -744,6 +749,15 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 			otf_send_result(res, HTML_DATA_MISSING, _ckey);
 			return;
 		}
+	}
+	// check hardware detection change
+	const char* _hwv = "hwv";
+
+	char* hwv = req.getQueryParameter(_hwv);
+
+	if(ohwd && hwv == NULL) {
+		otf_send_result(res, HTML_DATA_MISSING, _hwv);
+		return;
 	}
 
 	// SECOND ROUND: change option values
@@ -984,6 +998,7 @@ void do_setup() {
 	WiFi.persistent(false); // turn off persistent, fixing flash crashing issue
 	og.begin();
 	og.options_setup();
+	og.swrx_setup();
 	og.init_sensors();
 	if(og.get_mode() == OG_MOD_AP) og.play_startup_tune();
 	curr_mode = og.get_mode();
