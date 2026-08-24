@@ -22,6 +22,26 @@
 
 #include "espconnect.h"
 
+namespace {
+const int ROAMING_MARGIN_DB = 8;
+const unsigned long ROAMING_SCAN_INTERVAL_MS = 300000;
+
+bool find_strongest_ap(const char *ssid, int &channel, uint8_t *bssid, int &rssi) {
+	int count = WiFi.scanNetworks(false, true);
+	int strongest = -127;
+	for (int i = 0; i < count; i++) {
+		if (WiFi.SSID(i) != ssid || WiFi.RSSI(i) <= strongest) continue;
+		strongest = WiFi.RSSI(i);
+		channel = WiFi.channel(i);
+		memcpy(bssid, WiFi.BSSID(i), 6);
+	}
+	WiFi.scanDelete();
+	if (strongest == -127) return false;
+	rssi = strongest;
+	return true;
+}
+}
+
 String scan_network() {
 	DEBUG_PRINTLN(F("scan network"));
 	WiFi.mode(WIFI_STA);
@@ -48,6 +68,27 @@ String scan_network() {
 	}
 	wirelessinfo += "]";
 	return wirelessinfo;
+}
+
+void maintain_wifi_connection(const char *ssid, const char *pass) {
+	static unsigned long last_scan = 0;
+	static bool has_scanned = false;
+	if (!ssid || !pass || WiFi.status() != WL_CONNECTED) return;
+	if (has_scanned && millis() - last_scan < ROAMING_SCAN_INTERVAL_MS) return;
+	last_scan = millis();
+	has_scanned = true;
+
+	int channel;
+	int strongest_rssi;
+	uint8_t strongest_bssid[6];
+	if (!find_strongest_ap(ssid, channel, strongest_bssid, strongest_rssi)) return;
+	if (strongest_rssi <= WiFi.RSSI() + ROAMING_MARGIN_DB) return;
+	if (memcmp(strongest_bssid, WiFi.BSSID(), 6) == 0) return;
+
+	DEBUG_PRINT(F("Roaming to stronger access point (RSSI: "));
+	DEBUG_PRINT(strongest_rssi);
+	DEBUG_PRINTLN(F(")"));
+	WiFi.begin(ssid, pass, channel, strongest_bssid, true);
 }
 
 void start_network_ap(const char *ssid, const char *pass) {
