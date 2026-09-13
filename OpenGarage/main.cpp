@@ -84,6 +84,7 @@ static bool light_blink_enabled = true;
 // security+ objects
 SecPlus1::Garage secplus1_garage(PIN_SW_RX, PIN_SW_TX);
 #include "secplus2_identity_store.h"
+#include "body_device_key.h"
 #include "health_stats.h"
 static HealthStats health_stats;
 struct LoopMeasurement {
@@ -93,6 +94,7 @@ struct LoopMeasurement {
 };
 static uint32_t secplus2_client_id = 0;
 static bool secplus2_identity_ready = false;
+static bool identity_restart_pending = false;
 SecPlus2::Garage secplus2_garage(0, PIN_SW_RX, PIN_SW_TX);
 
 void do_setup();
@@ -494,6 +496,38 @@ void on_reset_all(const OTF::Request &req, OTF::Response &res){
 	otf_send_result(res, HTML_SUCCESS, nullptr);
 }
 
+// POST only. Keep credentials out of URLs and require a key even over OTC.
+void on_regenerate_secplus2_id(const OTF::Request &req, OTF::Response &res) {
+	if (!body_device_key_matches(req.getBody(), req.getBodyLength(), og.options[OPTION_DKEY].sval.c_str())) {
+		otf_send_result(res, HTML_UNAUTHORIZED, nullptr);
+		return;
+	}
+	if (og.options[OPTION_SECV].ival != 2) {
+		otf_send_json(res, F("{\"result\":0,\"message\":\"Select and save Security+ 2.0 first.\"}"));
+		return;
+	}
+	if (identity_restart_pending || og.state != OG_STATE_CONNECTED || og.alarm || secplus2_garage.command_pending()) {
+		otf_send_json(res, F("{\"result\":0,\"message\":\"Device busy. Wait for the pending action to finish, then retry.\"}"));
+		return;
+	}
+	// No pending actuation: stop the old identity before touching storage. Inhibit
+	// all further work until reboot, including on a failed/uncertain flash write.
+	identity_restart_pending = true;
+	secplus2_garage.stop();
+	Secplus2IdentityStore store;
+	uint32_t replacement = 0;
+	const bool saved = og_identity::load(store, []() -> uint32_t { return ESP.random(); }, true, replacement);
+	if (saved) {
+		String json = F("{\"result\":1,\"client_id\":\"0x");
+		json += String(replacement, HEX);
+		json += F("\",\"message\":\"New client ID saved. Restarting; WiFi and other settings are unchanged.\"}");
+		otf_send_json(res, json);
+	} else {
+		otf_send_json(res, F("{\"result\":0,\"message\":\"Could not verify the new ID. Restarting; check identity diagnostics before using controls.\"}"));
+	}
+	restart_in(1000);
+}
+
 void on_clear_log(const OTF::Request &req, OTF::Response &res) {
 	if(!verify_device_key(req)) {
 		otf_send_result(res, HTML_UNAUTHORIZED, nullptr);
@@ -561,6 +595,7 @@ void on_auto_detect(const OTF::Request &req, OTF::Response &res) {
 }
 
 void performDoorAction(uint8_t action, bool force_alarm_off = false) {
+	if (identity_restart_pending) return;
 	// Check if the requested action is valid based on the current door state
 	bool isValidAction = false;
 	if((og.options[OPTION_SECV].ival == 2) || // For Sec+ 2.0, open/close commands are always valid
@@ -1860,6 +1895,7 @@ void do_loop() {
 			updateServer->on("/update", HTTP_POST, on_firmware_upload_fin, on_firmware_upload);
 			updateServer->on("/update", HTTP_OPTIONS, on_update_options);
 			otf->on("/clearlog", on_clear_log);
+			otf->on("/secplus2/regenerate-id", on_regenerate_secplus2_id, OTF::HTTP_POST);
 			otf->on("/resetall",on_reset_all);
 			updateServer->begin();
 			DEBUG_PRINTLN(F("Web Server endpoints (STA mode) registered"));
@@ -1964,6 +2000,7 @@ void do_loop() {
 	}
 
 	// secplus process loop
+	if (identity_restart_pending) return;
 	switch (og.options[OPTION_SECV].ival) {
 		case 2: // SecPlus 2
 			secplus2_garage.loop();

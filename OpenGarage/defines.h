@@ -24,7 +24,7 @@
 #define _DEFINES_H
 
 /** Firmware version, hardware version, and maximal values */
-#define OG_FWV     124 // Firmware version: 124 means 1.2.4
+#define OG_FWV     125 // Firmware version: 125 means 1.2.5
 
 /** GPIO pins */
 #define PIN_RELAY  15 // NodeMCU D8. Relay for triggering door action (for non-Security+).

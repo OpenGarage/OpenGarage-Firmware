@@ -150,6 +150,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <tr><td colspan=2><input type='checkbox' id='cb_key' data-mini='true' onclick='update_ckey()'><label for='cb_key'>Change Device Key</label></td></tr>
 <tr class='ckey'><td><b>New Key:</b></td><td><input type='password' size=16 maxlength=64 id='nkey' data-mini='true'></td></tr>
 <tr class='ckey'><td><b>Confirm:</b></td><td><input type='password' size=16 maxlength=64 id='ckey' data-mini='true'></td></tr>
+<tr><td colspan=2><button type='button' id='btn_regenerate_id' data-mini='true'>Regenerate Security+ 2.0 Client ID</button></td></tr>
 </table>
 </div>
 <br />
@@ -230,6 +231,21 @@ $('#btn_back').click(function(e){
 e.preventDefault(); goback();
 });
 var comm;
+$('#btn_regenerate_id').click(function(e){
+e.preventDefault();
+var key = $('#dkey').val();
+if (!key) {show_msg('Enter the Device Key below first.','red'); return;}
+if (!confirm('Generate a new Security+ 2.0 client ID and restart OpenGarage? WiFi and other saved settings will be preserved. Unsaved edits on this page will not be saved. Use this only for troubleshooting.')) return;
+var button = $(this);
+button.prop('disabled',true);
+fetch('secplus2/regenerate-id', {method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:key})
+.then(function(response){return response.json();})
+.then(function(data){
+show_msg(data.message || (data.result===2 ? 'Incorrect Device Key.' : 'Request rejected.'),data.result===1?'green':'red');
+if(data.result!==1) button.prop('disabled',false);
+})
+.catch(function(){show_msg('Result not confirmed. Reconnect and check /db before retrying.','red');});
+});
 function bc(n,e=0) {comm+='&'+n+'=';
 if(e) comm+=encodeURIComponent($('#'+n).val());
 else comm+=$('#'+n).val();

@@ -30,6 +30,15 @@ int main() {
   }
   assert(load(fresh, random, true, id)); // factory reset
   assert(id == 0x00022908 && fresh.writes == 2);
+  // The authenticated regeneration endpoint requests a fresh identity without
+  // deleting configuration. The next ordinary boot must retain that new ID.
+  const auto prior = id;
+  assert(load(fresh, random, true, id));
+  assert(id != prior && (id & 0xffff) == 0x2908);
+  const auto regenerated = id;
+  const auto write_count = fresh.writes;
+  assert(load(fresh, random, false, id));
+  assert(id == regenerated && fresh.writes == write_count);
   Store legacy;
   assert(load(legacy, random, false, id) && id == LEGACY_ID);
   assert(load(legacy, random, false, id) && id == LEGACY_ID && legacy.writes == 1);
