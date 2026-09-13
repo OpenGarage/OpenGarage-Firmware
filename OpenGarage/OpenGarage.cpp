@@ -26,6 +26,7 @@
 byte  OpenGarage::state = OG_STATE_INITIAL;
 File  OpenGarage::log_file;
 byte  OpenGarage::alarm = 0;
+uint32_t OpenGarage::alarm_sequence = 0;
 byte  OpenGarage::alarm_action = 0;
 byte  OpenGarage::led_reverse = 0;
 byte  OpenGarage::has_swrx = 0;
@@ -463,19 +464,5 @@ void OpenGarage::config_ip() {
 		   dns1.fromString(options[OPTION_DNS1].sval)) {
 			WiFi.config(dvip, gwip, subn, dns1, gwip);
 		}
-	}
-}
-#include "pitches.h"
-
-void OpenGarage::play_startup_tune() {
-	static uint melody[] = {NOTE_C4, NOTE_E4, NOTE_G4, NOTE_C5};
-	static byte duration[] = {4, 8, 8, 8};
-
-	for (byte i = 0; i < sizeof(melody)/sizeof(uint); i++) {
-		uint noteTime = 1000/duration[i];
-		tone(PIN_BUZZER, melody[i], noteTime);
-		uint delayTime = noteTime * 1.2f;
-		delay(delayTime);
-		noTone(PIN_BUZZER);
 	}
 }

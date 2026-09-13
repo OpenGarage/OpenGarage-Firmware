@@ -52,6 +52,7 @@ public:
 	static OptionStruct options[];
 	static byte state;
 	static byte alarm;
+	static uint32_t alarm_sequence;
 	static byte alarm_action;
 	static byte led_reverse;
 	static byte has_swrx;
@@ -86,6 +87,7 @@ public:
 		if(ov) alarm = ov*10+1;
 		else alarm = options[OPTION_ALM].ival * 10 + 1;
 		alarm_action = action;
+		++alarm_sequence;
 	}
 	static void reset_alarm() { alarm = 0; alarm_action = 0; }
 	static void reset_to_ap() {
@@ -94,7 +96,6 @@ public:
 		restart();
 	}
 	static void config_ip();
-	static void play_startup_tune();
 	private:
 	static File log_file;
 	static void button_handler();

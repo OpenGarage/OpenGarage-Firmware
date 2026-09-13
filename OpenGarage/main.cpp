@@ -86,6 +86,26 @@ SecPlus1::Garage secplus1_garage(PIN_SW_RX, PIN_SW_TX);
 #include "secplus2_identity_store.h"
 #include "body_device_key.h"
 #include "health_stats.h"
+#include "audio_timing.h"
+struct BuzzerSink {
+	void note(unsigned frequency, unsigned duration) { tone(PIN_BUZZER, frequency, duration); }
+	void silence() { noTone(PIN_BUZZER); }
+};
+static BuzzerSink buzzer;
+static og_audio::Warning<BuzzerSink> warning_audio(buzzer);
+static og_audio::Melody<BuzzerSink> startup_audio(buzzer);
+static bool ip_audio_active=false, setup_reboot_pending=false;
+static byte ip_note=0, ip_digit=0;
+
+void cancel_diagnostic_audio() {
+	startup_audio.cancel();
+	ip_ticker.detach();
+	if (ip_audio_active) buzzer.silence();
+	ip_audio_active=false; ip_note=ip_digit=0;
+}
+void start_tune(og_audio::Tune tune) {
+	if (!og.alarm && !ip_audio_active) startup_audio.start(millis(),tune);
+}
 static HealthStats health_stats;
 struct LoopMeasurement {
 	uint32_t started=micros();
@@ -196,8 +216,8 @@ static void append_health_json(String &json) {
 
 void report_ip() {
 	static uint notes[] = {NOTE_C4, NOTE_CS4, NOTE_D4, NOTE_DS4, NOTE_E4, NOTE_F4, NOTE_FS4, NOTE_G4, NOTE_GS4, NOTE_A4};
-	static byte note = 0;
-	static byte digit = 0;
+	if (!ip_audio_active || og.alarm) return;
+	byte &note=ip_note, &digit=ip_digit;
 
 	if(digit == ipString.length()) { // play ending note
 		og.play_note(NOTE_C6); digit++; note=0;
@@ -205,6 +225,7 @@ void report_ip() {
 		return;
 	} else if(digit == ipString.length()+1) { // end
 		og.play_note(0); note=0; digit=0;
+		ip_audio_active=false;
 		return;
 	}
 	char c = ipString.charAt(digit);
@@ -238,6 +259,16 @@ void restart_in(uint32_t ms) {
 		DEBUG_PRINTLN(F("Prepare to restart..."));
 		restart_ticker.once_ms(ms, og.restart);
 	}
+}
+
+// Both the provisioning poll and the normal loop can notice association first.
+// Persist once, play the complete success tune, then restart to enter STA mode.
+void complete_ap_setup() {
+	if (setup_reboot_pending || og.options[OPTION_MOD].ival==OG_MOD_STA) return;
+	og.options[OPTION_MOD].ival=OG_MOD_STA;
+	og.options_save();
+	setup_reboot_pending=true;
+	start_tune(og_audio::Tune::SETUP_SUCCESS);
 }
 
 void on_home(const OTF::Request &req, OTF::Response &res) {
@@ -609,6 +640,7 @@ void performDoorAction(uint8_t action, bool force_alarm_off = false) {
 		DEBUG_PRINTLN(F("Requested command not valid, or door already in requested state"));
 		return;
 	}
+	cancel_diagnostic_audio();
 
 	// This is the core logic for deciding whether to trigger the alarm or the door directly.
 	bool shouldTriggerAlarm = true;
@@ -1028,7 +1060,7 @@ void on_ap_try_connect(const OTF::Request &req, OTF::Response &res) {
 	otf_send_json(res, json);
 	if(WiFi.status() == WL_CONNECTED && WiFi.localIP()) {
 		DEBUG_PRINTLN(F("IP received by client, restart."));
-		restart_in(1000);
+		complete_ap_setup();
 	}
 }
 
@@ -1105,7 +1137,6 @@ void do_setup() {
 	if (!secplus2_identity_ready) Serial.println(F("Security+ 2.0 disabled: identity storage unavailable or invalid"));
 	og.options_setup();
 	og.init_sensors();
-	if(og.get_mode() == OG_MOD_AP) og.play_startup_tune();
 	curr_mode = og.get_mode();
 
 	// initialize secplus objects and enable callbacks
@@ -1172,9 +1203,13 @@ void process_ui() {
 				og.reset_to_ap();
 			} else if(diff > BUTTON_REPORTIP_TIMEOUT) {
 				// report IP
-				ipString = get_ip();
-				ipString.replace(".", ". ");
-				report_ip();
+				if (!og.alarm) {
+					cancel_diagnostic_audio();
+					ipString = get_ip();
+					ipString.replace(".", ". ");
+					ip_audio_active=true;
+					report_ip();
+				}
 			} else if(curr > button_down_time + 50) {
 				performDoorAction(ACTION_TOGGLE, true); // no alarm since manual operation
 			}
@@ -1774,19 +1809,17 @@ void time_keeping() {
 }
 
 void process_alarm() {
-	if(!og.alarm) return;
-	static ulong prev_half_sec = 0;
-	ulong curr_half_sec = millis()/500;
-	if(curr_half_sec != prev_half_sec) {
-		prev_half_sec = curr_half_sec;
-		if(prev_half_sec % 2 == 0) {
-			og.play_note(ALARM_FREQ);
-		} else {
-			og.play_note(0);
-		}
-		og.alarm--;
-		if(og.alarm==0) {
-			og.play_note(0);
+	static uint32_t sequence=0;
+	static bool running=false;
+	if (!og.alarm) { warning_audio.cancel(); running=false; return; }
+	if (!running || sequence!=og.alarm_sequence) {
+		cancel_diagnostic_audio();
+		sequence=og.alarm_sequence; running=true;
+		warning_audio.start(millis(),uint32_t(og.alarm-1)*500);
+		return;
+	}
+	if (warning_audio.tick(millis())) {
+		og.alarm=0; running=false;
 			switch (og.options[OPTION_SECV].ival) {
 				case 2: // SecPlus 2
 					switch (og.alarm_action) {
@@ -1806,7 +1839,6 @@ void process_alarm() {
 				default: // No secplus
 					og.click_relay();
 			}
-		}
 	}
 }
 
@@ -1844,6 +1876,7 @@ void do_loop() {
 			og.state = OG_STATE_CONNECTED;
 			DEBUG_PRINTLN(WiFi.softAPIP());
 			connecting_timeout = 0;
+			start_tune(og_audio::Tune::AP);
 		} else {
 			led_blink_ms = LED_SLOW_BLINK;
 			DEBUG_PRINT(F("Attempting to connect to SSID: "));
@@ -1925,6 +1958,7 @@ void do_loop() {
 			og.set_led(LOW);
 			og.state = OG_STATE_CONNECTED;
 			connecting_timeout = 0;
+			start_tune(og_audio::Tune::STATION);
 		} else {
 			if(connecting_timeout && millis() > connecting_timeout) {
 				DEBUG_PRINTLN(F("Wifi Connecting timeout, restart"));
@@ -1959,11 +1993,7 @@ void do_loop() {
 			}
 			if(WiFi.status() == WL_CONNECTED && WiFi.localIP()) {
 				DEBUG_PRINTLN(F("STA connected, updating option file"));
-				og.options[OPTION_MOD].ival = OG_MOD_STA;
-				og.options_save();
-				og.play_startup_tune();
-				//restart_ticker.once_ms(10000, og.restart);
-				restart_in(10000);
+				complete_ap_setup();
 			}
 
 		} else {
@@ -2012,8 +2042,12 @@ void do_loop() {
 
 	process_ui();
 
-	if(og.alarm)
-		process_alarm();
+	process_alarm();
+	if (!og.alarm && !ip_audio_active) startup_audio.tick(millis());
+	if (setup_reboot_pending && !startup_audio.active() && !og.alarm) {
+		setup_reboot_pending=false;
+		restart_in(1000);
+	}
 }
 
 BLYNK_WRITE(BLYNK_PIN_RELAY) {
