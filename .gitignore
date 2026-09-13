@@ -1,6 +1,7 @@
 .DS_Store
+.local/
+planning/
 docs/site/
 OpenGarage/node_modules/
 OpenGarage/package-lock.json
 docs/docs/assets/bins/flash.sh
-

@@ -13,6 +13,8 @@
 <tr id='tbl_sn2' style='display:none'><td><b>Switch Sn. :</b></td><td><label id='lbl_sn2'>-</label></td><td></td></tr>
 <tr id='tbl_obstruct' style='display:none'><td><b>Obstructed:</b></td><td><label id='lbl_obstruct'>-</label></td><td></td></tr>
 <tr id='tbl_pemu' style='display:none'><td><b>Panel Emu.:</b></td><td><label id='lbl_pemu'>-</label></td><td></td></tr>
+<tr id='tbl_command' style='display:none'><td><b>Command:</b></td><td><label id='lbl_command'>-</label></td><td></td></tr>
+<tr id='tbl_light_unknown' style='display:none'><td><b>Light / Lock:</b></td><td>Unknown (waiting for status)</td><td></td></tr>
 <tr><td><b>WiFi Signal:</b></td><td colspan='2'><label id='lbl_rssi'>-</label></td></tr>
 <tr><td><b>Cloud:</b></td><td colspan='2'><label id='lbl_cld'>-</label></td></tr>
 <tr id='tbl_th'><td><b>T/H sensor:</b></td><td colspan='2'><label id='lbl_th'>-</label></td></tr>
@@ -188,6 +190,9 @@ function show() {
 			$('#lightflip').val(jd.light).slider('refresh');
 			$('#lockflip').val(jd.lock).slider('refresh');
 		}
+		var llUnknown = jd.light_lock_valid === 0;
+		$('#lightflip,#lockflip').slider(llUnknown ? 'disable' : 'enable');
+		$('#tbl_light_unknown').toggle(llUnknown);
 		if (jd.vehicle >=2){
 			$('#lbl_vstatus1').hide();
 			$('#lbl_vstatus').text('');
@@ -227,9 +232,12 @@ function show() {
 					break;
 			}
 		} else { $('#tbl_pemu').hide(); }
+		if (typeof(jd.panel_status)!='undefined') $('#lbl_pemu').text(jd.panel_status).css('color','');
+		$('#tbl_command').toggle(typeof(jd.command_status)!='undefined');
+		if (typeof(jd.command_status)!='undefined') $('#lbl_command').text(jd.command_status);
 		if(typeof(jd.obstruct)!='undefined') {
 			$('#tbl_obstruct').show();
-			$('#lbl_obstruct').text(jd.obstruct?'YES':'no').css('color',jd.obstruct?'red':'');
+			$('#lbl_obstruct').text(jd.obstruct_valid===0?'Unknown':(jd.obstruct?'YES':'no')).css('color',jd.obstruct_valid===0?'':(jd.obstruct?'red':''));
 		} else {$('#tbl_obstruct').hide();}
 	},
 	error:function(){

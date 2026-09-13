@@ -21,6 +21,7 @@
  */
 
 #include "OpenGarage.h"
+#include "distance_consensus.h"
 
 byte  OpenGarage::state = OG_STATE_INITIAL;
 File  OpenGarage::log_file;
@@ -328,20 +329,13 @@ uint OpenGarage::read_distance() {
 		last_returned = (uint)(buf[KAVG/2]*0.01716f);  // 34320 cm / 2 / 10^6 s
 		return last_returned;
 	} else {
-		// use consensus algorithm
-		uint32_t vmin, vmax, sum;
-		vmin = vmax = sum = buf[0];
-		for(byte i=1;i<KAVG;i++) {
-			uint32_t v = buf[i];
-			vmin = (v<vmin)?v:vmin;
-			vmax = (v>vmax)?v:vmax;
-			sum += v;
-		}
+		// Consensus of the tightest five out of seven; tolerate two outliers.
 		// calculate margin
 		uint32_t margin = (float)options[OPTION_CMR].ival/0.01716f;
 		margin = (margin<60)?60:margin;
-		if(vmax-vmin<=margin) {
-			last_returned = (sum/KAVG)*0.01716f;
+		uint32_t mean;
+		if(og_filter::tightest_five(buf, margin, mean)) {
+			last_returned = mean*0.01716f;
 		}
 		return last_returned;
 	}

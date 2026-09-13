@@ -83,7 +83,10 @@ static HTTPClient http;
 static bool light_blink_enabled = true;
 // security+ objects
 SecPlus1::Garage secplus1_garage(PIN_SW_RX, PIN_SW_TX);
-SecPlus2::Garage secplus2_garage(0x777, PIN_SW_RX, PIN_SW_TX);
+#include "secplus2_identity_store.h"
+static uint32_t secplus2_client_id = 0;
+static bool secplus2_identity_ready = false;
+SecPlus2::Garage secplus2_garage(0, PIN_SW_RX, PIN_SW_TX);
 
 void do_setup();
 
@@ -293,6 +296,17 @@ json += F(",\"fwv\":");
 				json += opening_count;
 			}
 			if(og.options[OPTION_SECV].ival==1) {
+				json += F(",\"door_valid\":");
+				json += secplus1_garage.door_valid() ? 1 : 0;
+				json += F(",\"light_lock_valid\":");
+				json += secplus1_garage.light_lock_valid() ? 1 : 0;
+				json += F(",\"obstruct_valid\":");
+				json += secplus1_garage.obstruction_valid() ? 1 : 0;
+				json += F(",\"panel_status\":\"");
+				json += secplus1_garage.get_panel_description();
+				json += F("\",\"command_status\":\"");
+				json += secplus1_garage.get_action_result();
+				json += F("\"");
 				json += F(",\"pemu\":");
 				json += secplus1_garage.get_panel_emu_status();
 			}
@@ -349,6 +363,19 @@ void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
 	json += WiFi.localIP().toString();
 	json += F("\",\"cid\":");
 	json += ESP.getChipId();
+	json += F(",\"secplus2_client_id\":\"0x");
+	json += String(secplus2_client_id, HEX);
+	json += F("\"");
+	json += F(",\"secplus2_identity_ready\":");
+	json += secplus2_identity_ready ? F("true") : F("false");
+	json += F(",\"secplus1_parity_errors\":");
+	json += secplus1_garage.get_parity_errors();
+	json += F(",\"secplus1_invalid_frames\":");
+	json += secplus1_garage.get_invalid_frames();
+	json += F(",\"secplus1_tx_deferrals\":");
+	json += secplus1_garage.get_tx_deferrals();
+	json += F(",\"secplus1_expired_commands\":");
+	json += secplus1_garage.get_expired_commands();
 	json += F(",\"rssi\":");
 	json += (int16_t)WiFi.RSSI();
 	json += F(",\"bssid\":\"");
@@ -476,6 +503,7 @@ void secplus2_state_callback(SecPlus2::state_struct_t state) {
 }
 
 int run_auto_detect() {
+	secplus1_garage.stop(); // finish any possibly dispatched Sec+ 1.0 release tail
 	// Try Sec+ 2.0 first
 	if (secplus2_garage.detect()) {
 		return 2;
@@ -786,6 +814,7 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 
 	uint new_secv = og.options[OPTION_SECV].ival;
 	if(old_secv != new_secv) { // sec+ version changed
+		if (old_secv == 1) secplus1_garage.stop();
 		switch(new_secv) {
 			case 2:
 				secplus2_garage.begin();
@@ -937,6 +966,11 @@ void on_ap_debug(const OTF::Request &req, OTF::Response &res) {
 	json += og.options[OPTION_FWV].ival;
 	json += F(",\"has_swrx\":");
 	json += og.has_swrx;
+	json += F(",\"secplus2_client_id\":\"0x");
+	json += String(secplus2_client_id, HEX);
+	json += F("\"");
+	json += F(",\"secplus2_identity_ready\":");
+	json += secplus2_identity_ready ? F("true") : F("false");
 	json += F("}");
 	otf_send_json(res, json);
 }
@@ -983,6 +1017,16 @@ void do_setup() {
 	}
 	WiFi.persistent(false); // turn off persistent, fixing flash crashing issue
 	og.begin();
+	Secplus2IdentityStore identity_store;
+	secplus2_identity_ready = og_identity::load(identity_store,
+		[]() -> uint32_t { return ESP.random(); },
+		!FILESYS.exists(CONFIG_FNAME), secplus2_client_id);
+	if (secplus2_identity_ready) {
+		secplus2_identity_ready = secplus2_garage.set_client_id(secplus2_client_id);
+	}
+	Serial.print(F("Security+ 2.0 client ID: 0x"));
+	Serial.println(secplus2_client_id, HEX);
+	if (!secplus2_identity_ready) Serial.println(F("Security+ 2.0 disabled: identity storage unavailable or invalid"));
 	og.options_setup();
 	og.init_sensors();
 	if(og.get_mode() == OG_MOD_AP) og.play_startup_tune();
@@ -1114,6 +1158,7 @@ void on_update_options() {
 void on_firmware_upload() {
 	HTTPUpload& upload = updateServer->upload();
 	if(upload.status == UPLOAD_FILE_START){
+		if (og.options[OPTION_SECV].ival == 1) secplus1_garage.finish_release();
 		if(curr_mode == OG_MOD_STA) {
 			DEBUG_PRINTLN(F("Stopping all network clients"));
 			WiFiUDP::stopAll();
@@ -1902,6 +1947,7 @@ BLYNK_WRITE(BLYNK_PIN_RELAY) {
 }
 
 BLYNK_WRITE(BLYNK_PIN_LIGHT) {
+	if (og.options[OPTION_SECV].ival == 1 && !secplus1_garage.light_lock_valid()) return;
 	bool requested_light_state = param.asInt();
 	if (requested_light_state != light_status) {
 		DEBUG_PRINTLN(F("Received Blynk generated light change request"));
@@ -1910,6 +1956,7 @@ BLYNK_WRITE(BLYNK_PIN_LIGHT) {
 }
 
 BLYNK_WRITE(BLYNK_PIN_LOCK) {
+	if (og.options[OPTION_SECV].ival == 1 && !secplus1_garage.light_lock_valid()) return;
 	bool requested_lock_state = param.asInt();
 	if (requested_lock_state != lock_status) {
 		DEBUG_PRINTLN(F("Received Blynk generated lock change request"));
