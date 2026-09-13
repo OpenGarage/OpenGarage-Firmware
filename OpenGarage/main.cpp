@@ -292,6 +292,13 @@ json += F(",\"fwv\":");
 			json += F(",\"obstruct\":");
 			json += obstruction_status;
 			if(og.options[OPTION_SECV].ival==2) {
+				const bool valid=secplus2_garage.status_valid();
+				json += F(",\"door_valid\":"); json += valid ? 1 : 0;
+				json += F(",\"light_lock_valid\":"); json += valid ? 1 : 0;
+				json += F(",\"obstruct_valid\":"); json += valid ? 1 : 0;
+				json += F(",\"recovery_status\":\"");
+				json += secplus2_garage.recovery_status(); json += F("\"");
+				json += F(",\"control_fault\":"); json += secplus2_garage.controls_faulted() ? 1 : 0;
 				json += F(",\"nopenings\":");
 				json += opening_count;
 			}
@@ -503,6 +510,7 @@ void secplus2_state_callback(SecPlus2::state_struct_t state) {
 }
 
 int run_auto_detect() {
+	secplus2_garage.stop();
 	secplus1_garage.stop(); // finish any possibly dispatched Sec+ 1.0 release tail
 	// Try Sec+ 2.0 first
 	if (secplus2_garage.detect()) {
@@ -814,6 +822,7 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 
 	uint new_secv = og.options[OPTION_SECV].ival;
 	if(old_secv != new_secv) { // sec+ version changed
+		if (old_secv == 2) secplus2_garage.stop();
 		if (old_secv == 1) secplus1_garage.stop();
 		switch(new_secv) {
 			case 2:
@@ -1158,6 +1167,7 @@ void on_update_options() {
 void on_firmware_upload() {
 	HTTPUpload& upload = updateServer->upload();
 	if(upload.status == UPLOAD_FILE_START){
+		if (og.options[OPTION_SECV].ival == 2) secplus2_garage.finish_release();
 		if (og.options[OPTION_SECV].ival == 1) secplus1_garage.finish_release();
 		if(curr_mode == OG_MOD_STA) {
 			DEBUG_PRINTLN(F("Stopping all network clients"));
@@ -1947,6 +1957,7 @@ BLYNK_WRITE(BLYNK_PIN_RELAY) {
 }
 
 BLYNK_WRITE(BLYNK_PIN_LIGHT) {
+	if (og.options[OPTION_SECV].ival == 2 && !secplus2_garage.status_valid()) return;
 	if (og.options[OPTION_SECV].ival == 1 && !secplus1_garage.light_lock_valid()) return;
 	bool requested_light_state = param.asInt();
 	if (requested_light_state != light_status) {
@@ -1956,6 +1967,7 @@ BLYNK_WRITE(BLYNK_PIN_LIGHT) {
 }
 
 BLYNK_WRITE(BLYNK_PIN_LOCK) {
+	if (og.options[OPTION_SECV].ival == 2 && !secplus2_garage.status_valid()) return;
 	if (og.options[OPTION_SECV].ival == 1 && !secplus1_garage.light_lock_valid()) return;
 	bool requested_lock_state = param.asInt();
 	if (requested_lock_state != lock_status) {
