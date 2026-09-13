@@ -150,7 +150,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <tr><td colspan=2><input type='checkbox' id='cb_key' data-mini='true' onclick='update_ckey()'><label for='cb_key'>Change Device Key</label></td></tr>
 <tr class='ckey'><td><b>New Key:</b></td><td><input type='password' size=16 maxlength=64 id='nkey' data-mini='true'></td></tr>
 <tr class='ckey'><td><b>Confirm:</b></td><td><input type='password' size=16 maxlength=64 id='ckey' data-mini='true'></td></tr>
-<tr><td colspan=2><button type='button' id='btn_regenerate_id' data-mini='true'>Regenerate Security+ 2.0 Client ID</button></td></tr>
+<tr id='tr_regenerate_id' style='display:none;'><td colspan=2><button type='button' id='btn_regenerate_id' data-mini='true'>Regenerate Security+ 2.0 Client ID</button></td></tr>
 </table>
 </div>
 <br />
@@ -169,6 +169,10 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 </div>
 <script>
 let prev_ct=1;
+let saved_secplus2=false;
+function update_identity_button(){
+$('#tr_regenerate_id').toggle(saved_secplus2 && $('input[name="secv"]:checked').val()==='2');
+}
 function clear_msg() {$('#msg').text('');}
 function get_and_save_dkey() {var dkey_val = $('#dkey').val(); localStorage.setItem('og_dkey', dkey_val);	return dkey_val;}
 function update_sno(){
@@ -177,6 +181,7 @@ $('#sno').selectmenu('enable');
 }else{$('#sno').selectmenu('disable');}
 }
 function update_secv(){
+update_identity_button();
 if(parseInt($('input[name="secv"]:checked').val())>0){
 $('#tr_dth').hide();
 $('#tr_sn2').hide();
@@ -361,6 +366,7 @@ var savedKey = localStorage.getItem('og_dkey');
 if (savedKey) {$('#dkey').val(savedKey);}
 $('#secv').hide();
 $.getJSON('jo', function(jd){
+saved_secplus2=!!jd.has_swrx && jd.secv===2;
 $('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 $('#alm').val(jd.alm).selectmenu('refresh');
 if(jd.aoo>0) cbt('aoo');

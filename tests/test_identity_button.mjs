@@ -5,6 +5,19 @@ import vm from 'node:vm';
 const html = fs.readFileSync(new URL('../OpenGarage/html/sta_options.html', import.meta.url), 'utf8');
 assert(html.indexOf("id='ckey'") < html.indexOf("id='btn_regenerate_id'"));
 assert(html.indexOf("id='btn_regenerate_id'") < html.indexOf("id='dkey'"));
+assert.match(html, /id='tr_regenerate_id' style='display:none;'/);
+const visibility = html.match(/function update_identity_button\(\)\{[\s\S]*?\n\}/)[0];
+for (const saved of [false,true]) {
+  for (const selected of ['0','1','2',undefined]) {
+    let visible;
+    vm.runInNewContext(visibility+';update_identity_button();', {
+      saved_secplus2:saved,
+      $: selector => selector==='#tr_regenerate_id' ? {toggle:v=>{visible=v;}} : {val:()=>selected}
+    });
+    assert.equal(visible,saved && selected==='2');
+  }
+}
+assert.match(html, /saved_secplus2=!!jd\.has_swrx && jd\.secv===2;/);
 const start = html.indexOf("$('#btn_regenerate_id').click(");
 const end = html.indexOf('\nfunction bc(', start);
 assert(start >= 0 && end > start);
