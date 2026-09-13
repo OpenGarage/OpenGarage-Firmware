@@ -4,7 +4,17 @@ This Github repository contains the firmware source code and documentation for O
 
 For official firmware release notes, please go to the [OpenGarage Firmware Releases](https://github.com/OpenGarage/OpenGarage-Firmware/releases) page on GitHub.
 
+Documentation for the upcoming **stock firmware 1.2.5** is available: [User Manual](1.2.5/manual.md) · [API Reference](1.2.5/api.md). Version 1.2.5 is not released yet.
+
+## Using Home Assistant?
+
+The alternative [ESPHome-based OpenGarage firmware](https://github.com/OpenGarage/OpenGarage-ESPHome) provides native Home Assistant integration, including door controls, distance and vehicle sensing, editable thresholds, and—on compatible Security+ hardware/openers—opener light, remote lock and reported obstruction status. See its [installation and HA pairing guide](https://github.com/OpenGarage/OpenGarage-ESPHome/blob/main/docs/install.md).
+
+ESPHome replaces the stock firmware and web interface; it is not required for standalone use. Check its supported hardware and experimental-firmware limitations before switching. Stock OpenGarage remains available with its existing web, cloud and Home Assistant integrations.
+
 ## OpenGarage's Built-in Web UI
+
+The screenshots below show stock firmware 1.2.4; newer versions may differ slightly.
 
 ![AP homepage](1.2.4/screenshots/1_ap.jpg){width="220"} ![Homepage](1.2.4/screenshots/2_home.jpg){width="220"} ![Log](1.2.4/screenshots/3_log.jpg){width="220"}
 ![Basic Options](1.2.4/screenshots/4_options_basic.jpg){width="220"} ![Integration](1.2.4/screenshots/5_options_integration.jpg){width="220"} ![Advanced Options](1.2.4/screenshots/6_options_advanced.jpg){width="220"}
