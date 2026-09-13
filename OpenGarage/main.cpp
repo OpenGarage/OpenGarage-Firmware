@@ -84,6 +84,13 @@ static bool light_blink_enabled = true;
 // security+ objects
 SecPlus1::Garage secplus1_garage(PIN_SW_RX, PIN_SW_TX);
 #include "secplus2_identity_store.h"
+#include "health_stats.h"
+static HealthStats health_stats;
+struct LoopMeasurement {
+	uint32_t started=micros();
+	LoopMeasurement() { health_stats.enter(millis()); }
+	~LoopMeasurement() { health_stats.finish(started,micros(),ESP.getFreeHeap()); }
+};
 static uint32_t secplus2_client_id = 0;
 static bool secplus2_identity_ready = false;
 SecPlus2::Garage secplus2_garage(0, PIN_SW_RX, PIN_SW_TX);
@@ -153,6 +160,37 @@ bool valid_url(String s) {
 }
 
 String ipString;
+
+static void append_age(String &json, uint32_t age) {
+	if (age==UINT32_MAX) json += F("-1");
+	else json += age;
+}
+
+static void append_health_json(String &json) {
+	json += F(",\"active_security_protocol\":"); json += og.options[OPTION_SECV].ival;
+	json += F(",\"free_heap\":"); json += ESP.getFreeHeap();
+	json += F(",\"reset_reason\":\""); json += ESP.getResetReason(); json += F("\"");
+	json += F(",\"reset_reason_code\":"); json += ESP.getResetInfoPtr()->reason;
+	json += F(",\"uptime_s\":"); json += health_stats.uptime_s();
+	json += F(",\"min_free_heap\":");
+	if (health_stats.min_heap()==UINT32_MAX) json += ESP.getFreeHeap();
+	else json += health_stats.min_heap();
+	json += F(",\"max_loop_us\":"); json += health_stats.max_loop_us();
+	json += F(",\"secplus1_parity_errors\":"); json += secplus1_garage.get_parity_errors();
+	json += F(",\"secplus1_invalid_frames\":"); json += secplus1_garage.get_invalid_frames();
+	json += F(",\"secplus1_rx_overflows\":"); json += secplus1_garage.get_overflows();
+	json += F(",\"secplus1_tx_deferrals\":"); json += secplus1_garage.get_tx_deferrals();
+	json += F(",\"secplus1_expired_commands\":"); json += secplus1_garage.get_expired_commands();
+	json += F(",\"secplus1_door_age_ms\":"); append_age(json,secplus1_garage.get_door_age());
+	json += F(",\"secplus1_light_lock_age_ms\":"); append_age(json,secplus1_garage.get_light_lock_age());
+	json += F(",\"secplus2_status_age_ms\":"); append_age(json,secplus2_garage.get_status_age());
+	json += F(",\"secplus2_query_failures\":"); json += secplus2_garage.get_query_failures();
+	json += F(",\"secplus2_action_write_failures\":"); json += secplus2_garage.get_write_failures();
+	json += F(",\"secplus2_tx_deferrals\":"); json += secplus2_garage.get_tx_deferrals();
+	json += F(",\"secplus2_expired_commands\":"); json += secplus2_garage.get_expired_commands();
+	json += F(",\"secplus2_control_fault\":"); json += secplus2_garage.controls_faulted() ? 1 : 0;
+	json += F(",\"secplus2_recovery\":\""); json += secplus2_garage.recovery_status(); json += F("\"");
+}
 
 void report_ip() {
 	static uint notes[] = {NOTE_C4, NOTE_CS4, NOTE_D4, NOTE_DS4, NOTE_E4, NOTE_F4, NOTE_FS4, NOTE_G4, NOTE_GS4, NOTE_A4};
@@ -375,14 +413,7 @@ void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
 	json += F("\"");
 	json += F(",\"secplus2_identity_ready\":");
 	json += secplus2_identity_ready ? F("true") : F("false");
-	json += F(",\"secplus1_parity_errors\":");
-	json += secplus1_garage.get_parity_errors();
-	json += F(",\"secplus1_invalid_frames\":");
-	json += secplus1_garage.get_invalid_frames();
-	json += F(",\"secplus1_tx_deferrals\":");
-	json += secplus1_garage.get_tx_deferrals();
-	json += F(",\"secplus1_expired_commands\":");
-	json += secplus1_garage.get_expired_commands();
+	append_health_json(json);
 	json += F(",\"rssi\":");
 	json += (int16_t)WiFi.RSSI();
 	json += F(",\"bssid\":\"");
@@ -980,6 +1011,7 @@ void on_ap_debug(const OTF::Request &req, OTF::Response &res) {
 	json += F("\"");
 	json += F(",\"secplus2_identity_ready\":");
 	json += secplus2_identity_ready ? F("true") : F("false");
+	append_health_json(json);
 	json += F("}");
 	otf_send_json(res, json);
 }
@@ -1744,6 +1776,7 @@ void process_alarm() {
 }
 
 void do_loop() {
+	LoopMeasurement loop_measurement;
 	static ulong connecting_timeout;
 	switch(og.state) {
 	case OG_STATE_INITIAL:
