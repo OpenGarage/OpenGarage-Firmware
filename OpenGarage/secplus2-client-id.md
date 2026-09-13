@@ -1,6 +1,6 @@
 # Regenerating the Security+ 2.0 client ID
 
-In this development build, open **Options → Advanced → Regenerate Security+ 2.0 Client ID**.
+In firmware 1.2.5, open **Options → Basic → Regenerate Sec+ 2 Client ID**.
 Enter the Device Key and confirm the restart. Save any other edited settings first.
 Security+ 2.0 must already be selected and saved.
 
