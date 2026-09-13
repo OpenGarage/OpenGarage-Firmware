@@ -3,6 +3,19 @@ hr.double {
   border-top: 4px double #ccc;
   border-bottom: none; /* Ensure no other borders interfere */
 }
+.nav-new-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background-color: #f0d45c;
+  color: #222;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0;
+  vertical-align: 1px;
+}
 .hl {
   background-color: #d0ead0; /* Light Green */
 }
@@ -60,6 +73,9 @@ table td {
   background-color: #f4f4f4;
   color: #A04020;
   font-size: 85%;
+}
+.rst-content .hl code {
+  background-color: transparent;
 }
 .center {
   display: block;

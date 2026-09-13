@@ -1,12 +1,7 @@
 ## Firmware 1.2.5 API Reference
 
-Draft for the upcoming 1.2.5 release. Existing endpoints remain available; additions are described below.
-
 ###1. Overview
-<span class="hl">Green highlights in the inherited reference mark Security+ features introduced in 1.2.4.</span>
-
-* <span class="hl">This firmware supports OpenGarage v2.3+ with built-in support for Security+ 2.0/1.0.</span>
-* Whenever device key is required, use `dkey=xxx`. At factory reset, the **default device key** is `opendoor`.
+* Existing endpoints that require a device key use `dkey=xxx`; the new regeneration endpoint uses a request body instead. At factory reset, the **default device key** is `opendoor`.
 * The device's IP address is referred to as `devip`. For most commands, parameters are optional and the order of parameters does not matter.
 * Return values are all formatted in JSON, for example: `{"result":1}`. Below is the list of error codes:
 
@@ -22,6 +17,15 @@ Draft for the upcoming 1.2.5 release. Existing endpoints remain available; addit
 |`48`|Not Permitted (e.g. cannot operate on the requested station)|
 |`64`|Upload failed (e.g. OTA firmware update failed)|
 
+<br>
+#### Changes from 1.2.4
+
+* <code>/jc</code>: adds status-validity fields and protocol-specific status/fault information. Clients should check validity before using retained light, lock or obstruction values.
+* <code>/db?verbose=1</code>: adds device-health, Security+ identity and communication diagnostics.
+* <code>POST /secplus2/regenerate-id</code>: new endpoint to regenerate the Security+ 2.0 client ID and restart, preserving other settings.
+
+<span class="hl">New or modified APIs in firmware 1.2.5 are highlighted in green.</span>
+
 ---
 
 ###2. Get Controller Variables `/jc`
@@ -31,7 +35,7 @@ Draft for the upcoming 1.2.5 release. Existing endpoints remain available; addit
 |:--------|:---------- |
 |`dist`   |Distance sensor value (unit: cm)|
 |`sn2`    |Switch sensor value (present only if switch sensor is enabled)|
-|<a id="jc_door"></a>`door`   |<span class="hl">Door status</span> (`0:closed; 1:open; 2:stopped (partially open); 3:closing; 4:opening; 5:unknown`)|
+|<a id="jc_door"></a>`door`   |Door status (`0:closed; 1:open; 2:stopped (partially open); 3:closing; 4:opening; 5:unknown`)|
 |`vehicle`|Vehicle status (`0:vehicle not detected; 1:detected; 2:unknown`)|
 |`rcnt`   |Read count (increments every time sensor values are updated)|
 |`fwv`    |Firmware version|
@@ -43,19 +47,30 @@ Draft for the upcoming 1.2.5 release. Existing endpoints remain available; addit
 |`clds`   |Cloud connection status<br>• For Blynk: `0:disconnected; 1:connected` <br>• For OTC: `0:not enabled; 1:connecting; 2:disconnected; 3:connected`|
 |`temp`   |temperature reading (Celsius), only if T/H sensor is enabled|
 |`humid`  |humidity reading (relative percentage), only if T/H sensor is enabled|
-|`secv`   |<span class="hl">Security+ version</span> (`2:v2.0; 1:v1.0; 0:None`)|
-|`has_swrx`|<span class="hl">Support for software RX (required for native support of Security+ 2.0/1.0)</span>|
-|`light`  |<span class="hl">Light status</span> (`0:off; 1:on`)</span>|
-|`lock`   |<span class="hl">Remote lock status</span>|
-|`obstruct`|<span class="hl">Obstruction sensor status</span>|
-|`nopenings`|<span class="hl">Number of times the door has opened</span> (available only if `secv=2`)|
-|`pemu`   |<span class="hl">Panel emulator status</span> (`0:inactive; 1:active; 2:detecting`, available only if `secv=1`)|
+|`secv`   |Security+ version (`2:v2.0; 1:v1.0; 0:None`)|
+|`has_swrx`|Support for software RX (required for native support of Security+ 2.0/1.0)|
+|`light`  |Light status (`0:off; 1:on`)|
+|`lock`   |Remote lock status|
+|`obstruct`|Obstruction sensor status|
+|`nopenings`|Number of times the door has opened (available only if `secv=2`)|
+|`pemu`   |Panel emulator status (`0:inactive; 1:active; 2:detecting`, available only if `secv=1`)|
+|<span class="hl"><code>door_valid</code></span>|<span class="hl">Door status validity: 0 unknown/stale, 1 valid (Security+ 1.0/2.0).</span>|
+|<span class="hl"><code>light_lock_valid</code></span>|<span class="hl">Validity of light and remote-lock status: 0 unknown/stale, 1 valid (Security+ 1.0/2.0).</span>|
+|<span class="hl"><code>obstruct_valid</code></span>|<span class="hl">Obstruction status validity: 0 unknown/stale, 1 valid (Security+ 1.0/2.0).</span>|
+|<span class="hl"><code>panel_status</code></span>|<span class="hl">Panel detection/emulation description (Security+ 1.0 only).</span>|
+|<span class="hl"><code>command_status</code></span>|<span class="hl">Command progress/outcome description (Security+ 1.0 only).</span>|
+|<span class="hl"><code>recovery_status</code></span>|<span class="hl">Communication recovery description (Security+ 2.0 only); not a transmission acknowledgement.</span>|
+|<span class="hl"><code>control_fault</code></span>|<span class="hl">0 no latched fault; 1 uncertain actuation failure has inhibited controls (Security+ 2.0 only).</span>|
+
+<br><span class="hl">These new fields are present only on Security+-capable hardware with the corresponding protocol selected. Expired door status uses <code>door=5</code>; light, lock and obstruction retain their last-known Boolean values for compatibility. Check the validity fields before treating them as current. Diagnostic text is not a stable enumeration.</span>
 
 ---
 
 ###3. Change Controller Variables `/cc`
 
-**Usage**: <code>http://devip/cc?**dkey**=xxx&**click**=1&**close**=1&**open**=1&**light**=toggle&**lock**=toggle&&**reboot**=1&**apmode**=1</code>
+**Usage**: `http://devip/cc?dkey=xxx&click=1`
+
+Send one action per request; supported parameters are listed below.
 
 |Parameters |Meaning |
 |:----------|:---------- |
@@ -65,15 +80,16 @@ Draft for the upcoming 1.2.5 release. Existing endpoints remain available; addit
 |`open`     |Trigger door open action|
 |`reboot`   |Reboot the controller|
 |`apmode`   |Reset the controller to WiFi AP mode (for reconfiguring WiFi setting)|
-|`light`    |<span class="hl">Toggle light. Supported only for Security+ 2.0/1.0</span>. The only accepted value currently is `toggle`.|
-|`lock`     |<span class="hl">Toggle remote lock. Supported only for Security+ 2.0/1.0</span> The only accepted value currently is `toggle`.|
+|`light`    |Toggle light. Supported only for Security+ 2.0/1.0. The only accepted value currently is `toggle`.|
+|`lock`     |Toggle remote lock. Supported only for Security+ 2.0/1.0 The only accepted value currently is `toggle`.|
 
 <br>**Examples:**
 
 * `http://devip/cc?dkey=xxx&click=1`: toggle door
-* `http://devip/cc?dkey=xxx&close=1`: close door (ignored if the door is already closed)
+* `http://devip/cc?dkey=xxx&close=1`: request door close
 * `http://devip/cc?dkey=xxx&reboot=1`: reboot device
 * `http://devip/cc?dkey=xxx&light=toggle`: toggle light
+
 ---
 
 ###4. Get Options `/jo`
@@ -84,10 +100,13 @@ Draft for the upcoming 1.2.5 release. Existing endpoints remain available; addit
 |Variable |Explanation|
 |:---------|:------------|
 | `fwv` | Firmware version (read-only) |
+| `secv` | Security+ version (`0:None; 1:1.0; 2:2.0`); native Security+ requires v2.3+ hardware |
+|<span class="hl"><code>pem</code></span>|<span class="hl">Security+ 1.0 panel emulation (<code>0:Auto</code>, default; <code>1:Disable</code>). Only configurable on v2.3+ hardware with Security+ 1.0 selected.</span>|
+|<span class="hl"><code>secplus2_client_id</code></span>|<span class="hl">Read-only Security+ 2.0 client ID (hexadecimal), or <code>Unavailable</code> if identity initialization failed.</span>|
 | `sn1` | Distance sensor (`sn1`) mounting type (<code><u>0:ceiling mount</u>; 1:side mount</code>)|
 | `sn2` | Switch sensor (`sn2`) type (<code><u>0:none</u>; 1:normally closed; 2:normally open</code>) |
-| `sno` | Sensor logic: door 'open' status is determined by: <code><u>0:use sn1 only</u>; 1:sn2 only; 2:sn1 AND sn2; 3:sn1 OR sn2</code>. <span class="hl">This option has no effect for Security+ 2.0/1.0</span>|
-| `dth` | Door distance threshold (unit: `cm`, used to detect if the door is open). <span class="hl">This option has no effect for Security+ 2.0/1.0</span>|
+| `sno` | Sensor logic: door 'open' status is determined by: <code><u>0:use sn1 only</u>; 1:sn2 only; 2:sn1 AND sn2; 3:sn1 OR sn2</code>. This option has no effect for Security+ 2.0/1.0|
+| `dth` | Door distance threshold (unit: `cm`, used to detect if the door is open). This option has no effect for Security+ 2.0/1.0|
 | `vth` | Vehicle distance threshold (unit: `cm`, used to detect if a vehicle is present) |
 | `riv` | Status and sensor check interval (unit: `second`, default is `1`) |
 | `alm` | Sound alarm: <code>0:no alarm; <u>1:5-second alarm</u>; 2:10-second alarm</code>|
@@ -97,7 +116,7 @@ Draft for the upcoming 1.2.5 release. Existing endpoints remain available; addit
 | `htp` | HTTP port (default is `80`) |
 | `cdt` | Button click time (unit: `ms`, default is `1000`) |
 | `dri` | Distance reading interval (unit: `ms`, default is `500`) |
-| `sfi` | Sensor filtering method (<code>0:median; <u>1:consensus</u></code>) |
+| `sfi` | Sensor filtering method (<code>0:median; <u>1:consensus</u></code>). <span class="hl">Consensus now averages the tightest five of seven readings if their spread meets <code>cmr</code>; otherwise the last accepted distance is retained.</span> |
 | `cmr` | Consensus margin for the consensus method (unit: `cm`, default is `10`) |
 | `sto` | Sensor timeout handling option (<code><u>0:ignore</u>; 1:cap to maximum value</code>) |
 | `ati` | Automation rule A time (unit: `minutes`): detect if the door is left open for longer than `ati` minutes |
@@ -135,8 +154,10 @@ Draft for the upcoming 1.2.5 release. Existing endpoints remain available; addit
 
 **Usage**: <code>http://devip/co?**dkey**=xxx&**nkey**=xxx&**ckey**=xxx&**opn**=opv...</code>
 
-* `opn` can be any variable name listed in the table above, and `opv` is the value you want to change it to.
-* `fwv` is read-only and thus not changeable.
+<span class="hl">Set <code>pem=0</code> for automatic Security+ 1.0 panel detection/emulation or <code>pem=1</code> to disable emulation. The device accepts this option only on Security+-capable hardware when Security+ 1.0 is selected.</span>
+
+* `opn` is a writable option name from the table above, and `opv` is its new value.
+* `fwv` and `ssid` cannot be changed through `/co`; use WiFi setup to change the network.
 * The device key `dkey` may be changed only by providing both `nkey` (new key) and `ckey` (confirm key) and they must match exactly.
 
 <br>**Examples:**
@@ -144,7 +165,7 @@ Draft for the upcoming 1.2.5 release. Existing endpoints remain available; addit
 * `devip/co?dkey=xxx&nkey=abc&ckey=abc`: set device key to `abc`
 * `devip/co?dkey=xxx&dth=75`: set door's distance threshold to `75cm`
 * `devip/co?dkey=xxx&auth=0123456789abcdef`: set the cloud authentication token
-* `devip/co?dkey=xxx&htp=8080&riv=2`: set HTTP port to `8080`, and set sensor read interval to `2` seconds
+* `devip/co?dkey=xxx&htp=8080&riv=2`: set HTTP port to `8080`, and set the status-check interval option to `2` seconds (the raw ultrasonic sampling interval is `dri`, in milliseconds)
 * `devip/co?dkey=xxx&ati=5&ato=3`: set automation rule A time to `5` minutes and its option to `0b11` (i.e. auto-notify and auto-close if the door is left open for `>5 minutes`).
 ---
 
@@ -175,6 +196,8 @@ Clears the entire log data.
 
 Resets the controller back to factory default settings. WiFi will be restored to AP (Access Point) mode.
 
+<span class="hl">Factory reset also generates a new Security+ 2.0 client ID on the next setup. Reboot, OTA update and WiFi-only reset preserve the identity.
+
 ---
 
 ###9. MQTT
@@ -183,24 +206,25 @@ To use MQTT features:
 
 * Enable MQTT (set `mqen=1`) and provide server parameters (server url `mqtt`, port `mqpt`, user name `mqur` and password `mqpw` if using authentication).
 * You may define a custom MQTT topic (`mqtp`). If left empty, the device name will be used as the topic. In the example below, the topic is referred to as `OGTOPIC`.
+* Topics use the configured prefix exactly: `OGTOPIC/OUT/JSON` has no leading slash unless the prefix itself starts with one.
 * To disable MQTT, set `mqen=0`, which preserves the other values, allowing you to easily switch between enabling and disabling MQTT without the loss of other parameters.
 
 | Published Message | Explanation |
 |:------------------|:------------|
-|`/OGTOPIC/OUT/NOTIFY`| Published upon changes in door status, including just `OPENED`, just `CLOSED`, or just `STOPPED`. |
-|`/OGTOPIC/OUT/STATUS`| Report device online/offline status. |
-|`/OGTOPIC/OUT/STATE` | Published every 15 seconds to report the current state, including `OPEN`, `CLOSED`, `STOPPED`. |
-|`/OGTOPIC/OUT/JSON`  | Published every 15 seconds and reports the same controller variables as the [`/jc` endpoint](#2-get-controller-variables-jc) |
+|`OGTOPIC/OUT/NOTIFY`| Published upon changes in door status, including just `OPENED`, just `CLOSED`, or just `STOPPED`. |
+|`OGTOPIC/OUT/STATUS`| Report device online/offline status. |
+|`OGTOPIC/OUT/STATE` | Published every 15 seconds to report the current state, including `OPEN`, `CLOSED`, `STOPPED`. |
+|`OGTOPIC/OUT/JSON`  | Published on door-state events and periodically (approximately every 15 seconds), with the same controller variables as [`/jc`](#2-get-controller-variables-jc). <span class="hl">Includes the new Security+ validity and diagnostic fields; use this JSON rather than the limited text state to identify Unknown.</span> |
 
 **Subscribed Message**:
 
-The controller subscribes to topic `/OGTOPIC/IN/STATE` and accepts the following payload messages:
+The controller subscribes to topic `OGTOPIC/IN/STATE` and accepts the following payload messages:
 
 * `click`: Toggle door
 * `close`: Trigger door close action
 * `open` : Trigger door open action
-* `togglelight`: <span class="hl">Toggle light. Supported only for Security+ 2.0/1.0</span>
-* `togglelock`: <span class="hl">Toggle remote lock. Supported only for Security+ 2.0/1.0</span>
+* `togglelight`: Toggle light. Supported only for Security+ 2.0/1.0
+* `togglelock`: Toggle remote lock. Supported only for Security+ 2.0/1.0
 
 ---
 
@@ -209,7 +233,7 @@ The controller subscribes to topic `/OGTOPIC/IN/STATE` and accepts the following
 The cloud connection type is defined by the [`cld` option](#jo_cld). Two types are supported: Blynk and OTC.
 
 ####Blynk
-As the Blynk team officially ended support for their legacy app and server, we provide a replicated Blynk server at [`openthings.io`](https://openthings.io). This allows existing users of the legacy app can continue using it for connection.
+As the Blynk team officially ended support for their legacy app and server, we provide a replicated Blynk server at [`openthings.io`](https://openthings.io). This allows existing users of the legacy app to continue connecting.
 
 * Default server domain name (`bdmn`): `blynk.openthings.io`
 * Default server port (`bprt`): `8080`. Change these accordingly if using your own Blynk server.
@@ -223,12 +247,17 @@ For example:
 
 * `https://blynk.openthings.io:9443/token/project` returns the entire project in JSON, where `token` is the 32-character authorization token.
 * `https://blynk.openthings.io:9443/token/get/V?` returns the value of pin `V?`, where:
-    * `V0`: door status (see [`door` variable](#jc_door) for supported values)
+    * `V0`: binary door indicator
+    * `V2`: complete door status (see [`door` variable](#jc_door))
     * `V3`: distance sensor value
     * `V4`: vehicle status
     * `V6`: temperature sensor value
     * `V7`: humidity sensor value
+    * `V8`: opener light state/control
+    * `V9`: remote lock state/control
 * `https://blynk.openthings.io:9443/token/update/V1?value=1` updates pin `V1` with value `1`, triggering a door click.
+
+<span class="hl">Blynk light/lock state-setting requests are ignored while the corresponding opener status is invalid. Existing Blynk indicators may still show last-known values; use <code>/jc</code> for validity information.</span>
 
 ####OTC (OpenThings Token)
 
@@ -242,46 +271,45 @@ Once connected, you can use the same **OpenGarage API** (this document) via the 
 * `https://cloud.openthings.io/forward/v1/token/` returns the controller homepage, where `token` is the 32-character OTC token.
 * `https://cloud.openthings.io/forward/v1/token/jc` returns [controller variables](#2-get-controller-variables-jc).
 * `https://cloud.openthings.io/forward/v1/token/jl` returns [log data](#6-get-logs-jl).
-* <u>**NOTE**</u>: When using OTC, the device key (`dkey`) is ignored. The OTC token itself serves as the globally unique secret key.
+* <u>**NOTE**</u>: Existing endpoints use the OTC token in place of the device key (`dkey`). <span class="hl">The new <code>POST /secplus2/regenerate-id</code> endpoint is an exception: it requires the current device key in the request body even over OTC.</span>
 
 ---
 
-### 11. Status Validity and Diagnostics (1.2.5)
+### 11. Debug `/db` {.hl}
 
-For Security+ modes, `/jc` adds `door_valid`, `light_lock_valid` and `obstruct_valid` (0 or 1). When a validity field is 0, do not treat its associated value as current information. Boolean fields retain their last-known values for compatibility; expired door state uses `door=5` (Unknown).
+**Usage:** `http://devip/db`
 
-Security+ 1.0 also exposes `panel_status` and `command_status` text. Security+ 2.0 exposes `recovery_status` text and `control_fault` (0 or 1). Diagnostic wording is intended for humans, not as a stable enumeration. A successful command HTTP response does not prove physical actuation.
-
-The `/db` endpoint adds:
+Returns the compact debug information.
 
 | Field | Meaning |
 |:------|:--------|
-| `active_security_protocol` | Configured protocol: 0 None, 1 Security+ 1.0, 2 Security+ 2.0 |
-| `reset_reason`, `reset_reason_code` | SDK-reported reason for the last reset |
-| `uptime_s` | Uptime in seconds |
-| `free_heap`, `min_free_heap` | Current and sampled minimum free heap, in bytes |
-| `max_loop_us` | Maximum measured completed loop duration, in microseconds |
-| `secplus2_client_id` | Persistent Security+ 2.0 identity, represented as hexadecimal text |
-| `secplus1_parity_errors`, `secplus1_invalid_frames`, `secplus1_rx_overflows` | Receiver error counters |
-| `secplus1_tx_deferrals`, `secplus1_expired_commands` | Transmission deferrals and unsent expired commands |
-| `secplus1_door_age_ms`, `secplus1_light_lock_age_ms` | Age of confirmed status; -1 if not currently valid |
-| `secplus2_status_age_ms` | Age of last accepted STATUS; -1 if none received in this session |
-| `secplus2_query_failures`, `secplus2_action_write_failures` | Query and actuation write failures |
-| `secplus2_tx_deferrals`, `secplus2_expired_commands` | Deferrals and unsent expired commands |
-| `secplus2_control_fault`, `secplus2_recovery` | Latched control fault and recovery description |
+| `fwv` | Firmware version, e.g. 125 for 1.2.5 |
+| `has_swrx` | Native Security+ hardware capability (0 or 1) |
+| `dist` | Distance reading in centimeters |
+| `rcnt` | Sensor/status read count |
+| `name` | Device name |
+| `mac` | Device MAC address |
+| `mqtt_topic` | Runtime MQTT topic prefix |
+| `devip` | Device IP address |
+| `cid` | ESP8266 chip ID (not the Security+ client ID) |
+| `rssi` | WiFi signal strength in dBm |
+| `bssid` | Connected access point's MAC address |
+| `build` | Firmware compilation date |
+| `Freeheap` | Legacy free heap in bytes, cast to 16 bits; retained for compatibility |
+| `flash_size` | Physical flash size in bytes |
 
-Counters are diagnostic observations, not proof of collisions or command acknowledgement. They are not persisted across reboot; protocol counters may reset when the backend restarts. Maximum loop time cannot measure a loop that crashes before returning. Debug builds may expose additional fields.
+---
 
-### 12. Regenerate Security+ 2.0 Client ID
+### 12. Regenerate Sec+ 2.0 Client ID {.hl}
 
 **Method:** `POST /secplus2/regenerate-id`
 
-Send the current device key as the **raw UTF-8 request body**, not a URL parameter or JSON object. This endpoint requires the device key even over OTC; the general OTC key exemption does not apply here.
+Send the current device key as the **raw UTF-8 request body**, not a URL parameter or JSON object. This endpoint requires the device key even over OTC.
 
-The device must have Security+ 2.0 saved, be connected, and have no pending warning, command or release cleanup. This is a maintenance operation: it saves a new identity and restarts OG, preserving WiFi and other settings. Never invoke it automatically as a retry after an uncertain response.
+The device must have Security+ 2.0 saved, be connected, and have no pending warning, command or release cleanup. This is a maintenance operation: it saves a new identity and restarts OG, preserving WiFi and other settings.
 
 - Success: `{"result":1,"client_id":"0x…","message":"…"}`.
 - Incorrect device key: `{"result":2}`.
 - Wrong mode, busy device or storage failure: `{"result":0,"message":"…"}`.
 
-After a storage attempt, OG restarts even if verification fails. Check identity diagnostics before using controls after a reported storage failure. This endpoint does not modernize the existing GET-based control endpoints; keep device access on a trusted network.
+After storage, OG automatically restarts and uses the new key.

@@ -251,6 +251,7 @@ typedef enum {
 	OPTION_DNS1,    // dns1 IP
 	OPTION_NTP1,    // custom NTP server
 	OPTION_HOST,    // custom host name
+	OPTION_PEM,     // Security+ 1.0 panel emulation (0: auto, 1: disabled)
 	NUM_OPTIONS     // number of options
 } OG_OPTION_enum;
 

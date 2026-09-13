@@ -198,43 +198,47 @@ static void append_health_json(String &json) {
 	if (health_stats.min_heap()==UINT32_MAX) json += ESP.getFreeHeap();
 	else json += health_stats.min_heap();
 	json += F(",\"max_loop_us\":"); json += health_stats.max_loop_us();
-	json += F(",\"secplus1_parity_errors\":"); json += secplus1_garage.get_parity_errors();
-	json += F(",\"secplus1_invalid_frames\":"); json += secplus1_garage.get_invalid_frames();
-	json += F(",\"secplus1_rx_overflows\":"); json += secplus1_garage.get_overflows();
-	json += F(",\"secplus1_tx_deferrals\":"); json += secplus1_garage.get_tx_deferrals();
-	json += F(",\"secplus1_expired_commands\":"); json += secplus1_garage.get_expired_commands();
-	json += F(",\"secplus1_door_age_ms\":"); append_age(json,secplus1_garage.get_door_age());
-	json += F(",\"secplus1_light_lock_age_ms\":"); append_age(json,secplus1_garage.get_light_lock_age());
+	if (!og.has_swrx) return;
+	if (og.options[OPTION_SECV].ival == 1) {
+		json += F(",\"secplus1_parity_errors\":"); json += secplus1_garage.get_parity_errors();
+		json += F(",\"secplus1_invalid_frames\":"); json += secplus1_garage.get_invalid_frames();
+		json += F(",\"secplus1_rx_overflows\":"); json += secplus1_garage.get_overflows();
+		json += F(",\"secplus1_tx_deferrals\":"); json += secplus1_garage.get_tx_deferrals();
+		json += F(",\"secplus1_expired_commands\":"); json += secplus1_garage.get_expired_commands();
+		json += F(",\"secplus1_door_age_ms\":"); append_age(json,secplus1_garage.get_door_age());
+		json += F(",\"secplus1_light_lock_age_ms\":"); append_age(json,secplus1_garage.get_light_lock_age());
 #ifdef OG_SEC1_DIAGNOSTICS
-	const auto &gap=secplus1_garage.diagnostic_gap();
-	const auto &gd=gap.diagnostic;
-	const auto &td=secplus1_garage.diagnostic;
-	json += F(",\"secplus1_diag\":{\"exchanges\":"); json += gd.exchanges;
-	json += F(",\"resets\":"); json += gd.resets;
-	json += F(",\"bad_latency\":"); json += gd.bad_latency;
-	json += F(",\"zero_latency\":"); json += gd.zero_latency;
-	json += F(",\"bad_interval\":"); json += gd.bad_interval;
-	json += F(",\"last_latency_ms\":"); json += gd.latency;
-	json += F(",\"last_interval_ms\":"); json += gd.interval;
-	json += F(",\"learned_count\":"); json += gap.learned_count();
-	json += F(",\"max_learned_count\":"); json += gd.max_count;
-	json += F(",\"minimum_ms\":"); json += gap.learned_minimum();
-	json += F(",\"maximum_ms\":"); json += gap.learned_maximum();
-	json += F(",\"reply_age_ms\":"); append_age(json,gap.reply_age(millis()));
-	json += F(",\"loops\":"); json += td.loops;
-	json += F(",\"gap_ready_loops\":"); json += td.gap_ready_loops;
-	json += F(",\"last_block\":"); json += td.last_block;
-	json += F(",\"blocked\":[");
-	for(unsigned i=0;i<9;++i) { if(i) json += ','; json += td.blocked[i]; }
-	json += F("]}");
+		const auto &gap=secplus1_garage.diagnostic_gap();
+		const auto &gd=gap.diagnostic;
+		const auto &td=secplus1_garage.diagnostic;
+		json += F(",\"secplus1_diag\":{\"exchanges\":"); json += gd.exchanges;
+		json += F(",\"resets\":"); json += gd.resets;
+		json += F(",\"bad_latency\":"); json += gd.bad_latency;
+		json += F(",\"zero_latency\":"); json += gd.zero_latency;
+		json += F(",\"bad_interval\":"); json += gd.bad_interval;
+		json += F(",\"last_latency_ms\":"); json += gd.latency;
+		json += F(",\"last_interval_ms\":"); json += gd.interval;
+		json += F(",\"learned_count\":"); json += gap.learned_count();
+		json += F(",\"max_learned_count\":"); json += gd.max_count;
+		json += F(",\"minimum_ms\":"); json += gap.learned_minimum();
+		json += F(",\"maximum_ms\":"); json += gap.learned_maximum();
+		json += F(",\"reply_age_ms\":"); append_age(json,gap.reply_age(millis()));
+		json += F(",\"loops\":"); json += td.loops;
+		json += F(",\"gap_ready_loops\":"); json += td.gap_ready_loops;
+		json += F(",\"last_block\":"); json += td.last_block;
+		json += F(",\"blocked\":[");
+		for(unsigned i=0;i<9;++i) { if(i) json += ','; json += td.blocked[i]; }
+		json += F("]}");
 #endif
-	json += F(",\"secplus2_status_age_ms\":"); append_age(json,secplus2_garage.get_status_age());
-	json += F(",\"secplus2_query_failures\":"); json += secplus2_garage.get_query_failures();
-	json += F(",\"secplus2_action_write_failures\":"); json += secplus2_garage.get_write_failures();
-	json += F(",\"secplus2_tx_deferrals\":"); json += secplus2_garage.get_tx_deferrals();
-	json += F(",\"secplus2_expired_commands\":"); json += secplus2_garage.get_expired_commands();
-	json += F(",\"secplus2_control_fault\":"); json += secplus2_garage.controls_faulted() ? 1 : 0;
-	json += F(",\"secplus2_recovery\":\""); json += secplus2_garage.recovery_status(); json += F("\"");
+	} else if (og.options[OPTION_SECV].ival == 2) {
+		json += F(",\"secplus2_status_age_ms\":"); append_age(json,secplus2_garage.get_status_age());
+		json += F(",\"secplus2_query_failures\":"); json += secplus2_garage.get_query_failures();
+		json += F(",\"secplus2_action_write_failures\":"); json += secplus2_garage.get_write_failures();
+		json += F(",\"secplus2_tx_deferrals\":"); json += secplus2_garage.get_tx_deferrals();
+		json += F(",\"secplus2_expired_commands\":"); json += secplus2_garage.get_expired_commands();
+		json += F(",\"secplus2_control_fault\":"); json += secplus2_garage.controls_faulted() ? 1 : 0;
+		json += F(",\"secplus2_recovery\":\""); json += secplus2_garage.recovery_status(); json += F("\"");
+	}
 }
 
 void report_ip() {
@@ -446,6 +450,19 @@ void on_sta_controller(const OTF::Request &req, OTF::Response &res) {
 	otf_send_json(res, json);
 }
 
+static void append_debug_details(const OTF::Request &req, String &json) {
+	const char *verbose = req.getQueryParameter("verbose");
+	if (!verbose || strcmp(verbose, "1") != 0) return;
+	if (og.has_swrx && og.options[OPTION_SECV].ival == 2) {
+		json += F(",\"secplus2_client_id\":\"0x");
+		json += String(secplus2_client_id, HEX);
+		json += F("\"");
+		json += F(",\"secplus2_identity_ready\":");
+		json += secplus2_identity_ready ? F("true") : F("false");
+	}
+	append_health_json(json);
+}
+
 void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
 	String json = "";
 	json.reserve(STRING_RESERVE_SIZE);
@@ -464,12 +481,7 @@ void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
 	json += WiFi.localIP().toString();
 	json += F("\",\"cid\":");
 	json += ESP.getChipId();
-	json += F(",\"secplus2_client_id\":\"0x");
-	json += String(secplus2_client_id, HEX);
-	json += F("\"");
-	json += F(",\"secplus2_identity_ready\":");
-	json += secplus2_identity_ready ? F("true") : F("false");
-	append_health_json(json);
+	append_debug_details(req, json);
 	json += F(",\"rssi\":");
 	json += (int16_t)WiFi.RSSI();
 	json += F(",\"bssid\":\"");
@@ -801,6 +813,16 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 	OptionStruct *o = og.options;
 
 	byte usi = 0;
+	char *pem_value = req.getQueryParameter("pem");
+	if (pem_value != NULL) {
+		const char *requested_secv = req.getQueryParameter("secv");
+		const bool secplus1_selected = requested_secv ? strcmp(requested_secv, "1") == 0 : og.options[OPTION_SECV].ival == 1;
+		if (!og.has_swrx || !secplus1_selected ||
+			(strcmp(pem_value, "0") != 0 && strcmp(pem_value, "1") != 0)) {
+			otf_send_result(res, HTML_DATA_OUTOFBOUND, "pem");
+			return;
+		}
+	}
 	// FIRST ROUND: check option validity
 	// do not save option values yet
 	for(i=0;i<NUM_OPTIONS;i++,o++) {
@@ -905,6 +927,7 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 
 	// SECOND ROUND: change option values
 	uint old_secv = og.options[OPTION_SECV].ival;
+	uint old_pem = og.options[OPTION_PEM].ival;
 	o = og.options;
 	for(i=0;i<NUM_OPTIONS;i++,o++) {
 		const char *key = o->name.c_str();
@@ -942,6 +965,7 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 	og.options_save();
 
 	uint new_secv = og.options[OPTION_SECV].ival;
+	secplus1_garage.set_panel_emulation_disabled(og.options[OPTION_PEM].ival != 0);
 	if(old_secv != new_secv) { // sec+ version changed
 		if (old_secv == 2) secplus2_garage.stop();
 		if (old_secv == 1) secplus1_garage.stop();
@@ -959,6 +983,9 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 				secplus1_garage.enable_callback(secplus1_state_callback);
 				break;
 		}
+	} else if (new_secv == 1 && old_pem != og.options[OPTION_PEM].ival) {
+		secplus1_garage.reset_state();
+		secplus_door_status = DOOR_STATUS_UNKNOWN;
 	}
 
 	otf_send_result(res, HTML_SUCCESS, nullptr);
@@ -1011,6 +1038,14 @@ void sta_options_fill_json(String& json) {
 	// append has_swrx variable
 	json += F("\"has_swrx\":");
 	json += og.has_swrx;
+	json += F(",\"secplus2_client_id\":\"");
+	if (secplus2_identity_ready) {
+		json += F("0x");
+		json += String(secplus2_client_id, HEX);
+	} else {
+		json += F("Unavailable");
+	}
+	json += F("\"");
 	json += F("}");
 }
 
@@ -1096,12 +1131,7 @@ void on_ap_debug(const OTF::Request &req, OTF::Response &res) {
 	json += og.options[OPTION_FWV].ival;
 	json += F(",\"has_swrx\":");
 	json += og.has_swrx;
-	json += F(",\"secplus2_client_id\":\"0x");
-	json += String(secplus2_client_id, HEX);
-	json += F("\"");
-	json += F(",\"secplus2_identity_ready\":");
-	json += secplus2_identity_ready ? F("true") : F("false");
-	append_health_json(json);
+	append_debug_details(req, json);
 	json += F("}");
 	otf_send_json(res, json);
 }
@@ -1159,6 +1189,7 @@ void do_setup() {
 	Serial.println(secplus2_client_id, HEX);
 	if (!secplus2_identity_ready) Serial.println(F("Security+ 2.0 disabled: identity storage unavailable or invalid"));
 	og.options_setup();
+	secplus1_garage.set_panel_emulation_disabled(og.options[OPTION_PEM].ival != 0);
 	og.init_sensors();
 	curr_mode = og.get_mode();
 

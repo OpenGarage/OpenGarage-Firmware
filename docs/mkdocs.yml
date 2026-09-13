@@ -2,12 +2,18 @@ site_name: OpenGarage Documentation
 site_url: https://OpenGarage.github.io/OpenGarage-Firmware/
 repo_url: https://github.com/OpenGarage/OpenGarage-Firmware
 
+# Release maintenance: update the redirect and fallback-link targets in
+# docs/manual/index.html and docs/api/index.html (relative to this config).
+# These permanent /manual/ and /api/ links must target the latest released
+# firmware. MkDocs copies them without a redirect plugin;
+# their JavaScript preserves section anchors and query strings.
+
 theme: readthedocs
 
 nav:
   - 'Home': 'index.md'
   - 'FAQ': 'faq.md'
-  - 'Firmware v1.2.5 (Draft)':
+  - 'Firmware v1.2.5 <span class="nav-new-badge" aria-label="New">NEW</span>':
     - 'User Manual': '1.2.5/manual.md'
     - 'API Reference': '1.2.5/api.md'
   - 'Firmware v1.2.4':

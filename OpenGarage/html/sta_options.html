@@ -39,6 +39,13 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <a href='#' data-role='button' data-mini='true' data-inline='true' data-theme='a' id='btn_autodetect'>Detect</a>
 </fieldset>
 </td></tr>
+<tr id='tr_panel_emu' style='display:none;'><td><b>Panel Emulate:</b></td><td>
+<fieldset data-role='controlgroup' data-mini='true' data-type='horizontal'>
+<input type='radio' name='pem' id='pem0' value=0 checked><label for='pem0'>Auto</label>
+<input type='radio' name='pem' id='pem1' value=1><label for='pem1'>Disable</label>
+</fieldset>
+</td></tr>
+<tr id='tr_client_id' style='display:none;'><td><b>Client ID:</b><br><small id='secplus2_client_id'>-</small></td><td><button type='button' id='btn_regenerate_id' data-mini='true' data-inline='true'>Regenerate Sec+ 2 Client ID</button></td></tr>
 <tr id='tr_dth'><td><b>Door Thres. (cm): </b></td><td><input type='text' size=3 maxlength=4 id='dth' data-mini='true' value=0></td></tr>
 <tr><td><b>Car Thres. (cm):</b><br><small>set to 0 to disable</small></td><td><input type='text' size=3 maxlength=4 id='vth' data-mini='true' value=0 ></td></tr>
 <tr><td><b>Status Check (s):</b><br><small>check status every</small></td><td><input type='text' size=3 maxlength=3 id='riv' data-mini='true' value=0></td></tr>
@@ -150,7 +157,6 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <tr><td colspan=2><input type='checkbox' id='cb_key' data-mini='true' onclick='update_ckey()'><label for='cb_key'>Change Device Key</label></td></tr>
 <tr class='ckey'><td><b>New Key:</b></td><td><input type='password' size=16 maxlength=64 id='nkey' data-mini='true'></td></tr>
 <tr class='ckey'><td><b>Confirm:</b></td><td><input type='password' size=16 maxlength=64 id='ckey' data-mini='true'></td></tr>
-<tr id='tr_regenerate_id' style='display:none;'><td colspan=2><button type='button' id='btn_regenerate_id' data-mini='true'>Regenerate Security+ 2.0 Client ID</button></td></tr>
 </table>
 </div>
 <br />
@@ -170,8 +176,12 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <script>
 let prev_ct=1;
 let saved_secplus2=false;
-function update_identity_button(){
-$('#tr_regenerate_id').toggle(saved_secplus2 && $('input[name="secv"]:checked').val()==='2');
+let security_capable=false;
+function update_security_details(){
+var version=security_capable ? $('input[name="secv"]:checked').val() : '0';
+$('#tr_panel_emu').toggle(version==='1');
+$('#tr_client_id').toggle(version==='2');
+$('#btn_regenerate_id').button(saved_secplus2 ? 'enable' : 'disable');
 }
 function clear_msg() {$('#msg').text('');}
 function get_and_save_dkey() {var dkey_val = $('#dkey').val(); localStorage.setItem('og_dkey', dkey_val);	return dkey_val;}
@@ -181,7 +191,7 @@ $('#sno').selectmenu('enable');
 }else{$('#sno').selectmenu('disable');}
 }
 function update_secv(){
-update_identity_button();
+update_security_details();
 if(parseInt($('input[name="secv"]:checked').val())>0){
 $('#tr_dth').hide();
 $('#tr_sn2').hide();
@@ -249,7 +259,7 @@ fetch('secplus2/regenerate-id', {method:'POST', headers:{'Content-Type':'text/pl
 show_msg(data.message || (data.result===2 ? 'Incorrect Device Key.' : 'Request rejected.'),data.result===1?'green':'red');
 if(data.result!==1) button.prop('disabled',false);
 })
-.catch(function(){show_msg('Result not confirmed. Reconnect and check /db before retrying.','red');});
+.catch(function(){show_msg('Result not confirmed. Reconnect and check /db?verbose=1 before retrying.','red');});
 });
 function bc(n,e=0) {comm+='&'+n+'=';
 if(e) comm+=encodeURIComponent($('#'+n).val());
@@ -263,7 +273,10 @@ comm='co?dkey='+encodeURIComponent(get_and_save_dkey());
 bc('sn1');bc('sn2');bc('sno');bc('dth');bc('vth');bc('riv');bc('bas');bc('alm');
 bc('lsz');bc('tsn');bc('htp');bc('cdt');bc('dri');bc('ati');bc('atib');
 comm+='&aoo='+($('#aoo').is(':checked')?1:0);
-if($('#secv').is(':visible')){comm+='&secv='+$('input[name="secv"]:checked').val();}
+if(security_capable){
+comm+='&secv='+$('input[name="secv"]:checked').val();
+if($('input[name="secv"]:checked').val()==='1') comm+='&pem='+$('input[name="pem"]:checked').val();
+}
 comm+='&sto='+eval_cb('#to_cap');
 comm+='&sfi='+eval_cb('#sf_con');
 if(eval_cb('#sf_con')) bc('cmr');
@@ -367,6 +380,8 @@ if (savedKey) {$('#dkey').val(savedKey);}
 $('#secv').hide();
 $.getJSON('jo', function(jd){
 saved_secplus2=!!jd.has_swrx && jd.secv===2;
+security_capable=!!jd.has_swrx;
+$('#secplus2_client_id').text(jd.secplus2_client_id || 'Unavailable');
 $('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 $('#alm').val(jd.alm).selectmenu('refresh');
 if(jd.aoo>0) cbt('aoo');
@@ -383,6 +398,9 @@ $('#bas').val(jd.bas);
 $('#htp').val(jd.htp);
 $('#cdt').val(jd.cdt);
 $('#dri').val(jd.dri);
+$('input[name="pem"]').prop('checked', false);
+$('#pem' + (jd.pem===1 ? 1 : 0)).prop('checked', true);
+$('input[name="pem"]').checkboxradio('refresh');
 if(jd.has_swrx){
 $('#secv').show();
 $('input[name="secv"]').prop('checked', false);

@@ -96,6 +96,7 @@ OptionStruct OpenGarage::options[] = {
 	{"dns1", 0, 0, "8.8.8.8"},
 	{"ntp1", 0, 0, ""},
 	{"host", 0, 0, ""},
+	{"pem", 0, 1, ""},
 };
 
 /* Variables and functions for handling Ultrasonic Distance sensor */

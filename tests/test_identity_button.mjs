@@ -3,21 +3,39 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const html = fs.readFileSync(new URL('../OpenGarage/html/sta_options.html', import.meta.url), 'utf8');
-assert(html.indexOf("id='ckey'") < html.indexOf("id='btn_regenerate_id'"));
-assert(html.indexOf("id='btn_regenerate_id'") < html.indexOf("id='dkey'"));
-assert.match(html, /id='tr_regenerate_id' style='display:none;'/);
-const visibility = html.match(/function update_identity_button\(\)\{[\s\S]*?\n\}/)[0];
-for (const saved of [false,true]) {
+assert(html.indexOf("id='secv'") < html.indexOf("id='tr_panel_emu'"));
+assert(html.indexOf("id='tr_panel_emu'") < html.indexOf("id='tr_client_id'"));
+assert(html.indexOf("id='tr_client_id'") < html.indexOf("id='dth'"));
+assert.match(html, /id='tr_client_id' style='display:none;'[\s\S]*?id='btn_regenerate_id'/);
+const visibility = html.match(/function update_security_details\(\)\{[\s\S]*?\n\}/)[0];
+for (const capable of [false,true]) for (const saved of [false,true]) {
   for (const selected of ['0','1','2',undefined]) {
-    let visible;
-    vm.runInNewContext(visibility+';update_identity_button();', {
-      saved_secplus2:saved,
-      $: selector => selector==='#tr_regenerate_id' ? {toggle:v=>{visible=v;}} : {val:()=>selected}
+    let panelVisible, clientVisible, buttonState;
+    vm.runInNewContext(visibility+';update_security_details();', {
+      security_capable:capable, saved_secplus2:saved,
+      $: selector => selector==='#tr_panel_emu' ? {toggle:v=>{panelVisible=v;}} :
+        selector==='#tr_client_id' ? {toggle:v=>{clientVisible=v;}} :
+        selector==='#btn_regenerate_id' ? {button:v=>{buttonState=v;}} : {val:()=>selected}
     });
-    assert.equal(visible,saved && selected==='2');
+    assert.equal(panelVisible,capable && selected==='1');
+    assert.equal(clientVisible,capable && selected==='2');
+    assert.equal(buttonState,saved ? 'enable' : 'disable');
   }
 }
 assert.match(html, /saved_secplus2=!!jd\.has_swrx && jd\.secv===2;/);
+const radioStart = html.indexOf("$('input[name=\"pem\"]').prop('checked', false);");
+const radioEnd = html.indexOf('if(jd.has_swrx)', radioStart);
+assert(radioStart>=0 && radioEnd>radioStart);
+for (const pem of [0,1,undefined]) {
+  const checked = {pem0:true,pem1:false}; // Auto starts checked in the HTML.
+  vm.runInNewContext(html.slice(radioStart,radioEnd), {
+    jd:{pem},
+    $: selector => selector==='input[name="pem"]' ? {
+      prop: (_,value) => {checked.pem0=value; checked.pem1=value;}, checkboxradio:()=>{}
+    } : {prop:(_,value)=>{checked[selector.slice(1)]=value;}}
+  });
+  assert.deepEqual(checked,pem===1 ? {pem0:false,pem1:true} : {pem0:true,pem1:false});
+}
 const start = html.indexOf("$('#btn_regenerate_id').click(");
 const end = html.indexOf('\nfunction bc(', start);
 assert(start >= 0 && end > start);
@@ -50,4 +68,4 @@ assert.equal(success.disabled, true);
 assert.equal(success.message, 'Restarting');
 assert.equal((await run('bad-key', true, {result: 2})).disabled, false);
 assert.equal((await run('test-key', true, {result: 0, message: 'Busy'})).message, 'Busy');
-console.log('Client-ID button: missing key, cancellation, POST, success and rejection checks passed');
+console.log('Security+ options: protocol visibility, one selected panel setting, and client-ID POST checks passed');

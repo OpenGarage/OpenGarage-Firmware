@@ -1,25 +1,21 @@
 ## Firmware 1.2.5 User Manual
 
-Draft for the upcoming 1.2.5 release. Screenshots inherited from 1.2.4 may differ slightly from the current interface.
-
 OpenGarage is a fully open-source product. Hardware and software details are all published at the [OpenGarage Github repository](https://github.com/opengarage). For additional details, video tutorials, technical support, and user forum, visit [https://opengarage.io](https://opengarage.io).
 
 ### What's New in Firmware 1.2.5?
 
-* More robust distance consensus filtering: uses the tightest five of seven readings to tolerate outliers.
-* Improved Security+ 1.0 operation with polling smart wall panels, including better status validation and command timing.
-* Automatic Security+ 2.0 recovery after an opener power outage, plus light/lock state-decoding fixes.
-* Persistent Security+ 2.0 client identity, with an option to regenerate it without a factory reset.
-* Smoother audible warnings and distinct startup tunes for AP mode, connected mode and successful WiFi setup.
-* Improved light/lock switches that wait briefly for status confirmation, and expanded diagnostic information at `/db`.
-
-### Using OpenGarage with Home Assistant
-
-For native Home Assistant integration, see the alternative [ESPHome-based OpenGarage firmware](https://github.com/OpenGarage/OpenGarage-ESPHome). It exposes door controls, distance and vehicle sensors, and—on compatible v2.3+ hardware with Security+ 1.0 or 2.0—opener light, remote lock and reported obstruction status directly in HA. Distance thresholds are also editable in HA.
-
-This is a separate firmware, not an add-on to stock OpenGarage. It replaces the stock web interface and cloud integrations. See its [installation guide](https://github.com/OpenGarage/OpenGarage-ESPHome/blob/main/docs/install.md) for supported hardware, installation and HA pairing, and review its experimental-firmware limitations before switching. The stock firmware remains available for standalone use and its existing integrations.
+* More robust distance consensus filtering: uses the tightest five readings to tolerate outliers.
+* Improved Security+ 1.0 operation when an existing smart wall panel is present.
+* Improved Security+ 2.0 client ID, with an option to regenerate it without a factory reset.
+* Automatic Security+ 2.0 recovery after an opener power outage.
+* Smoother audible warnings and distinct startup tunes for AP mode and station mode.
 
 **NOTE**: This firmware reserves `G05` for Security+ protocol, so it's no longer available for sensors. `G04` is a shared pin that can be assigned as either a switch sensor or a temperature/humidity sensor, but **not both simultaneously**.
+
+### Using Home Assistant
+
+Home Assistant supports the stock firmware through its built-in OpenGarage integration. For additional Security+ controls in Home Assistant, see the alternative [ESPHome-based OpenGarage firmware](https://github.com/OpenGarage/OpenGarage-ESPHome). Both options are described in [Step 6](#step-6-browser-mobile-app-and-home-assistant-integration).
+
 
 <hr class="double">
 
@@ -169,10 +165,10 @@ To control and monitor your OpenGarage remotely from anywhere, you'll need to se
     * The official **OpenGarage Web** app is available for installation in both the [iOS App Store](https://apps.apple.com/us/app/opengarage-web/id6758858574) and [Google Play Store](https://play.google.com/store/apps/details?id=io.opengarage.app). It provides a native app interface for door control, status, and multiple device management.
     * The firmware still works with the Blynk legacy app (officially discontinued but may still be available on third-party websites). Instructions can be [found here](../archive.md#blynk-legacy-app).
 * **Home Assistant Integration**
-    * For the more complete native HA feature set, including Security+ light and remote lock controls, see [ESPHome-based OpenGarage firmware](https://github.com/OpenGarage/OpenGarage-ESPHome). It is an alternative firmware; see [Using OpenGarage with Home Assistant](#using-opengarage-with-home-assistant) above.
-    * OpenGarage has an official [Home Assistant integration](https://www.home-assistant.io/integrations/opengarage/) that adds the device as a cover entity. It allows door control, status monitoring, and automation within Home Assistant.
+    * Home Assistant includes a built-in [OpenGarage integration](https://www.home-assistant.io/integrations/opengarage/) for the stock firmware. It provides door control, vehicle presence and distance readings, and optional temperature/humidity readings.
+    * For more native Home Assistant integration with additional features such as Security+ opener light and remote lock, use the alternative [ESPHome-based OpenGarage firmware](https://github.com/OpenGarage/OpenGarage-ESPHome). Installing it replaces the stock firmware.
 * **API and MQTT**
-    * OpenGarage exposes a simple, well-documented [HTTP API](api.md#) as well as MQTT support. You can use these to write custom scripts, integrate with third-party apps, or connect through any MQTT client.
+    * OpenGarage exposes a simple, well-documented [HTTP API](api.md) as well as MQTT support. You can use these to write custom scripts, integrate with third-party apps, or connect through any MQTT client.
 
 <hr class="double">
 
@@ -180,7 +176,7 @@ To control and monitor your OpenGarage remotely from anywhere, you'll need to se
 
 #### Homepage
 
-![Homepage](../1.2.4/screenshots/2_home.jpg){: .center }
+![Homepage](screenshots/2_home.png){: .center }
 
 The homepage displays a real-time overview of your device's status including:
 
@@ -209,7 +205,7 @@ The homepage also provides navigation links to **Edit Options**, **Show Log**, *
 
 #### Security+ Communication
 
-With a Security+ 1.0 smart wall panel, OG waits for a suitable gap between panel exchanges before transmitting. If no gap is available within two seconds, the request expires without being sent. If commands repeatedly fail, check `http://<your_og_ip>/db` and report your wall-panel model. Some smart panels, including the special `0x37` panel, are not supported for active control. If necessary, disconnect an incompatible panel with opener power off, then restart OG to enable panel emulation. Keep the opener's safety sensors connected and operational.
+With a Security+ 1.0 smart wall panel, OG waits for a suitable gap between panel exchanges before transmitting. If no gap is available within two seconds, the request expires without being sent. If commands repeatedly fail, check `http://<your_og_ip>/db?verbose=1` and report your wall-panel model. Some smart panels, including the special `0x37` panel, are not supported for active control. If necessary, disconnect an incompatible panel with opener power off, then restart OG to enable panel emulation. Keep the opener's safety sensors connected and operational.
 
 Status that is no longer fresh is shown as Unknown (15 seconds for Security+ 1.0; 30 seconds for Security+ 2.0). Older integrations may continue to display last-known Boolean values; API clients should check the validity fields.
 
@@ -221,7 +217,7 @@ Editing any option requires the Device Key (except when accessed remotely via OT
 
 ##### 1. Basic Tab
 
-![Basic Tab](../1.2.4/screenshots/4_options_basic.jpg){: .center }
+![Basic Tab](screenshots/4_options_basic.png){: .center }
 
 * **Device Name**: A custom name shown on the homepage.
 * **Distance Sensor**: How the device is mounted:
@@ -237,7 +233,10 @@ Editing any option requires the Device Key (except when accessed remotely via OT
         The detection can take up to 15 seconds, and **the door may activate or move** during this time. Ensure the door's path is clear before proceeding.
 
     !!! warning "Note on Security+ 1.0"
-        In **Security+ 1.0** mode, the device **emulates a smart wall panel** by sending rapid probing signals needed to obtain door status (unless an existing smart wall panel is detected). This disables traditional, non-smart wall-buttons. If this restriction is undesirable, please disable Security+ mode by setting it to `None`.<br>**NOTE**: Security+ 2.0 systems are not affected as they do not require panel emulation.
+        In **Security+ 1.0** mode, the device can **emulate a smart wall panel** by sending rapid probing signals needed to obtain door status (unless an existing smart wall panel is detected). This disables traditional, non-smart wall-buttons. If this restriction is undesirable, set Security+ to `None`. Security+ 2.0 systems do not require panel emulation.
+
+* **Panel Emulate** (Security+ 1.0 only): **Auto** (default) detects an existing smart wall panel and otherwise emulates one. **Disable** never emulates a panel; use it only when a compatible smart panel is already connected. Without one, door status and Security+ controls may remain unavailable. The change takes effect when you submit the options.
+* **Client ID** (Security+ 2.0 only): Shows the current client ID. **Regenerate Sec+ 2 Client ID** creates a new ID and restarts OG, preserving WiFi and other settings. The button is available after Security+ 2.0 is saved. Use it only to troubleshoot an identity/synchronization problem; it requires the device key even through OTC.
 
 * **Door Threshold**: Distance (in `cm`) used to determine if the door is open.
     * Set it larger than the distance from the ceiling to the door when fully open, but smaller than the ceiling-to-car distance.
@@ -306,7 +305,7 @@ Editing any option requires the Device Key (except when accessed remotely via OT
 
 ##### 3. Advanced Tab
 
-![Advanced Tab](../1.2.4/screenshots/6_options_advanced.jpg){: .center }
+![Advanced Tab](screenshots/6_options_advanced.png){: .center }
 
 * **Read Interval** `[effective after reboot]`: Time (in `ms`) between ultrasonic distance sensor readings. Default: `500 ms`.
     * Increasing this value can help reduce noise.
@@ -330,11 +329,6 @@ Editing any option requires the Device Key (except when accessed remotely via OT
 
 * **Use Static IP** `[effective after reboot]`: Manually assign a fixed IP instead of DHCP.
     * Requires manual entry of **Device IP**, **Gateway IP**, **Subnet**, and **DNS1**.
-
-* **Regenerate Security+ 2.0 Client ID**: Available only when Security+ 2.0 is selected and saved. Use this only to troubleshoot an identity/synchronization problem. Enter the current device key and confirm the action; OG saves a new identity and restarts without changing WiFi or other settings. Wait for any pending warning or command to finish first.
-    * This maintenance action requires the device key even when accessed through OTC.
-    * Reboots, OTA updates and WiFi-only resets preserve the identity. First setup and factory reset generate a new one. An ordinary upgrade from older stock firmware retains the legacy identity unless you regenerate it.
-    * The client ID can be viewed at `/db`; it is not a password.
 
 * **Device Key**: Change the Device Key from the default `opendoor` to your own password.
 

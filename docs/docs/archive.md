@@ -1,6 +1,13 @@
 # Archived Manuals and API References
 
-These documents are for older versions of the OpenGarage firmware and are provided in their original PDF format. For the latest documentation, please use the versioned navigation at the top of the page.
+These documents cover earlier OpenGarage firmware versions. Version 1.2.4 has online documentation; older versions are provided as PDFs. For newer documentation, use the site navigation.
+
+---
+
+### Firmware 1.2.4
+
+* [User Manual](1.2.4/manual.md)
+* [API Reference](1.2.4/api.md)
 
 ---
 
