@@ -205,6 +205,29 @@ static void append_health_json(String &json) {
 	json += F(",\"secplus1_expired_commands\":"); json += secplus1_garage.get_expired_commands();
 	json += F(",\"secplus1_door_age_ms\":"); append_age(json,secplus1_garage.get_door_age());
 	json += F(",\"secplus1_light_lock_age_ms\":"); append_age(json,secplus1_garage.get_light_lock_age());
+#ifdef OG_SEC1_DIAGNOSTICS
+	const auto &gap=secplus1_garage.diagnostic_gap();
+	const auto &gd=gap.diagnostic;
+	const auto &td=secplus1_garage.diagnostic;
+	json += F(",\"secplus1_diag\":{\"exchanges\":"); json += gd.exchanges;
+	json += F(",\"resets\":"); json += gd.resets;
+	json += F(",\"bad_latency\":"); json += gd.bad_latency;
+	json += F(",\"zero_latency\":"); json += gd.zero_latency;
+	json += F(",\"bad_interval\":"); json += gd.bad_interval;
+	json += F(",\"last_latency_ms\":"); json += gd.latency;
+	json += F(",\"last_interval_ms\":"); json += gd.interval;
+	json += F(",\"learned_count\":"); json += gap.learned_count();
+	json += F(",\"max_learned_count\":"); json += gd.max_count;
+	json += F(",\"minimum_ms\":"); json += gap.learned_minimum();
+	json += F(",\"maximum_ms\":"); json += gap.learned_maximum();
+	json += F(",\"reply_age_ms\":"); append_age(json,gap.reply_age(millis()));
+	json += F(",\"loops\":"); json += td.loops;
+	json += F(",\"gap_ready_loops\":"); json += td.gap_ready_loops;
+	json += F(",\"last_block\":"); json += td.last_block;
+	json += F(",\"blocked\":[");
+	for(unsigned i=0;i<9;++i) { if(i) json += ','; json += td.blocked[i]; }
+	json += F("]}");
+#endif
 	json += F(",\"secplus2_status_age_ms\":"); append_age(json,secplus2_garage.get_status_age());
 	json += F(",\"secplus2_query_failures\":"); json += secplus2_garage.get_query_failures();
 	json += F(",\"secplus2_action_write_failures\":"); json += secplus2_garage.get_write_failures();

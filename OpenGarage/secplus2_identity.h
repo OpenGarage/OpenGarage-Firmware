@@ -19,7 +19,10 @@ inline uint32_t generate(uint32_t random) {
 enum class ReadResult { MISSING, VALID, INVALID };
 
 // Store provides read(Record&) and write(Record). Entropy is a callable.
-// A missing stock config means first setup or factory reset, not WiFi reset.
+// fresh=true means first setup or factory reset: generate a new identity.
+// With an existing stock config (fresh=false), preserve a valid identity record;
+// if only the identity record is missing, migrate using legacy 0x777, not a new ID.
+// WiFi-only reset is not fresh setup.
 template<class Store, class Entropy>
 bool load(Store &store, Entropy entropy, bool fresh, uint32_t &id) {
   id = 0;

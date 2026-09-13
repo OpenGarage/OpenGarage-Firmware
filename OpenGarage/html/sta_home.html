@@ -13,7 +13,6 @@
 <tr id='tbl_sn2' style='display:none'><td><b>Switch Sn. :</b></td><td><label id='lbl_sn2'>-</label></td><td></td></tr>
 <tr id='tbl_obstruct' style='display:none'><td><b>Obstructed:</b></td><td><label id='lbl_obstruct'>-</label></td><td></td></tr>
 <tr id='tbl_pemu' style='display:none'><td><b>Panel Emu.:</b></td><td><label id='lbl_pemu'>-</label></td><td></td></tr>
-<tr id='tbl_command' style='display:none'><td><b>Command:</b></td><td><label id='lbl_command'>-</label></td><td></td></tr>
 <tr id='tbl_control_fault' style='display:none'><td><b>Control Fault:</b></td><td colspan='2' style='color:red'>Command delivery uncertain. Check the opener, then restart OpenGarage to restore controls.</td></tr>
 <tr id='tbl_light_unknown' style='display:none'><td><b>Light / Lock:</b></td><td>Unknown (waiting for status)</td><td></td></tr>
 <tr><td><b>WiFi Signal:</b></td><td colspan='2'><label id='lbl_rssi'>-</label></td></tr>
@@ -54,7 +53,10 @@
 </div>
 <script>
 var si;
-function clear_msg() {$('#msg').text('');}
+function clear_msg() {
+ $('#msg').text('');
+ if(typeof switchState!=='undefined' && (switchState.light.pending||switchState.lock.pending)) render_switch_message();
+}
 function show_msg(s,t,c) { $('#msg').text(s).css('color',c); if(t>0) setTimeout(clear_msg, t); }
 function get_and_save_dkey() {var dkey_val = $('#dkey').val(); localStorage.setItem('og_dkey', dkey_val);	return dkey_val;}
 $('#btn_opts').click(function(e){window.open('vo', '_top');});
@@ -96,28 +98,135 @@ $('#btn_rap').click(function(e){
 		});
 	}
 });
-function do_action_command(comm) {
+function do_action_command(comm, complete) {
 	var comm = 'cc?'+comm+'&dkey='+encodeURIComponent(get_and_save_dkey());
 	$.getJSON(comm)
 	.done(function( jd ) {
 		if(jd.result!=1) {
 			show_msg('Check device key and try again.',2000,'red');
 		}else{clear_msg();};
+		if (complete) complete(jd.result==1);
 	})
 	.fail(function( jqxhr, textStatus, error ) {
 		var err = error;
 		$('#msg').text('Request Failed: ' + err).css('color','red');
+		if (complete) complete(false);
 	});
+}
+// UI-only pending states: never retry a toggle and never treat HTTP acceptance
+// as physical confirmation. Polls started before a click cannot confirm it.
+var switchPoll=0, appliedSwitchPoll=0, renderingSwitch=false, switchMessage='';
+var switchState={
+ light:{value:'0',valid:false,pending:null,message:''},
+ lock:{value:'0',valid:false,pending:null,message:''}
+};
+function render_switch_message() {
+ var messages=[];
+ ['light','lock'].forEach(function(name){
+  var state=switchState[name], label=name==='light'?'Light':'Lock';
+  if(!state.pending && state.message) messages.push(label+': '+state.message);
+ });
+ var message=messages.join(' ');
+ if(message) $('#msg').text(message).css('color','#555');
+ else if($('#msg').text()===switchMessage) $('#msg').text('');
+ switchMessage=message;
+}
+function render_switch(name) {
+ var state=switchState[name];
+ // Do not refresh/disable jQuery Mobile while it is handling a gesture.
+ // Disabled widgets skip mouseup and can otherwise retain dragging=true.
+ if(state.gesture) {render_switch_message();return;}
+ renderingSwitch=true;
+ $('#'+name+'flip').val(state.pending?state.pending.value:state.value).slider('refresh')
+  .slider(state.pending||!state.valid?'disable':'enable');
+ renderingSwitch=false;
+ render_switch_message();
+}
+function finish_switch(name,pending,message) {
+ var state=switchState[name];
+ if(state.pending!==pending) return;
+ clearTimeout(pending.timer);
+ state.pending=null; state.message=message;
+ render_switch(name);
+}
+function request_switch(name) {
+ if(renderingSwitch || switchState[name].gesture) return;
+ var state=switchState[name];
+ if(state.pending||!state.valid) {render_switch(name);return;}
+ var value=String($('#'+name+'flip').val());
+ if(value===state.value) return;
+ var pending={value:value,afterPoll:switchPoll};
+ state.pending=pending; state.message='';
+ pending.timer=setTimeout(function(){
+  finish_switch(name,pending,'Not confirmed; showing last reported state.');
+ },4000);
+ render_switch(name);
+ do_action_command(name+'=toggle',function(ok){
+  if(!ok) finish_switch(name,pending,'Request not confirmed; showing last reported state.');
+ });
+}
+function observe_switches(jd,poll) {
+ if(poll<appliedSwitchPoll) return;
+ appliedSwitchPoll=poll;
+ ['light','lock'].forEach(function(name){
+  var state=switchState[name], pending=state.pending;
+  if(pending && poll<=pending.afterPoll) return;
+  state.valid=jd.light_lock_valid!==0 && (jd[name]===0||jd[name]===1);
+  if(!pending && state.valid) state.message='';
+  if(state.valid) state.value=String(jd[name]);
+  if(pending && state.valid && state.value===pending.value) finish_switch(name,pending,'');
+  render_switch(name);
+ });
+}
+function cancel_switch_gesture(name) {
+ var state=switchState[name];
+ if(!state.gesture) return;
+ state.gesture=null;
+ // jQuery Mobile 1.3.1 has no public drag-cancel API. Clear only transient
+ // gesture state on focus/touch cancellation; never synthesize a release.
+ var widget=$('#'+name+'flip').data('mobile-slider');
+ if(widget) {
+  widget.dragging=false;widget.mouseMoved=false;widget.userModified=false;widget._keySliding=false;
+  widget.handle.removeClass('ui-state-active');
+ }
+ render_switch(name);
+}
+function bind_switch_gestures() {
+ ['light','lock'].forEach(function(name){
+  $('#'+name+'flip').on('slidebeforestart',function(){
+   var state=switchState[name];
+   if(renderingSwitch || state.pending || !state.valid || state.gesture) return false;
+   state.gesture='pointer';
+  }).on('slidestop',function(){
+   var state=switchState[name];
+   if(state.gesture!=='pointer') return;
+   state.gesture=null;
+   request_switch(name); // widget has already cleared dragging before slidestop
+  });
+ });
+ var selector='.lightlock-ctrl .ui-slider-handle, #lightflip, #lockflip';
+ function key_name(element) {
+  var id=$(element).is('select')?element.id:$(element).closest('.ui-slider-switch').prev('select').attr('id');
+  return id==='lightflip'?'light':id==='lockflip'?'lock':null;
+ }
+ $(document).on('keydown',selector,function(e){
+  if([33,34,35,36,37,38,39,40].indexOf(e.which)<0) return;
+  var name=key_name(this); if(!name) return;
+  var state=switchState[name];
+  if(!state.pending && state.valid && !state.gesture) state.gesture='key';
+ }).on('keyup',selector,function(e){
+  if([33,34,35,36,37,38,39,40].indexOf(e.which)<0) return;
+  var name=key_name(this); if(!name || switchState[name].gesture!=='key') return;
+  switchState[name].gesture=null;
+  request_switch(name); // delegated keyup runs after widget keyup cleanup
+ });
+ $(window).on('blur',function(){['light','lock'].forEach(cancel_switch_gesture);});
+ $(document).on('touchcancel',function(){['light','lock'].forEach(cancel_switch_gesture);});
 }
 $('#dkey').on('input change', function() {
 if ($(this).val() === '') {localStorage.removeItem('og_dkey');show_msg('Cleared saved key.',1500,'green');}
 });
-$('#lightflip').on('change', function(e) {
-	do_action_command('light=toggle');
-});
-$('#lockflip').on('change', function(e) {
-	do_action_command('lock=toggle');
-});
+bind_switch_gestures();
 $('#btn_click').click(function(e) {
 	do_action_command('click=1');
 });
@@ -135,11 +244,13 @@ arrow_up: "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVR
 arrow_down: "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+Cjxzdmcgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDQ0OCAyNTYiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSIgeG1sbnM6c2VyaWY9Imh0dHA6Ly93d3cuc2VyaWYuY29tLyIgc3R5bGU9ImZpbGwtcnVsZTpldmVub2RkO2NsaXAtcnVsZTpldmVub2RkO3N0cm9rZS1saW5lam9pbjpyb3VuZDtzdHJva2UtbWl0ZXJsaW1pdDoyOyI+CiAgICA8ZyB0cmFuc2Zvcm09Im1hdHJpeCg1LjMwMTY4ZS0xNywwLjg2NTgzLC0wLjM1MDk3MiwyLjE0OTA4ZS0xNyw0NzYuMDc4LC0xMzMuMTY2KSI+CiAgICAgICAgPHBhdGggZD0iTTIwMCwxMzcuNjk3TDIwMCwxMDcuNzhMMjk4LjE3MiwxMDcuNzhMMjk4LjE3Miw4MEwzMTUuNDk2LDEyMi43MzhMMjk4LjE3MiwxNjUuNDc3TDI5OC4xNzIsMTM3LjY5N0wyMDAsMTM3LjY5N1oiIHN0eWxlPSJmaWxsOndoaXRlOyIvPgogICAgPC9nPgo8L3N2Zz4K"
 };
 function show() {
+	var poll=++switchPoll;
 	$.ajax({
 	url:'jc',
 	dataType:'JSON',
 	timeout:5000,
 	success:function(jd){
+		if(poll<appliedSwitchPoll) return;
 		$('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 		$('#lbl_dist').text(jd.dist +' (cm)').css('color', jd.dist==450?'red':'black');
 		let status_text;
@@ -188,11 +299,9 @@ function show() {
 			$('.lightlock-ctrl').hide();
 		}else{
 			$('.lightlock-ctrl').show();
-			$('#lightflip').val(jd.light).slider('refresh');
-			$('#lockflip').val(jd.lock).slider('refresh');
 		}
+		observe_switches(jd,poll);
 		var llUnknown = jd.light_lock_valid === 0;
-		$('#lightflip,#lockflip').slider(llUnknown ? 'disable' : 'enable');
 		$('#tbl_light_unknown').toggle(llUnknown);
 		if (jd.vehicle >=2){
 			$('#lbl_vstatus1').hide();
@@ -234,8 +343,6 @@ function show() {
 			}
 		} else { $('#tbl_pemu').hide(); }
 		if (typeof(jd.panel_status)!='undefined') $('#lbl_pemu').text(jd.panel_status).css('color','');
-		$('#tbl_command').toggle(typeof(jd.command_status)!='undefined');
-		if (typeof(jd.command_status)!='undefined') $('#lbl_command').text(jd.command_status);
 		$('#tbl_control_fault').toggle(jd.control_fault === 1);
 		if(typeof(jd.obstruct)!='undefined') {
 			$('#tbl_obstruct').show();
@@ -243,6 +350,9 @@ function show() {
 		} else {$('#tbl_obstruct').hide();}
 	},
 	error:function(){
+		if(poll<appliedSwitchPoll) return;
+		appliedSwitchPoll=poll;
+		['light','lock'].forEach(function(name){switchState[name].valid=false;render_switch(name);});
 		$('#lbl_beat').text('(offline)').css('color','red');
 		$('#lbl_cld').text('disconnected');
 	}
