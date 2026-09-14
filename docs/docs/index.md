@@ -71,24 +71,26 @@ OpenGarage firmware supports OTA (over-the-air) updates, allowing you to upload 
 
 The release notes of each firmware can be found on [GitHub](https://github.com/OpenGarage/OpenGarage-Firmware/releases).
 
-| Download | Documentation |
-|:------- |:---------------|
-| [**`1.2.5.bin`**](assets/bins/og_1.2.5.bin) | [[Manual](1.2.5/manual.md)], [[API](1.2.5/api.md)] |
-| [**`1.2.4.bin`**](assets/bins/og_1.2.4.bin) | [[Manual](1.2.4/manual.md)], [[API](1.2.4/api.md)] |
-| [`1.2.3.bin`](assets/bins/og_1.2.3.bin) | [Docs](archive.md) |
-| [`1.2.1.bin`](assets/bins/og_1.2.1.bin) | |
-| [`1.2.0.bin`](assets/bins/og_1.2.0.bin) | [Archive](archive.md) |
-| [`1.1.3.bin`](assets/bins/og_1.1.3.bin) | |
-| [`1.1.2.bin`](assets/bins/og_1.1.2.bin) | [Archive](archive.md) |
-| [`1.1.1.bin`](assets/bins/og_1.1.1.bin) | |
-| [`1.1.0.bin`](assets/bins/og_1.1.0.bin) | |
-| [`1.0.9.bin`](assets/bins/og_1.0.9.bin) | [Archive](archive.md) |
-| [`1.0.8.bin`](assets/bins/og_1.0.8.bin) | |
-| [`1.0.7.bin`](assets/bins/og_1.0.7.bin) | [Archive](archive.md) |
-| [`1.0.6.bin`](assets/bins/og_1.0.6.bin) | [Archive](archive.md) |
-| [`1.0.5.bin`](assets/bins/og_1.0.5.bin) | [Archive](archive.md) |
-| [`1.0.4.bin`](assets/bins/og_1.0.4.bin) | [Archive](archive.md) |
-| [`1.0.3.bin`](assets/bins/og_1.0.3.bin) | |
+| Download | SHA-256 | Documentation |
+|:---------|:--------|:--------------|
+| [**`1.2.5.bin`**](assets/bins/og_1.2.5.bin) | [Checksum](assets/bins/og_1.2.5.bin.sha256) | [[Manual](1.2.5/manual.md)], [[API](1.2.5/api.md)] |
+| [`1.2.4.bin`](assets/bins/og_1.2.4.bin) | [Checksum](assets/bins/og_1.2.4.bin.sha256) | [[Manual](1.2.4/manual.md)], [[API](1.2.4/api.md)] |
+| [`1.2.3.bin`](assets/bins/og_1.2.3.bin) | | [Docs](archive.md) |
+| [`1.2.1.bin`](assets/bins/og_1.2.1.bin) | | |
+| [`1.2.0.bin`](assets/bins/og_1.2.0.bin) | | [Archive](archive.md) |
+| [`1.1.3.bin`](assets/bins/og_1.1.3.bin) | | |
+| [`1.1.2.bin`](assets/bins/og_1.1.2.bin) | | [Archive](archive.md) |
+| [`1.1.1.bin`](assets/bins/og_1.1.1.bin) | | |
+| [`1.1.0.bin`](assets/bins/og_1.1.0.bin) | | |
+| [`1.0.9.bin`](assets/bins/og_1.0.9.bin) | | [Archive](archive.md) |
+| [`1.0.8.bin`](assets/bins/og_1.0.8.bin) | | |
+| [`1.0.7.bin`](assets/bins/og_1.0.7.bin) | | [Archive](archive.md) |
+| [`1.0.6.bin`](assets/bins/og_1.0.6.bin) | | [Archive](archive.md) |
+| [`1.0.5.bin`](assets/bins/og_1.0.5.bin) | | [Archive](archive.md) |
+| [`1.0.4.bin`](assets/bins/og_1.0.4.bin) | | [Archive](archive.md) |
+| [`1.0.3.bin`](assets/bins/og_1.0.3.bin) | | |
+
+<br>To verify a downloaded firmware, save its `.bin` and checksum files in the same folder, then run `sha256sum -c og_1.2.5.bin.sha256` (or substitute the version you downloaded).
 
 
 
