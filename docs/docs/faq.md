@@ -7,7 +7,7 @@
 
 **Q: What is OpenGarage?**
 <br>
-OpenGarage is an **open-source, WiFi-enabled smart** garage door controller that works with most existing garage opener system. It provides:
+OpenGarage is an **open-source, WiFi-enabled smart** garage door controller that works with most existing garage opener systems. It provides:
 
 * **Remote Access**: Check and control your garage door and opener light from anywhere.
 * **Advanced Features**: Intuitive web interface, event log, automation rules, and native support for Security+ 2.0/1.0.
@@ -23,7 +23,7 @@ Homeowners, business owners, makers who want remote status and control of their 
 
 **Q: Does it require a cloud connection?**
 <br>
-No. By default it connects only to your local WiFi network and does NOT rely on the Internet. Cloud connection is optional and only needed for remote access.
+No. By default it connects only to your local WiFi network and does NOT rely on the Internet. Cloud connection is optional; it is one way to enable remote access.
 
 **Q: Is there a subscription fee for cloud access?**
 <br>
@@ -31,10 +31,10 @@ No. Cloud access is completely free.
 
 **Q: Where can I find documents and source code?**
 
-* [User Manual](https://opengarage.github.io/OpenGarage-Firmware/1.2.4/manual/)
-* [API Reference](https://opengarage.github.io/OpenGarage-Firmware/1.2.4/api/)
+* [User Manual](https://opengarage.github.io/OpenGarage-Firmware/manual/)
+* [API Reference](https://opengarage.github.io/OpenGarage-Firmware/api/)
 * [Video Tutorials](https://openthings.freshdesk.com/support/solutions/articles/5000717106-video-introduction-to-opengarage)
-* [Github Repository](https://github.com/opengarage)
+* [GitHub Repository](https://github.com/opengarage)
 
 ---
 
@@ -74,15 +74,15 @@ Firmware can be updated through the [built-in web interface](https://opengarage.
 
 **Q: Will firmware update erase my settings?**
 <br>
-No. OpenGarage preserves your WiFi credentials, settings, and logs during a firmware update. Settings are only erased if you perform a manual factory reset.
+Usually not. OpenGarage preserves your WiFi credentials, settings, and logs during a normal firmware update. Upgrading from an early firmware to 1.2.0 or later is an exception because the flash layout changed; see the [firmware update warning](https://opengarage.github.io/OpenGarage-Firmware/#troubleshooting).
 
 **Q: How can I integrate it with Home Assistant or other smart platforms?**
 <br>
-See the [Integration Guide](https://opengarage.github.io/OpenGarage-Firmware/1.2.4/manual/#step-6-browser-mobile-app-and-home-assistant-integration)
+See the [Integration Guide](https://opengarage.github.io/OpenGarage-Firmware/manual/#step-6-browser-mobile-app-and-home-assistant-integration)
 
 **Q: What is the main difference between hardware v2.2 and v2.3+?**
 <br>
-v2.3+ can communicate directly with Security+ 2.0 and 1.0 systems (commonly used by LiftMaster, Chamberlain, and Craftsman brands). This allows for detailed status reporting (e.g., *opening*, *closing*, *stopped (partially open)*) and control of the opener's light and lock. Earlier hardware versions (v2.2 and below) rely solely on the distance sensor for detecting door status.
+v2.3+ can communicate directly with Security+ 2.0 and 1.0 systems (commonly used by LiftMaster, Chamberlain, and Craftsman brands). This allows for detailed status reporting (e.g., *opening*, *closing*, *stopped (partially open)*) and control of the opener's light and lock. Earlier hardware versions (v2.2 and below) use the distance sensor or an optional wired switch sensor for door status.
 
 **Q: Tell me more about Security+ and how v2.3+ handles it.**
 <br>
@@ -90,8 +90,8 @@ We have a [detailed blog post](https://opensprinkler.com/introducing-opengarage-
 
 **Q: My OpenGarage fails to join or stay connected to my WiFi network.**
 
-1. **Check the mode:** Is the unit still in **AP** (Access Point) mode (fast-blinking LED, twice a second)? If so, follow [WiFi Configuration](1.2.4/manual.md/#step-2-wifi-configuration) in the user manual.
-2. **Changed router/SSID/password recently?** Follow the [Reset WiFi](1.2.4/manual.md/#step-4-button-actions) instructions. 
+1. **Check the mode:** Is the unit still in **AP** (Access Point) mode (fast-blinking LED, twice a second)? If so, follow [WiFi Configuration](https://opengarage.github.io/OpenGarage-Firmware/manual/#step-2-wifi-configuration) in the user manual.
+2. **Changed router/SSID/password recently?** Follow the [Reset WiFi](https://opengarage.github.io/OpenGarage-Firmware/manual/#step-4-button-actions) instructions.
 3. **Router compatibility checklist:**
     * **2.4 GHz only:** The controller's ESP8266 chip is compatible with 2.4 GHz only. Make sure your router has 2.4 GHz enabled and uses a different SSID than 5 GHz.
     * **Security:** Use **WPA2-PSK (AES)** or WPA2/WPA mixed. **Avoid WPA3-only** and **Enterprise**.

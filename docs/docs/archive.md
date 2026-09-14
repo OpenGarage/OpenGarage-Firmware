@@ -69,7 +69,7 @@ The Blynk **legacy app** is discontinued and no longer available in the official
 |Virtual pin |Used for|
 |:--------  -|:------------|
 |`V0`| Door status (binary) |
-|`V1`| Trigger relay |
+|`V1`| Trigger door action |
 |`V2`| Door status (complete: including stopped, opening, closing) |
 |`V3`| Distance value |
 |`V4`| Car status |

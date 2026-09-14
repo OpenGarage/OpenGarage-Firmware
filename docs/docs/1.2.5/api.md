@@ -21,8 +21,8 @@
 #### Changes from 1.2.4
 
 * <code>/jc</code>: adds status-validity fields and protocol-specific status/fault information. Clients should check validity before using retained light, lock or obstruction values.
-* <code>/db?verbose=1</code>: adds device-health, Security+ identity and communication diagnostics.
-* <code>POST /secplus2/regenerate-id</code>: new endpoint to regenerate the Security+ 2.0 client ID and restart, preserving other settings.
+* <code>/jo</code>: adds the read-only <code>s2id</code> Security+ 2.0 client ID field.
+* <code>POST /s2id_gen</code>: new endpoint to regenerate the Security+ 2.0 client ID and restart, preserving other settings.
 
 <span class="hl">New or modified APIs in firmware 1.2.5 are highlighted in green.</span>
 
@@ -81,7 +81,9 @@ Send one action per request; supported parameters are listed below.
 |`reboot`   |Reboot the controller|
 |`apmode`   |Reset the controller to WiFi AP mode (for reconfiguring WiFi setting)|
 |`light`    |Toggle light. Supported only for Security+ 2.0/1.0. The only accepted value currently is `toggle`.|
-|`lock`     |Toggle remote lock. Supported only for Security+ 2.0/1.0 The only accepted value currently is `toggle`.|
+|`lock`     |Toggle remote lock. Supported only for Security+ 2.0/1.0. The only accepted value currently is `toggle`.|
+
+In dry-contact and Security+ 1.0 modes, `open` and `close` issue a toggle when the requested direction is valid for the reported door state. Only Security+ 2.0 sends directional Open and Close commands.
 
 <br>**Examples:**
 
@@ -102,7 +104,7 @@ Send one action per request; supported parameters are listed below.
 | `fwv` | Firmware version (read-only) |
 | `secv` | Security+ version (`0:None; 1:1.0; 2:2.0`); native Security+ requires v2.3+ hardware |
 |<span class="hl"><code>pem</code></span>|<span class="hl">Security+ 1.0 panel emulation (<code>0:Auto</code>, default; <code>1:Disable</code>). Only configurable on v2.3+ hardware with Security+ 1.0 selected.</span>|
-|<span class="hl"><code>secplus2_client_id</code></span>|<span class="hl">Read-only Security+ 2.0 client ID (hexadecimal), or <code>Unavailable</code> if identity initialization failed.</span>|
+|<span class="hl"><code>s2id</code></span>|<span class="hl">Stored Security+ 2.0 client ID (hexadecimal; may appear even when another protocol is selected), or <code>Unavailable</code> if identity initialization fails.</span>|
 | `sn1` | Distance sensor (`sn1`) mounting type (<code><u>0:ceiling mount</u>; 1:side mount</code>)|
 | `sn2` | Switch sensor (`sn2`) type (<code><u>0:none</u>; 1:normally closed; 2:normally open</code>) |
 | `sno` | Sensor logic: door 'open' status is determined by: <code><u>0:use sn1 only</u>; 1:sn2 only; 2:sn1 AND sn2; 3:sn1 OR sn2</code>. This option has no effect for Security+ 2.0/1.0|
@@ -114,7 +116,7 @@ Send one action per request; supported parameters are listed below.
 | `lsz` | Log size (e.g. `50` means the controller keeps the most recent `50` records) |
 | `tsn` | Temperature/humidity sensor type (<code><u>0:none</u>; 2:DHT11; 3:DHT22; 4:DS18B20</code>). Note that the previous `AM2320` type is no longer supported due to GPIO pin conflict with OpenGarage v2.3+ |
 | `htp` | HTTP port (default is `80`) |
-| `cdt` | Button click time (unit: `ms`, default is `1000`) |
+| `cdt` | Dry-contact relay pulse duration (unit: `ms`, default is `1000`) |
 | `dri` | Distance reading interval (unit: `ms`, default is `500`) |
 | `sfi` | Sensor filtering method (<code>0:median; <u>1:consensus</u></code>). <span class="hl">Consensus now averages the tightest five of seven readings if their spread meets <code>cmr</code>; otherwise the last accepted distance is retained.</span> |
 | `cmr` | Consensus margin for the consensus method (unit: `cm`, default is `10`) |
@@ -154,9 +156,8 @@ Send one action per request; supported parameters are listed below.
 
 **Usage**: <code>http://devip/co?**dkey**=xxx&**nkey**=xxx&**ckey**=xxx&**opn**=opv...</code>
 
-<span class="hl">Set <code>pem=0</code> for automatic Security+ 1.0 panel detection/emulation or <code>pem=1</code> to disable emulation. The device accepts this option only on Security+-capable hardware when Security+ 1.0 is selected.</span>
-
-* `opn` is a writable option name from the table above, and `opv` is its new value.
+* `opn` is a writable option name from the table above, and `opv` is its new value. The read-only `s2id` field cannot be changed through `/co`; use [POST `/s2id_gen`](#12-regenerate-sec-20-client-id) to regenerate it.
+* `pem` is writable only on v2.3+ hardware with Security+ 1.0 selected (`0:Auto`, `1:Disable`).
 * `fwv` and `ssid` cannot be changed through `/co`; use WiFi setup to change the network.
 * The device key `dkey` may be changed only by providing both `nkey` (new key) and `ckey` (confirm key) and they must match exactly.
 
@@ -196,7 +197,7 @@ Clears the entire log data.
 
 Resets the controller back to factory default settings. WiFi will be restored to AP (Access Point) mode.
 
-<span class="hl">Factory reset also generates a new Security+ 2.0 client ID on the next setup. Reboot, OTA update and WiFi-only reset preserve the identity.
+<span class="hl">Factory reset also generates a new Security+ 2.0 client ID on the next setup. Reboot, OTA update and WiFi-only reset preserve the identity.</span>
 
 ---
 
@@ -225,6 +226,8 @@ The controller subscribes to topic `OGTOPIC/IN/STATE` and accepts the following 
 * `open` : Trigger door open action
 * `togglelight`: Toggle light. Supported only for Security+ 2.0/1.0
 * `togglelock`: Toggle remote lock. Supported only for Security+ 2.0/1.0
+
+The `open` and `close` payloads have the same mode-dependent behavior as the [HTTP `/cc` actions](#3-change-controller-variables-cc).
 
 ---
 
@@ -271,7 +274,7 @@ Once connected, you can use the same **OpenGarage API** (this document) via the 
 * `https://cloud.openthings.io/forward/v1/token/` returns the controller homepage, where `token` is the 32-character OTC token.
 * `https://cloud.openthings.io/forward/v1/token/jc` returns [controller variables](#2-get-controller-variables-jc).
 * `https://cloud.openthings.io/forward/v1/token/jl` returns [log data](#6-get-logs-jl).
-* <u>**NOTE**</u>: Existing endpoints use the OTC token in place of the device key (`dkey`). <span class="hl">The new <code>POST /secplus2/regenerate-id</code> endpoint is an exception: it requires the current device key in the request body even over OTC.</span>
+* <u>**NOTE**</u>: Existing endpoints use the OTC token in place of the device key (`dkey`). <span class="hl">The new <code>POST /s2id_gen</code> endpoint is an exception: it requires the current device key in the request body even over OTC.</span>
 
 ---
 
@@ -302,7 +305,7 @@ Returns the compact debug information.
 
 ### 12. Regenerate Sec+ 2.0 Client ID {.hl}
 
-**Method:** `POST /secplus2/regenerate-id`
+**Method:** `POST /s2id_gen`
 
 Send the current device key as the **raw UTF-8 request body**, not a URL parameter or JSON object. This endpoint requires the device key even over OTC.
 
@@ -312,4 +315,4 @@ The device must have Security+ 2.0 saved, be connected, and have no pending warn
 - Incorrect device key: `{"result":2}`.
 - Wrong mode, busy device or storage failure: `{"result":0,"message":"…"}`.
 
-After storage, OG automatically restarts and uses the new key.
+After storage, OG automatically restarts and uses the new client ID.

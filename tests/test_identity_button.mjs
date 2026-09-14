@@ -3,6 +3,13 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const html = fs.readFileSync(new URL('../OpenGarage/html/sta_options.html', import.meta.url), 'utf8');
+const source = fs.readFileSync(new URL('../OpenGarage/main.cpp', import.meta.url), 'utf8');
+const optionsJson = source.slice(source.indexOf('void sta_options_fill_json('), source.indexOf('void on_sta_options('));
+assert.match(optionsJson, /F\(",.*s2id/);
+assert.doesNotMatch(optionsJson, /F\(",.*secplus2_client_id/);
+assert.match(source, /otf->on\("\/s2id_gen", on_regenerate_secplus2_id, OTF::HTTP_POST\)/);
+assert.doesNotMatch(source, /otf->on\("\/secplus2\/regenerate-id"/);
+assert.match(html, /jd\.s2id \|\| 'Unavailable'/);
 assert(html.indexOf("id='secv'") < html.indexOf("id='tr_panel_emu'"));
 assert(html.indexOf("id='tr_panel_emu'") < html.indexOf("id='tr_client_id'"));
 assert(html.indexOf("id='tr_client_id'") < html.indexOf("id='dth'"));
@@ -57,7 +64,7 @@ async function run(key, accepted, result) {
 assert.equal((await run('', true)).request, undefined);
 assert.equal((await run('test-key', false)).request, undefined);
 const success = await run('test-key', true, {result: 1, message: 'Restarting'});
-assert.equal(success.request.url, 'secplus2/regenerate-id');
+assert.equal(success.request.url, 's2id_gen');
 assert.equal(success.request.options.method, 'POST');
 assert.equal(success.request.options.body, 'test-key');
 assert.equal(success.request.options.headers['Content-Type'], 'text/plain;charset=UTF-8');

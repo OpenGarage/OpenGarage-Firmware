@@ -6,10 +6,10 @@ Security+ 2.0 must already be selected and saved.
 
 This replaces only the stored client ID; WiFi and other saved settings are preserved.
 The new hexadecimal ID ends in `2908`. OpenGarage restarts and begins synchronization
-with the opener; regeneration does not issue a door command. Check `secplus2_client_id`
-in `/db` after reconnecting. Use this for troubleshooting, not routine operation.
+with the opener; regeneration does not issue a door command. Check `s2id`
+in `/jo` after reconnecting. Use this for troubleshooting, not routine operation.
 
-The local API is `POST /secplus2/regenerate-id`, with the Device Key in the
+The local API is `POST /s2id_gen`, with the Device Key in the
 raw UTF-8 request body (`Content-Type: text/plain;charset=UTF-8`), not the URL.
 Do not form-encode the key or append a newline. GET cannot regenerate an ID.
 The JSON `result` is 1 on success, 2 for an incorrect/missing key, or 0 for

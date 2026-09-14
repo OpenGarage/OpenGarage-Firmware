@@ -1,6 +1,6 @@
 ## Firmware 1.2.5 User Manual
 
-OpenGarage is a fully open-source product. Hardware and software details are all published at the [OpenGarage Github repository](https://github.com/opengarage). For additional details, video tutorials, technical support, and user forum, visit [https://opengarage.io](https://opengarage.io).
+OpenGarage is a fully open-source product. Hardware and software details are all published at the [OpenGarage GitHub repository](https://github.com/opengarage). For additional details, video tutorials, technical support, and user forum, visit [https://opengarage.io](https://opengarage.io).
 
 ### What's New in Firmware 1.2.5?
 
@@ -100,7 +100,7 @@ This section walks you through powering on your OpenGarage, connecting it to you
 
 * Plug a microUSB cable into the device and connect it to a USB power adapter.
 
-* The first time it powers on (or after a WiFi/factory reset), the device creates an open WiFi Access Point (AP) named: `OG_` followed by the last 6 digits of its MAC address. For example: `OG_67FG8A`. Use your phone, tablet, or computer to find this network and connect to it.
+* The first time it powers on (or after a WiFi/factory reset), the device creates an open WiFi Access Point (AP) named `OG_` followed by the last six hexadecimal characters of its MAC address. For example: `OG_67FA8A`. Use your phone, tablet, or computer to find this network and connect to it.
 
 #### Step 2: WiFi Configuration
 
@@ -108,10 +108,10 @@ This section walks you through powering on your OpenGarage, connecting it to you
 
 * After connecting to the `OG_` network, most smart devices will automatically prompt you to "Sign In".
     * If you don't see this prompt or "Sign In" page, manually open a web browser and go to `192.168.4.1`.
-* Follow the on-screen instructions (see the attached screenshot below):
+* Follow the on-screen instructions (see the screenshot above):
     * **Either select or enter** your WiFi router's name (SSID) and type its password.
     * **Host Name** *(Optional)* : Enter a custom hostname (e.g. `myog`). This makes it easy to access the device later using a domain name like `http://myog.local`.
-    * **Security+ Detection** *(Optional, OpenGarage v2.3+ only)* : If you have wired your v2.3+ it to your garage opener, click **Detect** to automatically detect the Security+ protocol version. This feature is hidden on OpenGarage v2.2 and earlier as they do not support Security+.
+    * **Security+ Detection** *(Optional, OpenGarage v2.3+ only)* : If you have wired your v2.3+ to your garage opener, click **Detect** to automatically detect the Security+ protocol version. This feature is hidden on OpenGarage v2.2 and earlier as they do not support Security+.
     * **Cloud Token** *(Optional)* : If you already have a Blynk or OTC token (see the [Cloud Connection](#step-5-cloud-connection) section), enter it here. Otherwise, select `No` and you can configure it later.
 * Click **Submit**. Upon a successful connection, you will hear a short tune from the buzzer. Your WiFi credentials are saved and the device reboots into WiFi **Client Mode**, where it automatically obtains a **Device IP** address from your router. This device IP is typically displayed at the bottom of the screen upon the completion of this step.
 
@@ -130,14 +130,14 @@ Now that OpenGarage is connected to your home network, you can access it locally
 **Finding the Device IP**: If you don't know your OpenGarage's device IP, there are several ways to find it:
 
 * Check your router's **Client List**: Log in to your WiFi router's administration page and look for a list of connected devices. The OpenGarage should appear there with its assigned IP address.
-* **mDNS**: If you entered a custom **Host Name** during WiFi configuration (e.g. `myog`), you can access it using the mDNS name `http://myog.local/` (i.e. the host name followed by `.local/`). If you left the host name empty, it uses the default host name, which is `OG_` followed by the last 6 digits of its MAC address (same as AP-mode SSID). In the example above, it will be `http://OG_67FG8A.local/`.
+* **mDNS**: If you entered a custom **Host Name** during WiFi configuration (e.g. `myog`), you can access it using the mDNS name `http://myog.local/` (i.e. the host name followed by `.local/`). If you left the host name empty, it uses the default host name, which is `OG_` followed by the last six hexadecimal characters of its MAC address (same as AP-mode SSID). In the example above, it will be `http://OG_67FA8A.local/`.
 * **Audible IP**: Press and hold the onboard pushbutton for **2 to 4 seconds**, then release. The device will beep out its IP address using tones (see [Button Actions](#step-4-button-actions) below).
 
 #### Step 4: Button Actions
 
 The pushbutton on OpenGarage has several useful functions depending on how long you press it:
 
-* **Trigger Relay**: A short click (less than 2 sec) → triggers the onboard relay and consequently garage door action. This is similar to a typical garage door wall button.
+* **Trigger Door Action**: Tap and release within about 0.8 seconds to toggle the door, similar to a wall button. Dry-contact mode pulses the relay; Security+ mode sends a protocol command.
 * **Report IP**: Hold 2-4 sec and release → the device IP is reported as sequences of rising notes, pauses, and high-pitch tones for dots. For example: `192.168.1.10` is beeped out as a `C4` (the leading `1`), followed by a pause; then sequence `C4, C#4, D4...` continuously until `G#5`, indicating digit `9`, followed by a pause; then `C4, C#4` and pause, indicating `2`; then a high-pitch tone, indicating a dot; and so on. Count the number of notes in each sequence to determine the digit.
 * **Reset to AP Mode**: Hold 5-9 sec until the LED toggles state (from off to on), then release → resets the device to WiFi AP Mode. This allows you to reconfigure WiFi without losing settings and log data.
 * **Factory Reset**: Hold 10+ sec until the LED turns on and then off → resets the device back to factory default. This erases all settings and data, restoring the device to its original state.
@@ -193,6 +193,7 @@ The homepage displays a real-time overview of your device's status including:
 You can also perform several key operations including:
 
 * **Open/Close/Toggle door**
+    * In dry-contact and Security+ 1.0 modes, Open/Close requests use the same toggle action as the wall button. Only Security+ 2.0 provides directional Open and Close commands.
 * **Reboot Device**
 * **Reset WiFi**
 * **Clear Log**.
@@ -205,11 +206,9 @@ The homepage also provides navigation links to **Edit Options**, **Show Log**, *
 
 #### Security+ Communication
 
-With a Security+ 1.0 smart wall panel, OG waits for a suitable gap between panel exchanges before transmitting. If no gap is available within two seconds, the request expires without being sent. If commands repeatedly fail, check `http://<your_og_ip>/db?verbose=1` and report your wall-panel model. Some smart panels, including the special `0x37` panel, are not supported for active control. If necessary, disconnect an incompatible panel with opener power off, then restart OG to enable panel emulation. Keep the opener's safety sensors connected and operational.
+With a Security+ 1.0 smart wall panel, OG waits for a suitable gap between panel exchanges before transmitting. If no gap is available within two seconds, the request expires without being sent. If this happens repeatedly, turn off opener power before disconnecting the smart wall panel, then restart OG so it can emulate one. Keep the opener's safety sensors connected and operational.
 
-Status that is no longer fresh is shown as Unknown (15 seconds for Security+ 1.0; 30 seconds for Security+ 2.0). Older integrations may continue to display last-known Boolean values; API clients should check the validity fields.
-
-For Security+ 2.0, OG automatically retries communication after an opener outage. Recovery can take several minutes after a prolonged outage. It does not replay previous door commands. If the dashboard reports a control fault, command delivery was uncertain: check the opener, then restart OG before issuing another command.
+For Security+ 2.0, OG automatically retries communication after an opener outage. Recovery can take several minutes after a prolonged outage. It does not replay previous door commands.
 
 #### Edit Options
 
@@ -249,7 +248,7 @@ Editing any option requires the Device Key (except when accessed remotely via OT
 ![Set Thresholds](../1.2.4/images/set_thresholds.jpg){: .center }
 
 * **Status Check Interval**: How often (in `seconds`) the device checks all sensors. Default: `1`.
-* **Click Time**: Duration (in `ms`) the relay is held when triggered. Default: `1000 ms`.
+* **Click Time**: Duration (in `ms`) the relay is held when triggered in dry-contact mode. Default: `1000 ms`.
 * **Switch Sensor**: (<u>only available</u> if **Security+ Version** is **None**) Configure an optional magnetic sensor (connected between pin `G04` and `GND`) for door detection. Options:
     * **Normally Closed**: most common type; switch is closed/shorted when door is closed
     * **Normally Open**: switch is open when door is closed
@@ -268,7 +267,7 @@ Editing any option requires the Device Key (except when accessed remotely via OT
     !!! info
         Because `G04` is a shared pin for sensors, it can be assigned to **either** a switch sensor **or** a temperature/humidity sensor, but **NOT both simultaneously**.
 
-* **Sound Alarm**: Set the duration for the audible alarm before each door movement.
+* **Sound Alarm**: Set the duration for the audible alarm before OG-initiated web, app, or API door actions. A short press of OG's physical button bypasses this alarm.
     * Includes an option to disable the alarm specifically for door opening.
 * **Log Size**: Number of log records to retain.
     * After changing, go to the homepage and click **Clear Log** for it to take effect.
@@ -281,7 +280,7 @@ Editing any option requires the Device Key (except when accessed remotely via OT
     * Blynk: `blynk.openthings.io`, port `8080`
     * OTC: `ws.cloud.openthings.io`, port `80`
 
-* **Enable MQTT**: Enable MQTT communication by provide the MQTT server URL, port, credentials (optional), and a custom MQTT topic.
+* **Enable MQTT**: Enable MQTT communication by providing the MQTT server URL, port, credentials (optional), and a custom MQTT topic.
     * If topic is left blank, the device name is used.
 
 * **Enable Email Notifications**: Set up email notifications by providing an SMTP server, credentials, and recipient address.
@@ -319,7 +318,7 @@ Editing any option requires the Device Key (except when accessed remotely via OT
     * **Ignore** (default): Ignore invalid readings to reduce noise.
     * **Cap** at the maximum which is `450 cm`.
 
-* **HTTP Port** ` [effective after reboot]`: Custom web server port (default: `80`).
+* **HTTP Port** `[effective after reboot]`: Custom web server port (default: `80`).
 
 * **Hostname** `[effective after reboot]`: Custom local hostname.
     * If left blank, defaults to the WiFi AP name (refer to [WiFi configuration](#step-2-wifi-configuration)).
@@ -343,7 +342,7 @@ Follow the [firmware update instructions](../index.md#firmware-update-instructio
 ### Links and Resources
 
 * [OpenGarage Homepage](https://opengarage.io/)
-* [OpenGarage Github Repository](https://github.com/opengarage)
+* [OpenGarage GitHub Repository](https://github.com/opengarage)
 * [OpenGarage Documentation](https://opengarage.github.io/OpenGarage-Firmware/)
 * [OpenGarage Blog Post](https://rayshobby.net/introducing-opengarage/)
 

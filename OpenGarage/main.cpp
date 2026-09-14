@@ -1038,7 +1038,7 @@ void sta_options_fill_json(String& json) {
 	// append has_swrx variable
 	json += F("\"has_swrx\":");
 	json += og.has_swrx;
-	json += F(",\"secplus2_client_id\":\"");
+	json += F(",\"s2id\":\"");
 	if (secplus2_identity_ready) {
 		json += F("0x");
 		json += String(secplus2_client_id, HEX);
@@ -1982,7 +1982,7 @@ void do_loop() {
 			updateServer->on("/update", HTTP_POST, on_firmware_upload_fin, on_firmware_upload);
 			updateServer->on("/update", HTTP_OPTIONS, on_update_options);
 			otf->on("/clearlog", on_clear_log);
-			otf->on("/secplus2/regenerate-id", on_regenerate_secplus2_id, OTF::HTTP_POST);
+			otf->on("/s2id_gen", on_regenerate_secplus2_id, OTF::HTTP_POST);
 			otf->on("/resetall",on_reset_all);
 			updateServer->begin();
 			DEBUG_PRINTLN(F("Web Server endpoints (STA mode) registered"));

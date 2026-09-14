@@ -253,7 +253,7 @@ if (!key) {show_msg('Enter the Device Key below first.','red'); return;}
 if (!confirm('Generate a new Security+ 2.0 client ID and restart OpenGarage? WiFi and other saved settings will be preserved. Unsaved edits on this page will not be saved. Use this only for troubleshooting.')) return;
 var button = $(this);
 button.prop('disabled',true);
-fetch('secplus2/regenerate-id', {method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:key})
+fetch('s2id_gen', {method:'POST', headers:{'Content-Type':'text/plain;charset=UTF-8'}, body:key})
 .then(function(response){return response.json();})
 .then(function(data){
 show_msg(data.message || (data.result===2 ? 'Incorrect Device Key.' : 'Request rejected.'),data.result===1?'green':'red');
@@ -381,7 +381,7 @@ $('#secv').hide();
 $.getJSON('jo', function(jd){
 saved_secplus2=!!jd.has_swrx && jd.secv===2;
 security_capable=!!jd.has_swrx;
-$('#secplus2_client_id').text(jd.secplus2_client_id || 'Unavailable');
+$('#secplus2_client_id').text(jd.s2id || 'Unavailable');
 $('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 $('#alm').val(jd.alm).selectmenu('refresh');
 if(jd.aoo>0) cbt('aoo');
