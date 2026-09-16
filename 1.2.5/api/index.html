@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://OpenGarage.github.io/OpenGarage-Firmware/1.2.4/api/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://OpenGarage.github.io/OpenGarage-Firmware/1.2.5/api/" />
       <link rel="shortcut icon" href="../../img/favicon.ico" />
     <title>API Reference - OpenGarage Documentation</title>
     <link rel="stylesheet" href="../../css/theme.css" />
@@ -14,8 +14,8 @@
       <script>
         // Current page data
         var mkdocs_page_name = "API Reference";
-        var mkdocs_page_input_path = "1.2.4/api.md";
-        var mkdocs_page_url = "/OpenGarage-Firmware/1.2.4/api/";
+        var mkdocs_page_input_path = "1.2.5/api.md";
+        var mkdocs_page_url = "/OpenGarage-Firmware/1.2.5/api/";
       </script>
     
     <!--[if lt IE 9]>
@@ -49,19 +49,16 @@
                 </li>
               </ul>
               <p class="caption"><span class="caption-text">Firmware v1.2.5 <span class="nav-new-badge" aria-label="New">NEW</span></span></p>
-              <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.5/manual/">User Manual</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.5/api/">API Reference</a>
-                  </li>
-              </ul>
-              <p class="caption"><span class="caption-text">Firmware v1.2.4</span></p>
               <ul class="current">
                   <li class="toctree-l1"><a class="reference internal" href="../manual/">User Manual</a>
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">API Reference</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#1-overview">1. Overview</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#changes-from-124">Changes from 1.2.4</a>
+    </li>
+        </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#2-get-controller-variables-jc">2. Get Controller Variables /jc</a>
     </li>
@@ -87,7 +84,18 @@
     </li>
         </ul>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#11-debug-db">11. Debug /db</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#12-regenerate-sec-20-client-id">12. Regenerate Sec+ 2.0 Client ID</a>
+    </li>
     </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Firmware v1.2.4</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.4/manual/">User Manual</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.4/api/">API Reference</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">Archived</span></p>
@@ -109,10 +117,10 @@
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
-          <li class="breadcrumb-item">Firmware v1.2.4</li>
+          <li class="breadcrumb-item">Firmware v1.2.5 <span class="nav-new-badge" aria-label="New">NEW</span></li>
       <li class="breadcrumb-item active">API Reference</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/OpenGarage/OpenGarage-Firmware/edit/master/docs/1.2.4/api.md" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/OpenGarage/OpenGarage-Firmware/edit/master/docs/1.2.5/api.md" class="icon icon-github"> Edit on GitHub</a>
     </li>
   </ul>
   <hr/>
@@ -120,12 +128,10 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h2 id="firmware-124-api-reference-oct-6-2025">Firmware 1.2.4 API Reference [Oct 6, 2025]</h2>
+                <h2 id="firmware-125-api-reference">Firmware 1.2.5 API Reference</h2>
 <h3 id="1-overview">1. Overview</h3>
-<p><span class="hl">New changes since the last firmware version are highlighted in green like here.</span></p>
 <ul>
-<li><span class="hl">This firmware supports OpenGarage v2.3+ with built-in support for Security+ 2.0/1.0.</span></li>
-<li>Whenever device key is required, use <code>dkey=xxx</code>. At factory reset, the <strong>default device key</strong> is <code>opendoor</code>.</li>
+<li>Existing endpoints that require a device key use <code>dkey=xxx</code>; the new regeneration endpoint uses a request body instead. At factory reset, the <strong>default device key</strong> is <code>opendoor</code>.</li>
 <li>The device's IP address is referred to as <code>devip</code>. For most commands, parameters are optional and the order of parameters does not matter.</li>
 <li>Return values are all formatted in JSON, for example: <code>{"result":1}</code>. Below is the list of error codes:</li>
 </ul>
@@ -175,6 +181,14 @@
 </tr>
 </tbody>
 </table>
+<p><br></p>
+<h4 id="changes-from-124">Changes from 1.2.4</h4>
+<ul>
+<li><code>/jc</code>: adds status-validity fields and protocol-specific status/fault information. Clients should check validity before using retained light, lock or obstruction values.</li>
+<li><code>/jo</code>: adds the read-only <code>s2id</code> Security+ 2.0 client ID field.</li>
+<li><code>POST /s2id_gen</code>: new endpoint to regenerate the Security+ 2.0 client ID and restart, preserving other settings.</li>
+</ul>
+<p><span class="hl">New or modified APIs in firmware 1.2.5 are highlighted in green.</span></p>
 <hr />
 <h3 id="2-get-controller-variables-jc">2. Get Controller Variables <code>/jc</code></h3>
 <p><strong>Usage</strong>: <code>http://devip/jc</code></p>
@@ -196,7 +210,7 @@
 </tr>
 <tr>
 <td style="text-align: left;"><a id="jc_door"></a><code>door</code></td>
-<td style="text-align: left;"><span class="hl">Door status</span> (<code>0:closed; 1:open; 2:stopped (partially open); 3:closing; 4:opening; 5:unknown</code>)</td>
+<td style="text-align: left;">Door status (<code>0:closed; 1:open; 2:stopped (partially open); 3:closing; 4:opening; 5:unknown</code>)</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>vehicle</code></td>
@@ -244,37 +258,67 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>secv</code></td>
-<td style="text-align: left;"><span class="hl">Security+ version</span> (<code>2:v2.0; 1:v1.0; 0:None</code>)</td>
+<td style="text-align: left;">Security+ version (<code>2:v2.0; 1:v1.0; 0:None</code>)</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>has_swrx</code></td>
-<td style="text-align: left;"><span class="hl">Support for software RX (required for native support of Security+ 2.0/1.0)</span></td>
+<td style="text-align: left;">Support for software RX (required for native support of Security+ 2.0/1.0)</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>light</code></td>
-<td style="text-align: left;"><span class="hl">Light status</span> (<code>0:off; 1:on</code>)</span></td>
+<td style="text-align: left;">Light status (<code>0:off; 1:on</code>)</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>lock</code></td>
-<td style="text-align: left;"><span class="hl">Remote lock status</span></td>
+<td style="text-align: left;">Remote lock status</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>obstruct</code></td>
-<td style="text-align: left;"><span class="hl">Obstruction sensor status</span></td>
+<td style="text-align: left;">Obstruction sensor status</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>nopenings</code></td>
-<td style="text-align: left;"><span class="hl">Number of times the door has opened</span> (available only if <code>secv=2</code>)</td>
+<td style="text-align: left;">Number of times the door has opened (available only if <code>secv=2</code>)</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>pemu</code></td>
-<td style="text-align: left;"><span class="hl">Panel emulator status</span> (<code>0:inactive; 1:active; 2:detecting</code>, available only if <code>secv=1</code>)</td>
+<td style="text-align: left;">Panel emulator status (<code>0:inactive; 1:active; 2:detecting</code>, available only if <code>secv=1</code>)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><span class="hl"><code>door_valid</code></span></td>
+<td style="text-align: left;"><span class="hl">Door status validity: 0 unknown/stale, 1 valid (Security+ 1.0/2.0).</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><span class="hl"><code>light_lock_valid</code></span></td>
+<td style="text-align: left;"><span class="hl">Validity of light and remote-lock status: 0 unknown/stale, 1 valid (Security+ 1.0/2.0).</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><span class="hl"><code>obstruct_valid</code></span></td>
+<td style="text-align: left;"><span class="hl">Obstruction status validity: 0 unknown/stale, 1 valid (Security+ 1.0/2.0).</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><span class="hl"><code>panel_status</code></span></td>
+<td style="text-align: left;"><span class="hl">Panel detection/emulation description (Security+ 1.0 only).</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><span class="hl"><code>command_status</code></span></td>
+<td style="text-align: left;"><span class="hl">Command progress/outcome description (Security+ 1.0 only).</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><span class="hl"><code>recovery_status</code></span></td>
+<td style="text-align: left;"><span class="hl">Communication recovery description (Security+ 2.0 only); not a transmission acknowledgement.</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><span class="hl"><code>control_fault</code></span></td>
+<td style="text-align: left;"><span class="hl">0 no latched fault; 1 uncertain actuation failure has inhibited controls (Security+ 2.0 only).</span></td>
 </tr>
 </tbody>
 </table>
+<p><br><span class="hl">These new fields are present only on Security+-capable hardware with the corresponding protocol selected. Expired door status uses <code>door=5</code>; light, lock and obstruction retain their last-known Boolean values for compatibility. Check the validity fields before treating them as current. Diagnostic text is not a stable enumeration.</span></p>
 <hr />
 <h3 id="3-change-controller-variables-cc">3. Change Controller Variables <code>/cc</code></h3>
-<p><strong>Usage</strong>: <code>http://devip/cc?<strong>dkey</strong>=xxx&amp;<strong>click</strong>=1&amp;<strong>close</strong>=1&amp;<strong>open</strong>=1&amp;<strong>light</strong>=toggle&amp;<strong>lock</strong>=toggle&amp;&amp;<strong>reboot</strong>=1&amp;<strong>apmode</strong>=1</code></p>
+<p><strong>Usage</strong>: <code>http://devip/cc?dkey=xxx&amp;click=1</code></p>
+<p>Send one action per request; supported parameters are listed below.</p>
 <table>
 <thead>
 <tr>
@@ -309,18 +353,19 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>light</code></td>
-<td style="text-align: left;"><span class="hl">Toggle light. Supported only for Security+ 2.0/1.0</span>. The only accepted value currently is <code>toggle</code>.</td>
+<td style="text-align: left;">Toggle light. Supported only for Security+ 2.0/1.0. The only accepted value currently is <code>toggle</code>.</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>lock</code></td>
-<td style="text-align: left;"><span class="hl">Toggle remote lock. Supported only for Security+ 2.0/1.0</span> The only accepted value currently is <code>toggle</code>.</td>
+<td style="text-align: left;">Toggle remote lock. Supported only for Security+ 2.0/1.0. The only accepted value currently is <code>toggle</code>.</td>
 </tr>
 </tbody>
 </table>
+<p>In dry-contact and Security+ 1.0 modes, <code>open</code> and <code>close</code> issue a toggle when the requested direction is valid for the reported door state. Only Security+ 2.0 sends directional Open and Close commands.</p>
 <p><br><strong>Examples:</strong></p>
 <ul>
 <li><code>http://devip/cc?dkey=xxx&amp;click=1</code>: toggle door</li>
-<li><code>http://devip/cc?dkey=xxx&amp;close=1</code>: close door (ignored if the door is already closed)</li>
+<li><code>http://devip/cc?dkey=xxx&amp;close=1</code>: request door close</li>
 <li><code>http://devip/cc?dkey=xxx&amp;reboot=1</code>: reboot device</li>
 <li><code>http://devip/cc?dkey=xxx&amp;light=toggle</code>: toggle light</li>
 </ul>
@@ -341,6 +386,18 @@
 <td style="text-align: left;">Firmware version (read-only)</td>
 </tr>
 <tr>
+<td style="text-align: left;"><code>secv</code></td>
+<td style="text-align: left;">Security+ version (<code>0:None; 1:1.0; 2:2.0</code>); native Security+ requires v2.3+ hardware</td>
+</tr>
+<tr>
+<td style="text-align: left;"><span class="hl"><code>pem</code></span></td>
+<td style="text-align: left;"><span class="hl">Security+ 1.0 panel emulation (<code>0:Auto</code>, default; <code>1:Disable</code>). Only configurable on v2.3+ hardware with Security+ 1.0 selected.</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"><span class="hl"><code>s2id</code></span></td>
+<td style="text-align: left;"><span class="hl">Stored Security+ 2.0 client ID (hexadecimal; may appear even when another protocol is selected), or <code>Unavailable</code> if identity initialization fails.</span></td>
+</tr>
+<tr>
 <td style="text-align: left;"><code>sn1</code></td>
 <td style="text-align: left;">Distance sensor (<code>sn1</code>) mounting type (<code><u>0:ceiling mount</u>; 1:side mount</code>)</td>
 </tr>
@@ -350,11 +407,11 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>sno</code></td>
-<td style="text-align: left;">Sensor logic: door 'open' status is determined by: <code><u>0:use sn1 only</u>; 1:sn2 only; 2:sn1 AND sn2; 3:sn1 OR sn2</code>. <span class="hl">This option has no effect for Security+ 2.0/1.0</span></td>
+<td style="text-align: left;">Sensor logic: door 'open' status is determined by: <code><u>0:use sn1 only</u>; 1:sn2 only; 2:sn1 AND sn2; 3:sn1 OR sn2</code>. This option has no effect for Security+ 2.0/1.0</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>dth</code></td>
-<td style="text-align: left;">Door distance threshold (unit: <code>cm</code>, used to detect if the door is open). <span class="hl">This option has no effect for Security+ 2.0/1.0</span></td>
+<td style="text-align: left;">Door distance threshold (unit: <code>cm</code>, used to detect if the door is open). This option has no effect for Security+ 2.0/1.0</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>vth</code></td>
@@ -386,7 +443,7 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>cdt</code></td>
-<td style="text-align: left;">Button click time (unit: <code>ms</code>, default is <code>1000</code>)</td>
+<td style="text-align: left;">Dry-contact relay pulse duration (unit: <code>ms</code>, default is <code>1000</code>)</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>dri</code></td>
@@ -394,7 +451,7 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>sfi</code></td>
-<td style="text-align: left;">Sensor filtering method (<code>0:median; <u>1:consensus</u></code>)</td>
+<td style="text-align: left;">Sensor filtering method (<code>0:median; <u>1:consensus</u></code>). <span class="hl">Consensus now averages the tightest five of seven readings if their spread meets <code>cmr</code>; otherwise the last accepted distance is retained.</span></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>cmr</code></td>
@@ -522,8 +579,9 @@
 <h3 id="5-change-options-co">5. Change Options <code>/co</code></h3>
 <p><strong>Usage</strong>: <code>http://devip/co?<strong>dkey</strong>=xxx&amp;<strong>nkey</strong>=xxx&amp;<strong>ckey</strong>=xxx&amp;<strong>opn</strong>=opv...</code></p>
 <ul>
-<li><code>opn</code> can be any variable name listed in the table above, and <code>opv</code> is the value you want to change it to.</li>
-<li><code>fwv</code> is read-only and thus not changeable.</li>
+<li><code>opn</code> is a writable option name from the table above, and <code>opv</code> is its new value. The read-only <code>s2id</code> field cannot be changed through <code>/co</code>; use <a href="#12-regenerate-sec-20-client-id">POST <code>/s2id_gen</code></a> to regenerate it.</li>
+<li><code>pem</code> is writable only on v2.3+ hardware with Security+ 1.0 selected (<code>0:Auto</code>, <code>1:Disable</code>).</li>
+<li><code>fwv</code> and <code>ssid</code> cannot be changed through <code>/co</code>; use WiFi setup to change the network.</li>
 <li>The device key <code>dkey</code> may be changed only by providing both <code>nkey</code> (new key) and <code>ckey</code> (confirm key) and they must match exactly.</li>
 </ul>
 <p><br><strong>Examples:</strong></p>
@@ -531,7 +589,7 @@
 <li><code>devip/co?dkey=xxx&amp;nkey=abc&amp;ckey=abc</code>: set device key to <code>abc</code></li>
 <li><code>devip/co?dkey=xxx&amp;dth=75</code>: set door's distance threshold to <code>75cm</code></li>
 <li><code>devip/co?dkey=xxx&amp;auth=0123456789abcdef</code>: set the cloud authentication token</li>
-<li><code>devip/co?dkey=xxx&amp;htp=8080&amp;riv=2</code>: set HTTP port to <code>8080</code>, and set sensor read interval to <code>2</code> seconds</li>
+<li><code>devip/co?dkey=xxx&amp;htp=8080&amp;riv=2</code>: set HTTP port to <code>8080</code>, and set the status-check interval option to <code>2</code> seconds (the raw ultrasonic sampling interval is <code>dri</code>, in milliseconds)</li>
 <li><code>devip/co?dkey=xxx&amp;ati=5&amp;ato=3</code>: set automation rule A time to <code>5</code> minutes and its option to <code>0b11</code> (i.e. auto-notify and auto-close if the door is left open for <code>&gt;5 minutes</code>).</li>
 </ul>
 <hr />
@@ -575,12 +633,14 @@
 <h3 id="8-factory-reset-resetall">8. Factory Reset <code>/resetall</code></h3>
 <p><strong>Usage</strong>: <code>http://devip/resetall?<strong>dkey</strong>=xxx</code></p>
 <p>Resets the controller back to factory default settings. WiFi will be restored to AP (Access Point) mode.</p>
+<p><span class="hl">Factory reset also generates a new Security+ 2.0 client ID on the next setup. Reboot, OTA update and WiFi-only reset preserve the identity.</span></p>
 <hr />
 <h3 id="9-mqtt">9. MQTT</h3>
 <p>To use MQTT features:</p>
 <ul>
 <li>Enable MQTT (set <code>mqen=1</code>) and provide server parameters (server url <code>mqtt</code>, port <code>mqpt</code>, user name <code>mqur</code> and password <code>mqpw</code> if using authentication).</li>
 <li>You may define a custom MQTT topic (<code>mqtp</code>). If left empty, the device name will be used as the topic. In the example below, the topic is referred to as <code>OGTOPIC</code>.</li>
+<li>Topics use the configured prefix exactly: <code>OGTOPIC/OUT/JSON</code> has no leading slash unless the prefix itself starts with one.</li>
 <li>To disable MQTT, set <code>mqen=0</code>, which preserves the other values, allowing you to easily switch between enabling and disabling MQTT without the loss of other parameters.</li>
 </ul>
 <table>
@@ -592,37 +652,38 @@
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;"><code>/OGTOPIC/OUT/NOTIFY</code></td>
+<td style="text-align: left;"><code>OGTOPIC/OUT/NOTIFY</code></td>
 <td style="text-align: left;">Published upon changes in door status, including just <code>OPENED</code>, just <code>CLOSED</code>, or just <code>STOPPED</code>.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>/OGTOPIC/OUT/STATUS</code></td>
+<td style="text-align: left;"><code>OGTOPIC/OUT/STATUS</code></td>
 <td style="text-align: left;">Report device online/offline status.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>/OGTOPIC/OUT/STATE</code></td>
+<td style="text-align: left;"><code>OGTOPIC/OUT/STATE</code></td>
 <td style="text-align: left;">Published every 15 seconds to report the current state, including <code>OPEN</code>, <code>CLOSED</code>, <code>STOPPED</code>.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>/OGTOPIC/OUT/JSON</code></td>
-<td style="text-align: left;">Published every 15 seconds and reports the same controller variables as the <a href="#2-get-controller-variables-jc"><code>/jc</code> endpoint</a></td>
+<td style="text-align: left;"><code>OGTOPIC/OUT/JSON</code></td>
+<td style="text-align: left;">Published on door-state events and periodically (approximately every 15 seconds), with the same controller variables as <a href="#2-get-controller-variables-jc"><code>/jc</code></a>. <span class="hl">Includes the new Security+ validity and diagnostic fields; use this JSON rather than the limited text state to identify Unknown.</span></td>
 </tr>
 </tbody>
 </table>
 <p><strong>Subscribed Message</strong>:</p>
-<p>The controller subscribes to topic <code>/OGTOPIC/IN/STATE</code> and accepts the following payload messages:</p>
+<p>The controller subscribes to topic <code>OGTOPIC/IN/STATE</code> and accepts the following payload messages:</p>
 <ul>
 <li><code>click</code>: Toggle door</li>
 <li><code>close</code>: Trigger door close action</li>
 <li><code>open</code> : Trigger door open action</li>
-<li><code>togglelight</code>: <span class="hl">Toggle light. Supported only for Security+ 2.0/1.0</span></li>
-<li><code>togglelock</code>: <span class="hl">Toggle remote lock. Supported only for Security+ 2.0/1.0</span></li>
+<li><code>togglelight</code>: Toggle light. Supported only for Security+ 2.0/1.0</li>
+<li><code>togglelock</code>: Toggle remote lock. Supported only for Security+ 2.0/1.0</li>
 </ul>
+<p>The <code>open</code> and <code>close</code> payloads have the same mode-dependent behavior as the <a href="#3-change-controller-variables-cc">HTTP <code>/cc</code> actions</a>.</p>
 <hr />
 <h3 id="10-cloud-connection">10. Cloud Connection</h3>
 <p>The cloud connection type is defined by the <a href="#jo_cld"><code>cld</code> option</a>. Two types are supported: Blynk and OTC.</p>
 <h4 id="blynk">Blynk</h4>
-<p>As the Blynk team officially ended support for their legacy app and server, we provide a replicated Blynk server at <a href="https://openthings.io"><code>openthings.io</code></a>. This allows existing users of the legacy app can continue using it for connection.</p>
+<p>As the Blynk team officially ended support for their legacy app and server, we provide a replicated Blynk server at <a href="https://openthings.io"><code>openthings.io</code></a>. This allows existing users of the legacy app to continue connecting.</p>
 <ul>
 <li>Default server domain name (<code>bdmn</code>): <code>blynk.openthings.io</code></li>
 <li>Default server port (<code>bprt</code>): <code>8080</code>. Change these accordingly if using your own Blynk server.</li>
@@ -636,15 +697,19 @@
 <ul>
 <li><code>https://blynk.openthings.io:9443/token/project</code> returns the entire project in JSON, where <code>token</code> is the 32-character authorization token.</li>
 <li><code>https://blynk.openthings.io:9443/token/get/V?</code> returns the value of pin <code>V?</code>, where:<ul>
-<li><code>V0</code>: door status (see <a href="#jc_door"><code>door</code> variable</a> for supported values)</li>
+<li><code>V0</code>: binary door indicator</li>
+<li><code>V2</code>: complete door status (see <a href="#jc_door"><code>door</code> variable</a>)</li>
 <li><code>V3</code>: distance sensor value</li>
 <li><code>V4</code>: vehicle status</li>
 <li><code>V6</code>: temperature sensor value</li>
 <li><code>V7</code>: humidity sensor value</li>
+<li><code>V8</code>: opener light state/control</li>
+<li><code>V9</code>: remote lock state/control</li>
 </ul>
 </li>
 <li><code>https://blynk.openthings.io:9443/token/update/V1?value=1</code> updates pin <code>V1</code> with value <code>1</code>, triggering a door click.</li>
 </ul>
+<p><span class="hl">Blynk light/lock state-setting requests are ignored while the corresponding opener status is invalid. Existing Blynk indicators may still show last-known values; use <code>/jc</code> for validity information.</span></p>
 <h4 id="otc-openthings-token">OTC (OpenThings Token)</h4>
 <p>OTC is based on our own <a href="https://github.com/openthingsio">OpenThingsFramework (OTF) proxy</a>.</p>
 <ul>
@@ -656,15 +721,95 @@
 <li><code>https://cloud.openthings.io/forward/v1/token/</code> returns the controller homepage, where <code>token</code> is the 32-character OTC token.</li>
 <li><code>https://cloud.openthings.io/forward/v1/token/jc</code> returns <a href="#2-get-controller-variables-jc">controller variables</a>.</li>
 <li><code>https://cloud.openthings.io/forward/v1/token/jl</code> returns <a href="#6-get-logs-jl">log data</a>.</li>
-<li><u><strong>NOTE</strong></u>: When using OTC, the device key (<code>dkey</code>) is ignored. The OTC token itself serves as the globally unique secret key.</li>
+<li><u><strong>NOTE</strong></u>: Existing endpoints use the OTC token in place of the device key (<code>dkey</code>). <span class="hl">The new <code>POST /s2id_gen</code> endpoint is an exception: it requires the current device key in the request body even over OTC.</span></li>
 </ul>
 <hr />
+<h3 class="hl" id="11-debug-db">11. Debug <code>/db</code></h3>
+<p><strong>Usage:</strong> <code>http://devip/db</code></p>
+<p>Returns the compact debug information.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Field</th>
+<th style="text-align: left;">Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>fwv</code></td>
+<td style="text-align: left;">Firmware version, e.g. 125 for 1.2.5</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>has_swrx</code></td>
+<td style="text-align: left;">Native Security+ hardware capability (0 or 1)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>dist</code></td>
+<td style="text-align: left;">Distance reading in centimeters</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>rcnt</code></td>
+<td style="text-align: left;">Sensor/status read count</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>name</code></td>
+<td style="text-align: left;">Device name</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>mac</code></td>
+<td style="text-align: left;">Device MAC address</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>mqtt_topic</code></td>
+<td style="text-align: left;">Runtime MQTT topic prefix</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>devip</code></td>
+<td style="text-align: left;">Device IP address</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>cid</code></td>
+<td style="text-align: left;">ESP8266 chip ID (not the Security+ client ID)</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>rssi</code></td>
+<td style="text-align: left;">WiFi signal strength in dBm</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>bssid</code></td>
+<td style="text-align: left;">Connected access point's MAC address</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>build</code></td>
+<td style="text-align: left;">Firmware compilation date</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Freeheap</code></td>
+<td style="text-align: left;">Legacy free heap in bytes, cast to 16 bits; retained for compatibility</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>flash_size</code></td>
+<td style="text-align: left;">Physical flash size in bytes</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 class="hl" id="12-regenerate-sec-20-client-id">12. Regenerate Sec+ 2.0 Client ID</h3>
+<p><strong>Method:</strong> <code>POST /s2id_gen</code></p>
+<p>Send the current device key as the <strong>raw UTF-8 request body</strong>, not a URL parameter or JSON object. This endpoint requires the device key even over OTC.</p>
+<p>The device must have Security+ 2.0 saved, be connected, and have no pending warning, command or release cleanup. This is a maintenance operation: it saves a new identity and restarts OG, preserving WiFi and other settings.</p>
+<ul>
+<li>Success: <code>{"result":1,"client_id":"0x…","message":"…"}</code>.</li>
+<li>Incorrect device key: <code>{"result":2}</code>.</li>
+<li>Wrong mode, busy device or storage failure: <code>{"result":0,"message":"…"}</code>.</li>
+</ul>
+<p>After storage, OG automatically restarts and uses the new client ID.</p>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
         <a href="../manual/" class="btn btn-neutral float-left" title="User Manual"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../../archive/" class="btn btn-neutral float-right" title="Previous Manuals and API docs">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../../1.2.4/manual/" class="btn btn-neutral float-right" title="User Manual">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -694,7 +839,7 @@
       <span><a href="../manual/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../../archive/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../../1.2.4/manual/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>

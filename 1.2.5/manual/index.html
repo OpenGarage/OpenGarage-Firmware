@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://OpenGarage.github.io/OpenGarage-Firmware/1.2.4/manual/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://OpenGarage.github.io/OpenGarage-Firmware/1.2.5/manual/" />
       <link rel="shortcut icon" href="../../img/favicon.ico" />
     <title>User Manual - OpenGarage Documentation</title>
     <link rel="stylesheet" href="../../css/theme.css" />
@@ -14,8 +14,8 @@
       <script>
         // Current page data
         var mkdocs_page_name = "User Manual";
-        var mkdocs_page_input_path = "1.2.4/manual.md";
-        var mkdocs_page_url = "/OpenGarage-Firmware/1.2.4/manual/";
+        var mkdocs_page_input_path = "1.2.5/manual.md";
+        var mkdocs_page_url = "/OpenGarage-Firmware/1.2.5/manual/";
       </script>
     
     <!--[if lt IE 9]>
@@ -49,17 +49,12 @@
                 </li>
               </ul>
               <p class="caption"><span class="caption-text">Firmware v1.2.5 <span class="nav-new-badge" aria-label="New">NEW</span></span></p>
-              <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.5/manual/">User Manual</a>
-                  </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.5/api/">API Reference</a>
-                  </li>
-              </ul>
-              <p class="caption"><span class="caption-text">Firmware v1.2.4</span></p>
               <ul class="current">
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">User Manual</a>
     <ul class="current">
-    <li class="toctree-l2"><a class="reference internal" href="#whats-new-in-firmware-124">What's New in Firmware 1.2.4?</a>
+    <li class="toctree-l2"><a class="reference internal" href="#whats-new-in-firmware-125">What's New in Firmware 1.2.5?</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#using-home-assistant">Using Home Assistant</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#hardware-setup">Hardware Setup</a>
         <ul>
@@ -91,6 +86,8 @@
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#homepage">Homepage</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#security-communication">Security+ Communication</a>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#edit-options">Edit Options</a>
         <ul>
     <li class="toctree-l4"><a class="reference internal" href="#1-basic-tab">1. Basic Tab</a>
@@ -112,6 +109,13 @@
                   <li class="toctree-l1"><a class="reference internal" href="../api/">API Reference</a>
                   </li>
               </ul>
+              <p class="caption"><span class="caption-text">Firmware v1.2.4</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.4/manual/">User Manual</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.4/api/">API Reference</a>
+                  </li>
+              </ul>
               <p class="caption"><span class="caption-text">Archived</span></p>
               <ul>
                   <li class="toctree-l1"><a class="reference internal" href="../../archive/">Previous Manuals and API docs</a>
@@ -131,10 +135,10 @@
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
-          <li class="breadcrumb-item">Firmware v1.2.4</li>
+          <li class="breadcrumb-item">Firmware v1.2.5 <span class="nav-new-badge" aria-label="New">NEW</span></li>
       <li class="breadcrumb-item active">User Manual</li>
     <li class="wy-breadcrumbs-aside">
-          <a href="https://github.com/OpenGarage/OpenGarage-Firmware/edit/master/docs/1.2.4/manual.md" class="icon icon-github"> Edit on GitHub</a>
+          <a href="https://github.com/OpenGarage/OpenGarage-Firmware/edit/master/docs/1.2.5/manual.md" class="icon icon-github"> Edit on GitHub</a>
     </li>
   </ul>
   <hr/>
@@ -142,23 +146,19 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
             <div class="section" itemprop="articleBody">
               
-                <h2 id="firmware-124-user-manual-oct-6-2025">Firmware 1.2.4 User Manual [Oct 6, 2025]</h2>
-<p>OpenGarage is a fully open-source product. Hardware and software details are all published at the <a href="https://github.com/opengarage">OpenGarage Github repository</a>. For additional details, video tutorials, technical support, and user forum, visit <a href="https://opengarage.io">https://opengarage.io</a>.</p>
-<h3 id="whats-new-in-firmware-124">What's New in Firmware 1.2.4?</h3>
-<p>This firmware introduces support for <strong>OpenGarage v2.3+</strong>, a new hardware version that can natively communicate with <strong>Security+ 2.0 and 1.0</strong> openers. This direct communication enables a range of new features, including richer door status reporting and control over the opener's light and remote lock. Here is a detailed list:</p>
+                <h2 id="firmware-125-user-manual">Firmware 1.2.5 User Manual</h2>
+<p>OpenGarage is a fully open-source product. Hardware and software details are all published at the <a href="https://github.com/opengarage">OpenGarage GitHub repository</a>. For additional details, video tutorials, technical support, and user forum, visit <a href="https://opengarage.io">https://opengarage.io</a>.</p>
+<h3 id="whats-new-in-firmware-125">What's New in Firmware 1.2.5?</h3>
 <ul>
-<li>Auto-detection of Security+ 2.0/1.0.</li>
-<li>Reporting a complete list of door states: closed, open, stopped (partially open), closing, opening.</li>
-<li>Control opener's light and remote lock (enable/disable garage remotes).</li>
-<li>Obstruction sensor reporting.</li>
-<li>Wall-panel emulation for Security+ 1.0.</li>
-<li>Redesigned AP-mode WiFi setup page with a sleek new appearance.</li>
-<li>Built-in web UI now serves minified and compressed assets for quicker loads and reduced flash usage.</li>
-<li>Firmware update progress indicator.</li>
-<li>MQTT integration and Blynk UI updated to include the extended door states, light, and remote lock controls.</li>
-<li>Backward compatibility with older OpenGarage hardware that does not have native support for Security+.</li>
+<li>More robust distance consensus filtering: uses the tightest five readings to tolerate outliers.</li>
+<li>Improved Security+ 1.0 operation when an existing smart wall panel is present.</li>
+<li>Improved Security+ 2.0 client ID, with an option to regenerate it without a factory reset.</li>
+<li>Automatic Security+ 2.0 recovery after an opener power outage.</li>
+<li>Smoother audible warnings and distinct startup tunes for AP mode and station mode.</li>
 </ul>
 <p><strong>NOTE</strong>: This firmware reserves <code>G05</code> for Security+ protocol, so it's no longer available for sensors. <code>G04</code> is a shared pin that can be assigned as either a switch sensor or a temperature/humidity sensor, but <strong>not both simultaneously</strong>.</p>
+<h3 id="using-home-assistant">Using Home Assistant</h3>
+<p>Home Assistant supports the stock firmware through its built-in OpenGarage integration. For additional Security+ controls in Home Assistant, see the alternative <a href="https://github.com/OpenGarage/OpenGarage-ESPHome">ESPHome-based OpenGarage firmware</a>. Both options are described in <a href="#step-6-browser-mobile-app-and-home-assistant-integration">Step 6</a>.</p>
 <hr class="double">
 
 <h3 id="hardware-setup">Hardware Setup</h3>
@@ -167,9 +167,9 @@
 <p>If installing outdoors, place it inside a <strong>waterproof enclosure</strong>.</p>
 </div>
 <p>OpenGarage has a built-in ultrasonic distance sensor for detecting door status and car presence, a pushbutton, and a microUSB connector for power.</p>
-<p><img alt="OG Hardware" class="center" src="../images/og_hardware.jpg" /></p>
+<p><img alt="OG Hardware" class="center" src="../../1.2.4/images/og_hardware.jpg" /></p>
 <h4 id="step-1-locate-door-button-terminals">Step 1: Locate Door-Button Terminals</h4>
-<p><img alt="Opener Terminals" class="center" src="../images/opener_terminals.jpg" /></p>
+<p><img alt="Opener Terminals" class="center" src="../../1.2.4/images/opener_terminals.jpg" /></p>
 <p>On <strong>your garage opener's motor unit</strong>, locate the terminals that connect to the <strong>wall button</strong> (also called console or door control). OpenGarage communicates with the opener through these terminals. Most openers have <strong>four</strong> terminals:</p>
 <ul>
 <li>Two for the <strong>wall-button</strong> — typically colored <span class="hl_red">Red</span> (Signal) and <span class="hl_white">White</span> (Ground). These are the ones OpenGarage connects to.</li>
@@ -177,7 +177,7 @@
 </ul>
 <p>If you are unsure, or your terminals don't have these colors: simply identify which terminals are connected to your existing wall button, or refer to your opener’s user manual.</p>
 <h4 id="step-2-wiring">Step 2: Wiring</h4>
-<p><img alt="OG Terminals" class="center_wider" src="../images/og_terminals.jpg" /></p>
+<p><img alt="OG Terminals" class="center_wider" src="../../1.2.4/images/og_terminals.jpg" /></p>
 <p>OpenGarage v2.x has four integrated screw terminals. Flip the device over to identify the terminals on the back:</p>
 <ul>
 <li>The <strong>bottom</strong> two connect to your opener's <strong>wall-button</strong> terminals. These are <strong>required</strong>.</li>
@@ -198,7 +198,7 @@
 </li>
 </ul>
 <p>To connect the wires:</p>
-<p><img alt="Screw Wiring" class="center_wider" src="../images/screw_wiring.jpg" /></p>
+<p><img alt="Screw Wiring" class="center_wider" src="../../1.2.4/images/screw_wiring.jpg" /></p>
 <ul>
 <li>Loosen the screws on the bottom two terminals.</li>
 <li>Strip the wire ends to an appropriate length. Then insert the stripped copper wire through the enclosure hole.</li>
@@ -216,14 +216,14 @@
 </ul>
 </li>
 </ul>
-<p><img alt="Mounting NoSecurity+" class="center_wider" src="../images/og_mounting_nosecurity%2B.jpg" /></p>
+<p><img alt="Mounting NoSecurity+" class="center_wider" src="../../1.2.4/images/og_mounting_nosecurity%2B.jpg" /></p>
 <ul>
 <li><strong>For OpenGarage v2.3+</strong> with <strong>Security+ set to <code>2.0</code> or <code>1.0</code></strong>: The device obtains the door status directly via the Security+ protocol. The distance sensor is used solely for detecting car presence. Therefore, position the device such that it has an <strong>unobstructed view of your car</strong> at all times, regardless of the door's position.<ul>
 <li><u><strong>NOTE</strong></u>: Car status remains available whether the door is open or closed.</li>
 </ul>
 </li>
 </ul>
-<p><img alt="Mounting Security+" class="center_wider" src="../images/og_mounting_security%2B.jpg" /></p>
+<p><img alt="Mounting Security+" class="center_wider" src="../../1.2.4/images/og_mounting_security%2B.jpg" /></p>
 <div class="admonition warning">
 <p class="admonition-title"><strong>Areas to Avoid</strong></p>
 <p>Do <strong>NOT</strong> mount the device directly above or too close to the metal garage door rail or chain. These objects can interfere with distance sensor readings.</p>
@@ -239,20 +239,20 @@
 <p>Plug a microUSB cable into the device and connect it to a USB power adapter.</p>
 </li>
 <li>
-<p>The first time it powers on (or after a WiFi/factory reset), the device creates an open WiFi Access Point (AP) named: <code>OG_</code> followed by the last 6 digits of its MAC address. For example: <code>OG_67FG8A</code>. Use your phone, tablet, or computer to find this network and connect to it.</p>
+<p>The first time it powers on (or after a WiFi/factory reset), the device creates an open WiFi Access Point (AP) named <code>OG_</code> followed by the last six hexadecimal characters of its MAC address. For example: <code>OG_67FA8A</code>. Use your phone, tablet, or computer to find this network and connect to it.</p>
 </li>
 </ul>
 <h4 id="step-2-wifi-configuration">Step 2: WiFi Configuration</h4>
-<p><img alt="AP homepage" class="center" src="../screenshots/1_ap.jpg" /></p>
+<p><img alt="AP homepage" class="center" src="../../1.2.4/screenshots/1_ap.jpg" /></p>
 <ul>
 <li>After connecting to the <code>OG_</code> network, most smart devices will automatically prompt you to "Sign In".<ul>
 <li>If you don't see this prompt or "Sign In" page, manually open a web browser and go to <code>192.168.4.1</code>.</li>
 </ul>
 </li>
-<li>Follow the on-screen instructions (see the attached screenshot below):<ul>
+<li>Follow the on-screen instructions (see the screenshot above):<ul>
 <li><strong>Either select or enter</strong> your WiFi router's name (SSID) and type its password.</li>
 <li><strong>Host Name</strong> <em>(Optional)</em> : Enter a custom hostname (e.g. <code>myog</code>). This makes it easy to access the device later using a domain name like <code>http://myog.local</code>.</li>
-<li><strong>Security+ Detection</strong> <em>(Optional, OpenGarage v2.3+ only)</em> : If you have wired your v2.3+ it to your garage opener, click <strong>Detect</strong> to automatically detect the Security+ protocol version. This feature is hidden on OpenGarage v2.2 and earlier as they do not support Security+.</li>
+<li><strong>Security+ Detection</strong> <em>(Optional, OpenGarage v2.3+ only)</em> : If you have wired your v2.3+ to your garage opener, click <strong>Detect</strong> to automatically detect the Security+ protocol version. This feature is hidden on OpenGarage v2.2 and earlier as they do not support Security+.</li>
 <li><strong>Cloud Token</strong> <em>(Optional)</em> : If you already have a Blynk or OTC token (see the <a href="#step-5-cloud-connection">Cloud Connection</a> section), enter it here. Otherwise, select <code>No</code> and you can configure it later.</li>
 </ul>
 </li>
@@ -275,13 +275,13 @@
 <p><strong>Finding the Device IP</strong>: If you don't know your OpenGarage's device IP, there are several ways to find it:</p>
 <ul>
 <li>Check your router's <strong>Client List</strong>: Log in to your WiFi router's administration page and look for a list of connected devices. The OpenGarage should appear there with its assigned IP address.</li>
-<li><strong>mDNS</strong>: If you entered a custom <strong>Host Name</strong> during WiFi configuration (e.g. <code>myog</code>), you can access it using the mDNS name <code>http://myog.local/</code> (i.e. the host name followed by <code>.local/</code>). If you left the host name empty, it uses the default host name, which is <code>OG_</code> followed by the last 6 digits of its MAC address (same as AP-mode SSID). In the example above, it will be <code>http://OG_67FG8A.local/</code>.</li>
+<li><strong>mDNS</strong>: If you entered a custom <strong>Host Name</strong> during WiFi configuration (e.g. <code>myog</code>), you can access it using the mDNS name <code>http://myog.local/</code> (i.e. the host name followed by <code>.local/</code>). If you left the host name empty, it uses the default host name, which is <code>OG_</code> followed by the last six hexadecimal characters of its MAC address (same as AP-mode SSID). In the example above, it will be <code>http://OG_67FA8A.local/</code>.</li>
 <li><strong>Audible IP</strong>: Press and hold the onboard pushbutton for <strong>2 to 4 seconds</strong>, then release. The device will beep out its IP address using tones (see <a href="#step-4-button-actions">Button Actions</a> below).</li>
 </ul>
 <h4 id="step-4-button-actions">Step 4: Button Actions</h4>
 <p>The pushbutton on OpenGarage has several useful functions depending on how long you press it:</p>
 <ul>
-<li><strong>Trigger Relay</strong>: A short click (less than 2 sec) → triggers the onboard relay and consequently garage door action. This is similar to a typical garage door wall button.</li>
+<li><strong>Trigger Door Action</strong>: Tap and release within about 0.8 seconds to toggle the door, similar to a wall button. Dry-contact mode pulses the relay; Security+ mode sends a protocol command.</li>
 <li><strong>Report IP</strong>: Hold 2-4 sec and release → the device IP is reported as sequences of rising notes, pauses, and high-pitch tones for dots. For example: <code>192.168.1.10</code> is beeped out as a <code>C4</code> (the leading <code>1</code>), followed by a pause; then sequence <code>C4, C#4, D4...</code> continuously until <code>G#5</code>, indicating digit <code>9</code>, followed by a pause; then <code>C4, C#4</code> and pause, indicating <code>2</code>; then a high-pitch tone, indicating a dot; and so on. Count the number of notes in each sequence to determine the digit.</li>
 <li><strong>Reset to AP Mode</strong>: Hold 5-9 sec until the LED toggles state (from off to on), then release → resets the device to WiFi AP Mode. This allows you to reconfigure WiFi without losing settings and log data.</li>
 <li><strong>Factory Reset</strong>: Hold 10+ sec until the LED turns on and then off → resets the device back to factory default. This erases all settings and data, restoring the device to its original state.</li>
@@ -315,7 +315,8 @@
 </ul>
 </li>
 <li><strong>Home Assistant Integration</strong><ul>
-<li>OpenGarage has an official <a href="https://www.home-assistant.io/integrations/opengarage/">Home Assistant integration</a> that adds the device as a cover entity. It allows door control, status monitoring, and automation within Home Assistant.</li>
+<li>Home Assistant includes a built-in <a href="https://www.home-assistant.io/integrations/opengarage/">OpenGarage integration</a> for the stock firmware. It provides door control, vehicle presence and distance readings, and optional temperature/humidity readings.</li>
+<li>For more native Home Assistant integration with additional features such as Security+ opener light and remote lock, use the alternative <a href="https://github.com/OpenGarage/OpenGarage-ESPHome">ESPHome-based OpenGarage firmware</a>. Installing it replaces the stock firmware.</li>
 </ul>
 </li>
 <li><strong>API and MQTT</strong><ul>
@@ -327,7 +328,7 @@
 
 <h3 id="built-in-web-interface">Built-in Web Interface</h3>
 <h4 id="homepage">Homepage</h4>
-<p><img alt="Homepage" class="center" src="../screenshots/2_home.jpg" /></p>
+<p><img alt="Homepage" class="center" src="../screenshots/2_home.png" /></p>
 <p>The homepage displays a real-time overview of your device's status including:</p>
 <ul>
 <li><strong>Door</strong> status</li>
@@ -342,18 +343,27 @@
 </ul>
 <p>You can also perform several key operations including:</p>
 <ul>
-<li><strong>Open/Close/Toggle door</strong></li>
+<li><strong>Open/Close/Toggle door</strong><ul>
+<li>In dry-contact and Security+ 1.0 modes, Open/Close requests use the same toggle action as the wall button. Only Security+ 2.0 provides directional Open and Close commands.</li>
+</ul>
+</li>
 <li><strong>Reboot Device</strong></li>
 <li><strong>Reset WiFi</strong></li>
 <li><strong>Clear Log</strong>.</li>
-<li><strong>Toggle Light and Remote Lock</strong> (<em>Security+ 2.0/1.0 only</em>)</li>
+<li><strong>Toggle Light and Remote Lock</strong> (<em>Security+ 2.0/1.0 only</em>)<ul>
+<li>After a click, the switch is temporarily disabled while waiting for confirmation (up to four seconds). If confirmation does not arrive, it returns to the last reported state and shows a message; it does not automatically retry. Unknown light/lock status keeps the controls disabled until fresh status arrives.</li>
+</ul>
+</li>
 </ul>
 <p>All of these actions require the <strong>Device Key</strong> (default: <code>opendoor</code>), except when accessed remotely via OTC token, where the key is not required. For convenience, the key is cached in your browser and can be cleared by clicking the ✖ icon next to it.</p>
 <p>The homepage also provides navigation links to <strong>Edit Options</strong>, <strong>Show Log</strong>, <strong>Firmware Update</strong>, and the <strong>User Manual</strong>.</p>
+<h4 id="security-communication">Security+ Communication</h4>
+<p>With a Security+ 1.0 smart wall panel, OG waits for a suitable gap between panel exchanges before transmitting. If no gap is available within two seconds, the request expires without being sent. If this happens repeatedly, turn off opener power before disconnecting the smart wall panel, then restart OG so it can emulate one. Keep the opener's safety sensors connected and operational.</p>
+<p>For Security+ 2.0, OG automatically retries communication after an opener outage. Recovery can take several minutes after a prolonged outage. It does not replay previous door commands.</p>
 <h4 id="edit-options">Edit Options</h4>
 <p>Editing any option requires the Device Key (except when accessed remotely via OTC token). Some options take effect only after a reboot — these are marked <code>[Effective after reboot]</code>. The options are divided into three tabs:</p>
 <h5 id="1-basic-tab">1. Basic Tab</h5>
-<p><img alt="Basic Tab" class="center" src="../screenshots/4_options_basic.jpg" /></p>
+<p><img alt="Basic Tab" class="center" src="../screenshots/4_options_basic.png" /></p>
 <ul>
 <li><strong>Device Name</strong>: A custom name shown on the homepage.</li>
 <li><strong>Distance Sensor</strong>: How the device is mounted:<ul>
@@ -375,8 +385,14 @@
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Note on Security+ 1.0</p>
-<p>In <strong>Security+ 1.0</strong> mode, the device <strong>emulates a smart wall panel</strong> by sending rapid probing signals needed to obtain door status (unless an existing smart wall panel is detected). This disables traditional, non-smart wall-buttons. If this restriction is undesirable, please disable Security+ mode by setting it to <code>None</code>.<br><strong>NOTE</strong>: Security+ 2.0 systems are not affected as they do not require panel emulation.</p>
+<p>In <strong>Security+ 1.0</strong> mode, the device can <strong>emulate a smart wall panel</strong> by sending rapid probing signals needed to obtain door status (unless an existing smart wall panel is detected). This disables traditional, non-smart wall-buttons. If this restriction is undesirable, set Security+ to <code>None</code>. Security+ 2.0 systems do not require panel emulation.</p>
 </div>
+</li>
+<li>
+<p><strong>Panel Emulate</strong> (Security+ 1.0 only): <strong>Auto</strong> (default) detects an existing smart wall panel and otherwise emulates one. <strong>Disable</strong> never emulates a panel; use it only when a compatible smart panel is already connected. Without one, door status and Security+ controls may remain unavailable. The change takes effect when you submit the options.</p>
+</li>
+<li>
+<p><strong>Client ID</strong> (Security+ 2.0 only): Shows the current client ID. <strong>Regenerate Sec+ 2 Client ID</strong> creates a new ID and restarts OG, preserving WiFi and other settings. The button is available after Security+ 2.0 is saved. Use it only to troubleshoot an identity/synchronization problem; it requires the device key even through OTC.</p>
 </li>
 <li>
 <p><strong>Door Threshold</strong>: Distance (in <code>cm</code>) used to determine if the door is open.</p>
@@ -392,10 +408,10 @@
 </ul>
 </li>
 </ul>
-<p><img alt="Set Thresholds" class="center" src="../images/set_thresholds.jpg" /></p>
+<p><img alt="Set Thresholds" class="center" src="../../1.2.4/images/set_thresholds.jpg" /></p>
 <ul>
 <li><strong>Status Check Interval</strong>: How often (in <code>seconds</code>) the device checks all sensors. Default: <code>1</code>.</li>
-<li><strong>Click Time</strong>: Duration (in <code>ms</code>) the relay is held when triggered. Default: <code>1000 ms</code>.</li>
+<li><strong>Click Time</strong>: Duration (in <code>ms</code>) the relay is held when triggered in dry-contact mode. Default: <code>1000 ms</code>.</li>
 <li>
 <p><strong>Switch Sensor</strong>: (<u>only available</u> if <strong>Security+ Version</strong> is <strong>None</strong>) Configure an optional magnetic sensor (connected between pin <code>G04</code> and <code>GND</code>) for door detection. Options:</p>
 <ul>
@@ -425,7 +441,7 @@
 </div>
 </li>
 <li>
-<p><strong>Sound Alarm</strong>: Set the duration for the audible alarm before each door movement.</p>
+<p><strong>Sound Alarm</strong>: Set the duration for the audible alarm before OG-initiated web, app, or API door actions. A short press of OG's physical button bypasses this alarm.</p>
 <ul>
 <li>Includes an option to disable the alarm specifically for door opening.</li>
 </ul>
@@ -436,7 +452,7 @@
 </li>
 </ul>
 <h5 id="2-integration-tab">2. Integration Tab</h5>
-<p><img alt="Integration Tab" class="center" src="../screenshots/5_options_integration.jpg" /></p>
+<p><img alt="Integration Tab" class="center" src="../../1.2.4/screenshots/5_options_integration.jpg" /></p>
 <ul>
 <li>
 <p><strong>Enable Cloud Connection</strong> <code>[effective after reboot]</code>: Select <strong>Blynk</strong> or <strong>OTC</strong> for cloud service, and enter the <strong>Cloud Token</strong>. The default <strong>Cloud Server / Port</strong> are:</p>
@@ -446,7 +462,7 @@
 </ul>
 </li>
 <li>
-<p><strong>Enable MQTT</strong>: Enable MQTT communication by provide the MQTT server URL, port, credentials (optional), and a custom MQTT topic.</p>
+<p><strong>Enable MQTT</strong>: Enable MQTT communication by providing the MQTT server URL, port, credentials (optional), and a custom MQTT topic.</p>
 <ul>
 <li>If topic is left blank, the device name is used.</li>
 </ul>
@@ -483,7 +499,7 @@
 </li>
 </ul>
 <h5 id="3-advanced-tab">3. Advanced Tab</h5>
-<p><img alt="Advanced Tab" class="center" src="../screenshots/6_options_advanced.jpg" /></p>
+<p><img alt="Advanced Tab" class="center" src="../screenshots/6_options_advanced.png" /></p>
 <ul>
 <li>
 <p><strong>Read Interval</strong> <code>[effective after reboot]</code>: Time (in <code>ms</code>) between ultrasonic distance sensor readings. Default: <code>500 ms</code>.</p>
@@ -495,7 +511,7 @@
 <p><strong>Sensor Filter</strong> method:</p>
 <ul>
 <li><strong>Median</strong>: Use median of the last 7 readings.</li>
-<li><strong>Consensus</strong>: Average the last 7 readings if their range <code>(max–min) ≤ margin</code>; otherwise ignores until stable. <strong>Margin</strong> defines the range tolerance (default: <code>10 cm</code>).</li>
+<li><strong>Consensus</strong>: Select the five readings with the smallest spread from the last seven, and average them if their range <code>(max–min) ≤ margin</code>. Otherwise retain the last accepted distance. <strong>Margin</strong> defines the range tolerance (default: <code>10 cm</code>).</li>
 <li>If Consensus fails often, increase margin (e.g. <code>20 cm</code>) or switch to Median filter.</li>
 </ul>
 </li>
@@ -538,7 +554,7 @@
 <h3 id="links-and-resources">Links and Resources</h3>
 <ul>
 <li><a href="https://opengarage.io/">OpenGarage Homepage</a></li>
-<li><a href="https://github.com/opengarage">OpenGarage Github Repository</a></li>
+<li><a href="https://github.com/opengarage">OpenGarage GitHub Repository</a></li>
 <li><a href="https://opengarage.github.io/OpenGarage-Firmware/">OpenGarage Documentation</a></li>
 <li><a href="https://rayshobby.net/introducing-opengarage/">OpenGarage Blog Post</a></li>
 </ul>
@@ -547,7 +563,7 @@
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
-        <a href="../../1.2.5/api/" class="btn btn-neutral float-left" title="API Reference"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../faq/" class="btn btn-neutral float-left" title="FAQ"><span class="icon icon-circle-arrow-left"></span> Previous</a>
         <a href="../api/" class="btn btn-neutral float-right" title="API Reference">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
@@ -575,7 +591,7 @@
         </span>
     
     
-      <span><a href="../../1.2.5/api/" style="color: #fcfcfc">&laquo; Previous</a></span>
+      <span><a href="../../faq/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
       <span><a href="../api/" style="color: #fcfcfc">Next &raquo;</a></span>

@@ -43,6 +43,12 @@
               <ul class="current">
                 <li class="toctree-l1 current"><a class="reference internal current" href="#">Home</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#latest-firmware">Latest Firmware</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#using-home-assistant">Using Home Assistant?</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#opengarages-built-in-web-ui">OpenGarage's Built-in Web UI</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#firmware-compilation-instructions">Firmware Compilation Instructions</a>
@@ -71,6 +77,13 @@
               <ul>
                 <li class="toctree-l1"><a class="reference internal" href="faq/">FAQ</a>
                 </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Firmware v1.2.5 <span class="nav-new-badge" aria-label="New">NEW</span></span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="1.2.5/manual/">User Manual</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="1.2.5/api/">API Reference</a>
+                  </li>
               </ul>
               <p class="caption"><span class="caption-text">Firmware v1.2.4</span></p>
               <ul>
@@ -109,9 +122,20 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="opengarage-firmware-and-documentation">OpenGarage Firmware and Documentation</h1>
-<p>This Github repository contains the firmware source code and documentation for OpenGarage. For product details, visit <a href="https://opengarage.io">https://opengarage.io</a>.</p>
-<p>For official firmware release notes, please go to the <a href="https://github.com/OpenGarage/OpenGarage-Firmware/releases">OpenGarage Firmware Releases</a> page on GitHub.</p>
+<p>This GitHub repository contains the firmware source code and documentation for OpenGarage. For product details, visit <a href="https://opengarage.io">https://opengarage.io</a>.</p>
+<p>For official firmware release notes, visit the <a href="https://github.com/OpenGarage/OpenGarage-Firmware/releases">OpenGarage Firmware Releases</a> page on GitHub.</p>
+<h2 id="documentation">Documentation</h2>
+<ul>
+<li><a href="faq/">FAQ</a></li>
+<li><a href="https://opengarage.github.io/OpenGarage-Firmware/manual/">User Manual (latest)</a></li>
+<li><a href="https://opengarage.github.io/OpenGarage-Firmware/api/">API Reference (latest)</a></li>
+</ul>
+<h2 id="latest-firmware">Latest Firmware</h2>
+<p>Download <a href="assets/bins/og_1.2.5.bin">OpenGarage stock firmware 1.2.5</a> for boards with 4 MB flash. See the <a href="#firmware-update-instructions">firmware update instructions</a> before uploading it.</p>
+<h2 id="using-home-assistant">Using Home Assistant?</h2>
+<p>The alternative <a href="https://github.com/OpenGarage/OpenGarage-ESPHome">ESPHome-based OpenGarage firmware</a> provides native Home Assistant integration, including door controls, distance and vehicle sensing, editable thresholds, and—on compatible Security+ hardware/openers—opener light, remote lock and reported obstruction status.</p>
 <h2 id="opengarages-built-in-web-ui">OpenGarage's Built-in Web UI</h2>
+<p>The screenshots below show stock firmware 1.2.4; newer versions may differ slightly.</p>
 <p><img alt="AP homepage" src="1.2.4/screenshots/1_ap.jpg" width="220" /> <img alt="Homepage" src="1.2.4/screenshots/2_home.jpg" width="220" /> <img alt="Log" src="1.2.4/screenshots/3_log.jpg" width="220" />
 <img alt="Basic Options" src="1.2.4/screenshots/4_options_basic.jpg" width="220" /> <img alt="Integration" src="1.2.4/screenshots/5_options_integration.jpg" width="220" /> <img alt="Advanced Options" src="1.2.4/screenshots/6_options_advanced.jpg" width="220" />
 <img alt="Firmware Update" src="1.2.4/screenshots/7_update.jpg" width="220" /> <img alt="Webapp" src="1.2.4/screenshots/9_webapp.jpg" width="220" /> <img alt="Blynk" src="1.2.4/screenshots/8_blynk_app.jpg" width="220" /></p>
@@ -148,7 +172,7 @@
 <li><em>If your OpenGarage is in WiFi AP (Access Point) mode, the update page is available at <code>http://192.168.4.1/update</code>.</em></li>
 </ul>
 </li>
-<li>Select the firmware file your downloaded, enter your device key, and click <code>Submit</code>.</li>
+<li>Select the firmware file you downloaded, enter your device key, and click <code>Submit</code>.</li>
 <li>Wait for the process to finish. If the upload fails, you can try again. If the device hangs, unplug and replug the power, then try again.</li>
 </ol>
 <h3 id="troubleshooting">Troubleshooting</h3>
@@ -156,80 +180,102 @@
 <li><strong>Firmware Corruption</strong>: If the firmware upload fails and the device no longer boots, you'll need to re-flash the firmware using a <a href="https://opensprinkler.com/product/usb-programmer/">USB-serial programmer</a>.</li>
 <li><strong>Flash Memory Requirement</strong>: Early OpenGarage units (v1.0, v1.1, v1.2, made before 2018) have only 2MB of flash memory. These cannot be upgraded to firmware 1.2.0 or later, which require 4MB. All newer versions (v1.3 and above) include 4MB flash and support the latest firmware.</li>
 <li><strong>Checking Flash Size</strong>: If you are unsure how much flash memory is available on your OpenGarage, you can first update to firmware 1.1.3. After the update, open a browser and go to <code>http://&lt;your_og_ip&gt;/db</code>. This will display a JSON string. Look for the <code>flash_size</code> value: if it's <code>4194304</code>, you have 4MB of flash and can upgrade. If it is <code>2097152</code>, your device is not upgradeable to firmware 1.2.0 and beyond.</li>
-<li><strong>Factory Reset Warning</strong>: Upgrading from an early firmware to version 1.2.0 will <strong>erase all setings</strong> due to changes in the flash memory layout. Be sure to write down your configuration before proceeding.</li>
+<li><strong>Factory Reset Warning</strong>: Upgrading from an early firmware to version 1.2.0 will <strong>erase all settings</strong> due to changes in the flash memory layout. Be sure to write down your configuration before proceeding.</li>
 </ul>
 <h3 id="list-of-opengarage-firmwares">List of OpenGarage Firmwares</h3>
-<p>The release notes of each firmware can be found on <a href="https://github.com/OpenGarage/OpenGarage-Firmware/releases">github</a>.</p>
+<p>The release notes of each firmware can be found on <a href="https://github.com/OpenGarage/OpenGarage-Firmware/releases">GitHub</a>.</p>
 <table>
 <thead>
 <tr>
 <th style="text-align: left;">Download</th>
+<th style="text-align: left;">SHA-256</th>
 <th style="text-align: left;">Documentation</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;"><a href="assets/bins/og_1.2.4.bin"><strong><code>1.2.4.bin</code></strong></a></td>
+<td style="text-align: left;"><a href="assets/bins/og_1.2.5.bin"><strong><code>1.2.5.bin</code></strong></a></td>
+<td style="text-align: left;"><a href="assets/bins/og_1.2.5.bin.sha256">Checksum</a></td>
+<td style="text-align: left;">[<a href="1.2.5/manual/">Manual</a>], [<a href="1.2.5/api/">API</a>]</td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.2.4.bin"><code>1.2.4.bin</code></a></td>
+<td style="text-align: left;"><a href="assets/bins/og_1.2.4.bin.sha256">Checksum</a></td>
 <td style="text-align: left;">[<a href="1.2.4/manual/">Manual</a>], [<a href="1.2.4/api/">API</a>]</td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="assets/bins/og_1.2.3.bin"><code>1.2.3.bin</code></a></td>
+<td style="text-align: left;"></td>
 <td style="text-align: left;"><a href="archive/">Docs</a></td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="assets/bins/og_1.2.1.bin"><code>1.2.1.bin</code></a></td>
 <td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="assets/bins/og_1.2.0.bin"><code>1.2.0.bin</code></a></td>
+<td style="text-align: left;"></td>
 <td style="text-align: left;"><a href="archive/">Archive</a></td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="assets/bins/og_1.1.3.bin"><code>1.1.3.bin</code></a></td>
 <td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="assets/bins/og_1.1.2.bin"><code>1.1.2.bin</code></a></td>
+<td style="text-align: left;"></td>
 <td style="text-align: left;"><a href="archive/">Archive</a></td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="assets/bins/og_1.1.1.bin"><code>1.1.1.bin</code></a></td>
 <td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="assets/bins/og_1.1.0.bin"><code>1.1.0.bin</code></a></td>
 <td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="assets/bins/og_1.0.9.bin"><code>1.0.9.bin</code></a></td>
+<td style="text-align: left;"></td>
 <td style="text-align: left;"><a href="archive/">Archive</a></td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="assets/bins/og_1.0.8.bin"><code>1.0.8.bin</code></a></td>
 <td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="assets/bins/og_1.0.7.bin"><code>1.0.7.bin</code></a></td>
+<td style="text-align: left;"></td>
 <td style="text-align: left;"><a href="archive/">Archive</a></td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="assets/bins/og_1.0.6.bin"><code>1.0.6.bin</code></a></td>
+<td style="text-align: left;"></td>
 <td style="text-align: left;"><a href="archive/">Archive</a></td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="assets/bins/og_1.0.5.bin"><code>1.0.5.bin</code></a></td>
+<td style="text-align: left;"></td>
 <td style="text-align: left;"><a href="archive/">Archive</a></td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="assets/bins/og_1.0.4.bin"><code>1.0.4.bin</code></a></td>
+<td style="text-align: left;"></td>
 <td style="text-align: left;"><a href="archive/">Archive</a></td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="assets/bins/og_1.0.3.bin"><code>1.0.3.bin</code></a></td>
 <td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
 </tr>
 </tbody>
 </table>
+<p><br>To verify a downloaded firmware, save its <code>.bin</code> and checksum files in the same folder, then run <code>sha256sum -c og_1.2.5.bin.sha256</code> (or substitute the version you downloaded).</p>
 <hr />
               
             </div>
@@ -283,5 +329,5 @@
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2026-02-11 18:57:50.607871+00:00
+Build Date UTC : 2026-09-16 16:55:41.096487+00:00
 -->
