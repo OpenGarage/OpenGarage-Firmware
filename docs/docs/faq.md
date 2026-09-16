@@ -102,7 +102,8 @@ We have a [detailed blog post](https://opensprinkler.com/introducing-opengarage-
     * **Isolation/filters:** **Disable AP isolation**, **MAC filtering**, and **captive portal** requirements.
     * Turn on **legacy mode** on 2.4 GHz, **disable WMM and airtime fairness**.
     * Ensure the controller isn’t blocked by firewall rules.
-4. **Additional troubleshooting:** If problems persist, there may be an ad-hoc compatibility issue between ESP8266 and your router. Try:
+4. **Multiple access points with the same SSID:** OpenGarage periodically scans for the strongest access point and reconnects when another AP is at least 8 dB stronger. Roaming scans run every five minutes while connected, so the device can move back to a nearer AP after it becomes available.
+5. **Additional troubleshooting:** If problems persist, there may be an ad-hoc compatibility issue between ESP8266 and your router. Try:
     * A different WiFi network (e.g. your phone's 2.4 GHz hotspot) to see if it works.
     * Look up your router model + `ESP8266` for known issues and fixes. For example, if your router is Asus BE7200, search (or use generative AI) `ESP8266 issues Asus BE7200`.
 

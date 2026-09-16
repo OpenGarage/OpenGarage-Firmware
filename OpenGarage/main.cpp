@@ -2052,6 +2052,7 @@ void do_loop() {
 
 		} else {
 			if(WiFi.status() == WL_CONNECTED) {
+				maintain_wifi_connection(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str());
 				MDNS.update();
 				time_keeping();
 				check_status(); //This checks the door, sends info to services and processes the automation rules
