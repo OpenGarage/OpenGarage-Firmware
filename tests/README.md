@@ -14,11 +14,13 @@ g++ -std=c++11 -Wall -Wextra -Werror tests/test_body_device_key.cpp -o /tmp/og-t
 node tests/test_identity_button.mjs
 node tests/test_pending_switches.mjs
 python3 tests/test_debug_response.py
+python3 tests/test_json_options.py
 g++ -std=c++11 -Wall -Wextra -Werror tests/test_audio_timing.cpp -o /tmp/og-test-audio
 /tmp/og-test-audio
 ```
 
 These test production distance-consensus, health, identity lifecycle and exact POST-body authentication helpers without Arduino dependencies. The Node test checks the Security+ option visibility, exclusive Panel Emulate selection, and client-ID button's JavaScript, request body, cancellation and placement.
+The JSON tests compile production response builders and check quoted names, topics, option defaults, control characters and omitted passwords.
 They do not replace sensor checks on hardware.
 
 For the real-widget slider regression, supply local copies of the exact

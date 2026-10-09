@@ -85,6 +85,7 @@ static bool light_blink_enabled = true;
 SecPlus1::Garage secplus1_garage(PIN_SW_RX, PIN_SW_TX);
 #include "secplus2_identity_store.h"
 #include "body_device_key.h"
+#include "json_escape.h"
 #include "health_stats.h"
 #include "audio_timing.h"
 struct BuzzerSink {
@@ -418,7 +419,7 @@ json += F(",\"fwv\":");
 		}
 	}
 	json += F(",\"name\":\"");
-	json += og.options[OPTION_NAME].sval;
+	append_json_escaped(json, og.options[OPTION_NAME].sval);
 	json += F("\",\"mac\":\"");
 	json += get_mac();
 	json += F("\",\"cid\":");
@@ -472,11 +473,11 @@ void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
 	json += F(",\"fwv\":");
 	json += og.options[OPTION_FWV].ival;
 	json += F(",\"name\":\"");
-	json += og.options[OPTION_NAME].sval;
+	append_json_escaped(json, og.options[OPTION_NAME].sval);
 	json += F("\",\"mac\":\"");
 	json += get_mac();
 	json += F("\",\"mqtt_topic\":\"");
-	json += mqtt_topic;
+	append_json_escaped(json, mqtt_topic);
 	json += F("\",\"devip\":\"");
 	json += WiFi.localIP().toString();
 	json += F("\",\"cid\":");
@@ -502,7 +503,7 @@ void sta_logs_fill_json(String& json, OTF::Response &res) {
 	json = "";
 	json.reserve(2048); // reserve capacity to reduce the overhead of String's +=
 	json += F("{\"name\":\"");
-	json += og.options[OPTION_NAME].sval;
+	append_json_escaped(json, og.options[OPTION_NAME].sval);
 	json += F("\",\"starttime\":");
 	json += start_utc_time;
 	json += F(",\"time\":");
@@ -1012,17 +1013,17 @@ void sta_options_fill_json(String& json) {
 				if(o->sval.length()==0) {
 					switch(i) {
 					case OPTION_MQTP:
-						json += og.options[OPTION_NAME].sval;
+						append_json_escaped(json, og.options[OPTION_NAME].sval);
 						break;
 					case OPTION_HOST:
-						json += get_ap_ssid();
+						append_json_escaped(json, get_ap_ssid());
 						break;
 					//case OPTION_NTP1: // leave NPT1 empty if using default
 					//json += DEFAULT_NTP1;
 					//break;
 					}
 				} else {
-					json += o->sval;
+					append_json_escaped(json, o->sval);
 				}
 				json += F("\"");
 				json += ",";
