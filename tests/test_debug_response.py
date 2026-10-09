@@ -14,6 +14,7 @@ for name in ('append_age', 'append_health_json', 'append_debug_details', 'on_sta
 
 stub = r'''
 #include <string>
+#include "json_escape.h"
 #include <sstream>
 #include <iostream>
 #include <cstring>
@@ -27,6 +28,7 @@ struct String : std::string {
   using std::string::operator=;
   String(unsigned n,int) { std::ostringstream s; s<<std::hex<<n; assign(s.str()); }
   template<class T> String& operator+=(T n) { append(std::to_string(n)); return *this; }
+  String& operator+=(char c) { push_back(c); return *this; }
   String& operator+=(const char *s) { append(s); return *this; }
   String& operator+=(const String &s) { append(s); return *this; }
 };
@@ -64,6 +66,8 @@ void otf_send_json(OTF::Response&,const String &json){std::cout<<json<<'\n';}
 runner = r'''
 int main() {
   OTF::Response response;
+  og.options[OPTION_NAME].sval="Garage \"East\"\\row";
+  mqtt_topic="garage/\"status\"\\topic";
   for(int hardware : {0,1}) for(int protocol : {0,1,2}) {
   og.has_swrx=hardware; og.options[OPTION_SECV].ival=protocol;
   for(auto handler : {on_sta_debug,on_ap_debug}) {
@@ -74,9 +78,13 @@ int main() {
   }
 }
 '''
-with tempfile.TemporaryDirectory(prefix='og-db-test-') as scratch:
+scratch_root = Path(__file__).resolve().parents[1] / '.local'
+scratch_root.mkdir(exist_ok=True)
+with tempfile.TemporaryDirectory(prefix='og-db-test-', dir=scratch_root) as scratch:
     binary = str(Path(scratch) / 'test')
-    subprocess.run(['g++', '-std=c++11', '-x', 'c++', '-', '-o', binary],
+    subprocess.run(['g++', '-std=c++11', '-I',
+                    str(Path(__file__).resolve().parents[1] / 'OpenGarage'),
+                    '-x', 'c++', '-', '-o', binary],
                    input=stub + '\n'.join(functions) + runner, text=True, check=True)
     results = [json.loads(line) for line in subprocess.check_output([binary], text=True).splitlines()]
 
@@ -94,6 +102,9 @@ for hardware in (0, 1):
             for offset in range(7):
                 data = next(iterator)
                 assert set(data) == baseline | (extra if offset == 6 else set()), data
+                if baseline == station:
+                    assert data['name'] == 'Garage "East"\\row'
+                    assert data['mqtt_topic'] == 'garage/"status"\\topic'
                 if offset == 6:
                     assert data['active_security_protocol'] == protocol
                     if hardware and protocol == 2:
