@@ -28,6 +28,7 @@
 
 #include "json_escape.h"
 #include "update_auth.h"
+#include "local_time.h"
 #include "pitches.h"
 #include "OpenGarage.h"
 #include "espconnect.h"
@@ -71,7 +72,9 @@ static bool obstruction_status = 0;
 static uint16_t opening_count = 0;
 static int vehicle_status = OG_VEH_ABSENT;
 static uint led_blink_ms = LED_FAST_BLINK;
-static ulong justopen_timestamp = 0;
+static og_local::OpenDuration open_duration;
+static og_local::DailyRule daily_rule;
+static og_local::Clock local_clock;
 static byte curr_mode;
 extern bool fullbuffer;
 // this is one byte storing the door status histogram
@@ -460,6 +463,7 @@ static void append_debug_details(const OTF::Request &req, String &json) {
 		json += secplus2_identity_ready ? F("true") : F("false");
 	}
 	append_health_json(json);
+	json += F(",\"time_valid\":"); json += local_clock.valid ? 1 : 0;
 	json += F(",\"mqtt_json_failures\":"); json += mqtt_json_failures;
 	json += F(",\"mqtt_json_bytes\":"); json += mqtt_json_bytes;
 	json += F(",\"mqtt_buffer_ready\":"); json += mqtt_buffer_ready ? 1 : 0;
@@ -509,6 +513,7 @@ void sta_logs_fill_json(String& json, OTF::Response &res) {
 	json += start_utc_time;
 	json += F(",\"time\":");
 	json += curr_utc_time;
+	json += F(",\"uptime\":"); json += uint32_t(local_clock.uptime_ms / 1000);
 	json += F(",\"ncols\":");
 	json += og.options[OPTION_SN2].ival>OG_SN2_NONE ? 4 : 3;
 	json += F(",\"logs\":[");
@@ -1431,8 +1436,9 @@ void check_status_ap() {
 }
 
 bool mqtt_connect_subscribe() {
-	static ulong mqtt_subscribe_timeout = 0;
-	if(curr_utc_time > mqtt_subscribe_timeout) {
+	static og_local::Interval mqtt_retry;
+	static uint32_t retry_ms = 0;
+	if(mqtt_retry.due(millis(), retry_ms)) {
 		if (!mqttclient.connected()) {
 			DEBUG_PRINT(F("MQTT Not connected- (Re)connect MQTT"));
 			boolean ret;
@@ -1449,11 +1455,11 @@ bool mqtt_connect_subscribe() {
 				mqttclient.subscribe((mqtt_topic +"/IN/#").c_str());
 				mqttclient.publish((mqtt_topic+"/OUT/STATUS").c_str(), "online", true);
 				DEBUG_PRINTLN(F("......Success, Subscribed to MQTT Topic"));
-				mqtt_subscribe_timeout = curr_utc_time + 5; // if successful, don't check for 5 seconds
+				retry_ms = 5000; // if successful, don't check for 5 seconds
 				return true;
 			}else {
 				DEBUG_PRINTLN(F("......Failed to Connect to MQTT"));
-				mqtt_subscribe_timeout = curr_utc_time + 60; // if unsuccessful, try again in 60 seconds
+				retry_ms = 60000; // if unsuccessful, try again in 60 seconds
 				return false;
 			}
 		}
@@ -1504,6 +1510,8 @@ void mqttNotify(String s){
 }
 
 void perform_notify(String s) {
+	// Offline events remain in the local log; never queue them for reconnect.
+	if (WiFi.status() != WL_CONNECTED || !WiFi.localIP()) return;
 	DEBUG_PRINT(F("Sending Notify to connected systems, value:"));
 	DEBUG_PRINTLN(s);
 
@@ -1524,36 +1532,35 @@ void perform_notify(String s) {
 }
 
 void process_dynamics(byte event) {
-	static bool automationclose_triggered=false;
+	const uint32_t now = millis();
 	byte ato = og.options[OPTION_ATO].ival;
 	byte atob = og.options[OPTION_ATOB].ival;
 	byte noto = og.options[OPTION_NOTO].ival;
 	if(!ato && !atob && !noto) {
-		justopen_timestamp = 0;
+		open_duration.reset();
 		return;
 	}
 	if(event == DOOR_EVENT_JUST_OPENED) {
-		justopen_timestamp = curr_utc_time; // record time stamp
+		open_duration.start(now); // record time stamp
 		if (noto & OG_NOTIFY_DO) { perform_notify(og.options[OPTION_NAME].sval + " just OPENED!");}
 
 		// If the door is set to auto close at a certain hour, ensure if manually opened it doesn't autoshut
-		if( (curr_utc_hour == og.options[OPTION_ATIB].ival) && (!automationclose_triggered) ){
+		if( daily_rule.eligible(local_clock.valid, curr_utc_time, og.options[OPTION_ATIB].ival) ){
 			DEBUG_PRINTLN(" Door opened during automation hour, set to not auto-close ");
-			automationclose_triggered=true;
+			daily_rule.mark(curr_utc_time);
 		}
 
 	} else if (event == DOOR_EVENT_JUST_CLOSED) {
-		justopen_timestamp = 0; // reset time stamp
+		open_duration.reset(); // reset time stamp
 		if (noto & OG_NOTIFY_DC) { perform_notify(og.options[OPTION_NAME].sval + " just CLOSED!");}
 
 	} else if (event == DOOR_EVENT_JUST_STOPPED) {
-		justopen_timestamp = 0; // reset time stamp
+		open_duration.reset(); // reset time stamp
 		if (noto & OG_NOTIFY_DS) { perform_notify(og.options[OPTION_NAME].sval + " just STOPPED!");}
 
 	}	else if (event == DOOR_EVENT_REMAIN_OPEN) {
-		if (!justopen_timestamp) justopen_timestamp = curr_utc_time; // record time stamp
-		else {
-			if(curr_utc_time > justopen_timestamp + (ulong)og.options[OPTION_ATI].ival*60L) {
+		{
+			if(ato && open_duration.expired(now, uint32_t(og.options[OPTION_ATI].ival) * 60000UL)) {
 				// reached timeout, perform action
 				if(ato & OG_AUTO_NOTIFY) {
 					// send notification
@@ -1573,13 +1580,13 @@ void process_dynamics(byte event) {
 					if(!og.options[OPTION_ALM].ival) { og.set_alarm(OG_ALM_5); }
 					else { og.set_alarm(); }
 				}
-				justopen_timestamp = 0;
+				open_duration.reset();
 			}
 
-			if(( curr_utc_hour == og.options[OPTION_ATIB].ival) && (!automationclose_triggered)) {
+			if(atob && daily_rule.eligible(local_clock.valid, curr_utc_time, og.options[OPTION_ATIB].ival)) {
 				// still open past time, perform action
 				DEBUG_PRINTLN("Door is open at specified close time and automation not yet triggered: ");
-				automationclose_triggered=true;
+				daily_rule.mark(curr_utc_time);
 				if(atob & OG_AUTO_NOTIFY) {
 					// send notification
 					String s = og.options[OPTION_NAME].sval+" is open after ";
@@ -1599,15 +1606,11 @@ void process_dynamics(byte event) {
 					if(!og.options[OPTION_ALM].ival) { og.set_alarm(OG_ALM_5); }
 					else { og.set_alarm(); }
 				}
-				justopen_timestamp = 0;
-			}
-			else if ((curr_utc_hour > og.options[OPTION_ATIB].ival) && (automationclose_triggered)) {
-				DEBUG_PRINTLN("Unlocking automation close function");
-				automationclose_triggered=false; //Unlock the hour after the setting
+				open_duration.reset();
 			}
 		}
 	} else {
-		justopen_timestamp = 0;
+		open_duration.reset();
 	}
 }
 
@@ -1660,9 +1663,10 @@ byte check_door_event() {
 }
 
 void check_status() {
-	static ulong checkstatus_timeout = 0;
+	static og_local::Interval status_interval;
+	static bool history_initialized = false;
 
-	if((curr_utc_time > checkstatus_timeout) || (checkstatus_timeout == 0))  { //also check on first boot
+	if(status_interval.due(millis(), uint32_t(og.options[OPTION_RIV].ival) * 1000UL))  { //also check on first boot
 		last_door_status = door_status; // save the current status to last_door_status
 		if(light_blink_enabled) {
 			og.set_led(HIGH);
@@ -1677,7 +1681,6 @@ void check_status() {
 		if((distance==0 || distance>500 || !fullbuffer) && og.options[OPTION_SNO].ival!=OG_SNO_2ONLY) {
 			// invalid distance value or non full buffer, return immediately except if using SN2 only
 			DEBUG_PRINTLN(F("invalid distance or non-full buffer"));
-			checkstatus_timeout = curr_utc_time + og.options[OPTION_RIV].ival;
 			return;
 		}
 
@@ -1736,7 +1739,8 @@ void check_status() {
 				break;
 		}
 
-		if (checkstatus_timeout == 0){
+		if (!history_initialized){
+			history_initialized = true;
 			DEBUG_PRINTLN(F("First time checking status don't trigger a status change, set full history to current value"));
 			if (door_status) { door_status_hist = B11111111; }
 			else { door_status_hist = B00000000; }
@@ -1768,7 +1772,9 @@ void check_status() {
 			// write log record
 			DEBUG_PRINTLN(" Update Local Log");
 			LogStruct l;
-			l.tstamp = curr_utc_time;
+			// Zero is the empty-slot marker in the existing binary log format.
+			l.tstamp = local_clock.valid ? curr_utc_time :
+				uint32_t(local_clock.uptime_ms / 1000) + 1;
 			l.status = door_status;
 			l.dist = distance;
 			l.sn2 = 255;	// use 255 to indicate invalid value
@@ -1777,12 +1783,12 @@ void check_status() {
 
 		} //End state change updates
 
-		static ulong force_mqtt_update_timeout = 0;
+		static og_local::Interval mqtt_status_interval;
 		// Send current status on change, or on status_report interval
-		if ((curr_utc_time > force_mqtt_update_timeout) ||
+		if (mqtt_status_interval.due(millis(), 15000) ||
 				(event == DOOR_EVENT_JUST_OPENED || event == DOOR_EVENT_JUST_CLOSED || event == DOOR_EVENT_JUST_STOPPED || event == DOOR_EVENT_START_OPENING || event == DOOR_EVENT_START_CLOSING) ){
 			// Mqtt update
-			if(og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval) && (mqttclient.connected())) {
+			if(WiFi.status() == WL_CONNECTED && og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval) && mqttclient.connected()) {
 				//DEBUG_PRINTLN(F(" Update MQTT (State Refresh)"));
 				if(event == DOOR_EVENT_REMAIN_OPEN) {
 					mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(),"OPEN");
@@ -1802,72 +1808,28 @@ void check_status() {
 					!mqttclient.publish(topic.c_str(), msg.c_str())) ++mqtt_json_failures;
 			}
 			// Send status report every 15 seconds: we don't need to send updates frequently if there is no status change.
-			force_mqtt_update_timeout= curr_utc_time + 15;
+			mqtt_status_interval.last = millis(); mqtt_status_interval.started = true;
 		}
 
 		// Process dynamics: automation and notifications
 		process_dynamics(event);
-		checkstatus_timeout = curr_utc_time + og.options[OPTION_RIV].ival;
 	}
 }
 
 void time_keeping() {
 	static bool configured = false;
-	static ulong prev_millis = 0;
-	static ulong time_keeping_timeout = 0;
-	static unsigned char failed_ntp_calls = 0;
-	const unsigned char MAX_FAILED_NTP_CALLS = 20;
-	const ulong NTP_VALID_TIME = 1577836800UL;
-
-	if(!configured) {
-		if(valid_url(og.options[OPTION_NTP1].sval)) {
-			DEBUG_PRINT(F("NTP1:"));
-			DEBUG_PRINTLN(og.options[OPTION_NTP1].sval);
-			configTime(0, 0, og.options[OPTION_NTP1].sval.c_str(), DEFAULT_NTP1, DEFAULT_NTP2);
-		} else {
-			DEBUG_PRINT(F("NTP1:"));
-			DEBUG_PRINTLN(DEFAULT_NTP1);
-			configTime(0, 0, DEFAULT_NTP1, DEFAULT_NTP2, DEFAULT_NTP3);
-		}
+	if (!configured && WiFi.status() == WL_CONNECTED && WiFi.localIP()) {
+		const String &server = og.options[OPTION_NTP1].sval;
+		if (valid_url(server)) configTime(0, 0, server.c_str(), DEFAULT_NTP1, DEFAULT_NTP2);
+		else configTime(0, 0, DEFAULT_NTP1, DEFAULT_NTP2, DEFAULT_NTP3);
 		configured = true;
-		delay(1000);
 	}
-
-	if(!curr_utc_time || (curr_utc_time > time_keeping_timeout)) {
-		ulong gt = 0;
-		gt = time(nullptr);
-		if(gt<NTP_VALID_TIME) {
-			// we didn't get a valid response
-			if(failed_ntp_calls >= MAX_FAILED_NTP_CALLS) { // if already reached max failed calls
-				time_keeping_timeout = curr_utc_time + 60; // re-try after a minute
-				DEBUG_PRINTLN(F("max failed ntp reached! re-try in 60 seconds"));
-			} else {
-				failed_ntp_calls ++;
-				time_keeping_timeout = curr_utc_time + 2; // re-try after 2 seconds
-				DEBUG_PRINTLN(F("ntp invalid! re-try in 2 seconds"));
-			}
-		} else {
-			failed_ntp_calls = 0;
-			curr_utc_time = gt;
-			curr_utc_hour = (curr_utc_time % 86400)/3600;
-			DEBUG_PRINT(F("Updated time from NTP: "));
-			DEBUG_PRINT(curr_utc_time);
-			DEBUG_PRINT(" Hour: ");
-			DEBUG_PRINTLN(curr_utc_hour);
-			// if we got a response, re-try after TIME_SYNC_TIMEOUT seconds
-			time_keeping_timeout = curr_utc_time + TIME_SYNC_TIMEOUT;
-			prev_millis = millis();
-			if(!start_utc_time) {
-				start_utc_time = curr_utc_time - millis()/1000;
-			}
-		}
-	}
-
-	while(millis() - prev_millis >= 1000) {
-		curr_utc_time ++;
-		curr_utc_hour = (curr_utc_time % 86400)/3600;
-		prev_millis += 1000;
-	}
+	const time_t observed = time(nullptr);
+	local_clock.tick(millis(), observed >= og_local::Clock::MIN_UTC ? uint32_t(observed) : 0);
+	curr_utc_time = local_clock.utc;
+	curr_utc_hour = (curr_utc_time % 86400UL) / 3600UL;
+	if (local_clock.valid && !start_utc_time)
+		start_utc_time = curr_utc_time - uint32_t(local_clock.uptime_ms / 1000);
 }
 
 void process_alarm() {
@@ -1906,7 +1868,25 @@ void process_alarm() {
 
 void do_loop() {
 	LoopMeasurement loop_measurement;
-	static ulong connecting_timeout;
+	static uint32_t sta_address = 0;
+	static bool station_tune_played = false;
+	static og_local::ReconnectBackoff reconnect_backoff;
+	if (curr_mode == OG_MOD_STA && (og.state == OG_STATE_CONNECTING || og.state == OG_STATE_CONNECTED)) {
+		time_keeping();
+		check_status();
+		const bool online = WiFi.status() == WL_CONNECTED && WiFi.localIP();
+		const bool busy = og.alarm || update_started || identity_restart_pending ||
+			setup_reboot_pending || secplus2_garage.command_pending();
+		if (reconnect_backoff.due(millis(), online, busy)) {
+			// An entire attempt has had at least two minutes, including DHCP.
+			// Stop SDK retry before starting a fresh SSID-only attempt. No flash write.
+			WiFi.setAutoReconnect(false);
+			WiFi.disconnect(false, false);
+			WiFi.begin(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str());
+			WiFi.setAutoReconnect(true);
+		}
+
+	}
 	switch(og.state) {
 	case OG_STATE_INITIAL:
 		if(curr_mode == OG_MOD_AP) {
@@ -1937,7 +1917,6 @@ void do_loop() {
 			DEBUG_PRINTLN(F("Web Server endpoints (AP mode) registered"));
 			og.state = OG_STATE_CONNECTED;
 			DEBUG_PRINTLN(WiFi.softAPIP());
-			connecting_timeout = 0;
 			start_tune(og_audio::Tune::AP);
 		} else {
 			led_blink_ms = LED_SLOW_BLINK;
@@ -1947,34 +1926,6 @@ void do_loop() {
 			String host = og.options[OPTION_HOST].sval;
 			const char* hostname = host.length() == 0 ? NULL : host.c_str(); // use the hostname provided if one is specified
 
-			start_network_sta(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), hostname);
-			og.config_ip();
-			og.state = OG_STATE_CONNECTING;
-			connecting_timeout = millis() + 60000;
-		}
-		break;
-
-	case OG_STATE_TRY_CONNECT:
-		{
-			led_blink_ms = LED_SLOW_BLINK;
-			DEBUG_PRINT(F("Attempting to connect to SSID: "));
-			DEBUG_PRINTLN(og.options[OPTION_SSID].sval.c_str());
-
-			String host = og.options[OPTION_HOST].sval;
-			const char* hostname = host.length() == 0 ? NULL : host.c_str(); // use the hostname provided if one is specified
-
-			start_network_sta_with_ap(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), hostname);
-			og.config_ip();
-			og.state = OG_STATE_CONNECTED;
-			break;
-		}
-
-	case OG_STATE_CONNECTING:
-		if(WiFi.status() == WL_CONNECTED) {
-			DEBUG_PRINT(F("Wireless connected, IP: "));
-			DEBUG_PRINTLN(WiFi.localIP());
-
-			time_keeping();
 			otf->on("/", on_home);
 			otf->on("/jc", on_sta_controller);
 			otf->on("/jo", on_sta_options);
@@ -1994,7 +1945,34 @@ void do_loop() {
 			otf->on("/resetall",on_reset_all);
 			updateServer->begin();
 			DEBUG_PRINTLN(F("Web Server endpoints (STA mode) registered"));
+			start_network_sta(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), hostname);
+			og.config_ip();
+			og.state = OG_STATE_CONNECTING;
+		}
+		break;
 
+	case OG_STATE_TRY_CONNECT:
+		{
+			led_blink_ms = LED_SLOW_BLINK;
+			DEBUG_PRINT(F("Attempting to connect to SSID: "));
+			DEBUG_PRINTLN(og.options[OPTION_SSID].sval.c_str());
+
+			String host = og.options[OPTION_HOST].sval;
+			const char* hostname = host.length() == 0 ? NULL : host.c_str(); // use the hostname provided if one is specified
+
+			start_network_sta_with_ap(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), hostname);
+			og.config_ip();
+			og.state = OG_STATE_CONNECTED;
+			break;
+		}
+
+	case OG_STATE_CONNECTING:
+		if(WiFi.status() == WL_CONNECTED && WiFi.localIP()) {
+			DEBUG_PRINT(F("Wireless connected, IP: "));
+			DEBUG_PRINTLN(WiFi.localIP());
+
+			sta_address = uint32_t(WiFi.localIP());
+			MDNS.close();
 			// request mDNS host name
 			String host = og.options[OPTION_HOST].sval;
 			if(host.length()==0) host=get_ap_ssid(); // if undefined, AP name as host
@@ -2010,13 +1988,7 @@ void do_loop() {
 			led_blink_ms = 0;
 			og.set_led(LOW);
 			og.state = OG_STATE_CONNECTED;
-			connecting_timeout = 0;
-			start_tune(og_audio::Tune::STATION);
-		} else {
-			if(connecting_timeout && millis() > connecting_timeout) {
-				DEBUG_PRINTLN(F("Wifi Connecting timeout, restart"));
-				og.restart();
-			}
+			if (!station_tune_played) { start_tune(og_audio::Tune::STATION); station_tune_played = true; }
 		}
 		break;
 
@@ -2039,7 +2011,6 @@ void do_loop() {
 			otf->loop();
 			updateServer->handleClient();
 			check_status_ap();
-			connecting_timeout = 0;
 			if(og.options[OPTION_MOD].ival == OG_MOD_STA) {
 				// already in STA mode, waiting to reboot
 				break;
@@ -2051,9 +2022,10 @@ void do_loop() {
 
 		} else {
 			if(WiFi.status() == WL_CONNECTED) {
+				if (!WiFi.localIP() || uint32_t(WiFi.localIP()) != sta_address) {
+					og.state = OG_STATE_CONNECTING; break;
+				}
 				MDNS.update();
-				time_keeping();
-				check_status(); //This checks the door, sends info to services and processes the automation rules
 				otf->loop();
 				updateServer->handleClient();
 
@@ -2069,9 +2041,9 @@ void do_loop() {
 					}
 					else {mqttclient.loop();} //Processes MQTT Pings/keep alives
 				}
-				connecting_timeout = 0;
 			} else {
-				//og.state = OG_STATE_INITIAL;
+				og.state = OG_STATE_CONNECTING;
+				led_blink_ms = LED_SLOW_BLINK;
 				DEBUG_PRINTLN(F("WiFi connection lost."));
 			}
 		}

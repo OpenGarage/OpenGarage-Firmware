@@ -19,6 +19,8 @@ stub = r'''
 #include <cstring>
 #include <cstdint>
 #include "OpenGarage/json_escape.h"
+#include "OpenGarage/local_time.h"
+og_local::Clock local_clock;
 #define F(x) x
 #define HEX 16
 #define STRING_RESERVE_SIZE 256
@@ -86,7 +88,7 @@ with tempfile.TemporaryDirectory(prefix='og-db-test-') as scratch:
 
 station = set('rcnt fwv name mac mqtt_topic devip cid rssi bssid build Freeheap flash_size has_swrx'.split())
 ap = set('dist fwv has_swrx'.split())
-common = set('active_security_protocol free_heap reset_reason reset_reason_code uptime_s min_free_heap max_loop_us'.split())
+common = set('active_security_protocol free_heap reset_reason reset_reason_code uptime_s min_free_heap max_loop_us time_valid'.split())
 one = {'secplus1_' + k for k in 'parity_errors invalid_frames rx_overflows tx_deferrals expired_commands door_age_ms light_lock_age_ms'.split()}
 two = {'secplus2_' + k for k in 'client_id identity_ready status_age_ms query_failures action_write_failures tx_deferrals expired_commands control_fault recovery'.split()}
 assert len(results) == 84

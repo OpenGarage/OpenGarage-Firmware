@@ -14,6 +14,9 @@ g++ -std=c++11 -Wall -Wextra -Werror tests/test_body_device_key.cpp -o /tmp/og-t
 node tests/test_identity_button.mjs
 node tests/test_pending_switches.mjs
 node tests/test_cloud_options.mjs
+g++ -std=c++11 -Wall -Wextra -Werror tests/test_local_time.cpp -o /tmp/og-test-local-time
+/tmp/og-test-local-time
+python3 tests/test_offline_automation.py
 python3 tests/test_debug_response.py
 python3 tests/test_update_security.py
 python3 tests/test_options_security.py
@@ -42,3 +45,9 @@ This optional browser test uses `/opt/google/chrome/chrome`, a temporary profile
 and a loopback-only simulated page. All commands are mocked; no device is contacted.
 It exercises jQuery Mobile's actual drag/disable lifecycle, which the smaller
 pending-state unit test does not model.
+
+The local-time tests cover rollover, NTP corrections and daily automation. The
+offline automation harness executes the production automation function with
+controlled time and outputs, including boot before synchronization, the hour-23
+rule and the manual-open exception. Hardware offline/reconnect checks are still
+required; these tests do not establish network-call latency.
