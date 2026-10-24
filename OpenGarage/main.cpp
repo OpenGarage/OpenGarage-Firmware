@@ -29,6 +29,7 @@
 #include "json_escape.h"
 #include "update_auth.h"
 #include "local_time.h"
+#include "network_policy.h"
 #include "pitches.h"
 #include "OpenGarage.h"
 #include "espconnect.h"
@@ -50,6 +51,14 @@ String mqtt_id;
 static uint32_t mqtt_json_failures = 0;
 static uint32_t mqtt_json_bytes = 0;
 static bool mqtt_buffer_ready = false;
+static uint32_t mqtt_retained_dropped = 0;
+static og_network::MqttRecovery mqtt_retry;
+static og_network::Backoff cloud_retry(5000, 300000);
+static og_network::Backoff email_retry(60000, 600000), ifttt_retry(60000, 600000);
+static String pending_notification;
+static uint32_t notification_ms = 0, notification_dropped = 0;
+static uint32_t local_action_ms = 0;
+static bool local_action_seen = false;
 static bool update_authorized = false, update_failed = false, update_started = false;
 static bool update_tail_pending = false;
 static bool update_file_seen = false;
@@ -467,6 +476,8 @@ static void append_debug_details(const OTF::Request &req, String &json) {
 	json += F(",\"mqtt_json_failures\":"); json += mqtt_json_failures;
 	json += F(",\"mqtt_json_bytes\":"); json += mqtt_json_bytes;
 	json += F(",\"mqtt_buffer_ready\":"); json += mqtt_buffer_ready ? 1 : 0;
+	json += F(",\"mqtt_retained_dropped\":"); json += mqtt_retained_dropped;
+	json += F(",\"notification_dropped\":"); json += notification_dropped;
 }
 
 void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
@@ -667,6 +678,15 @@ void on_auto_detect(const OTF::Request &req, OTF::Response &res) {
 	otf_send_json(res, json);
 }
 
+static void hold_network_delivery() {
+	local_action_seen = true; local_action_ms = millis();
+}
+static bool network_delivery_busy() {
+	return og.alarm || update_started || identity_restart_pending || setup_reboot_pending ||
+		secplus2_garage.command_pending() ||
+		(local_action_seen && uint32_t(millis()-local_action_ms)<5000);
+}
+
 void performDoorAction(uint8_t action, bool force_alarm_off = false) {
 	if (identity_restart_pending) return;
 	// Check if the requested action is valid based on the current door state
@@ -683,6 +703,7 @@ void performDoorAction(uint8_t action, bool force_alarm_off = false) {
 		return;
 	}
 	cancel_diagnostic_audio();
+	hold_network_delivery();
 
 	// This is the core logic for deciding whether to trigger the alarm or the door directly.
 	bool shouldTriggerAlarm = true;
@@ -717,6 +738,7 @@ void performDoorAction(uint8_t action, bool force_alarm_off = false) {
 }
 
 void performLightAction(uint8_t action) {
+	hold_network_delivery();
 	switch(action) {
 		case ACTION_TOGGLE:
 			switch (og.options[OPTION_SECV].ival) {
@@ -737,6 +759,7 @@ void performLightAction(uint8_t action) {
 }
 
 void performLockAction(uint8_t action) {
+	hold_network_delivery();
 	switch(action) {
 		case ACTION_TOGGLE:
 			switch (og.options[OPTION_SECV].ival) {
@@ -1178,31 +1201,44 @@ void on_ap_debug(const OTF::Request &req, OTF::Response &res) {
 }
 
 // MQTT callback to read "Button" requests
-void mqtt_callback(char* topic, byte* payload, unsigned int length) {
-	payload[length]=0;
-	String Payload((char*)payload);
-	String Topic(topic);
-
-	//Accept button on any topic for backwards compat with existing code - use IN messages below if possible
-	if (Payload=="Button") {
-		DEBUG_PRINTLN(F("MQTT Button request received, change door state"));
-		performDoorAction(ACTION_TOGGLE);
-		return;
-	}
-
-	//Accept click for consistency with api, open and close should be used instead, use IN topic if possible
-	if (Topic==(mqtt_topic+"/IN/STATE")){
-		DEBUG_PRINT(F("MQTT IN Message detected, check data for action, Data:"));
-		DEBUG_PRINTLN(Payload);
-		if(Payload == "click")      { performDoorAction(ACTION_TOGGLE); }
-		else if(Payload == "close") { performDoorAction(ACTION_CLOSE); }
-		else if(Payload == "open")  { performDoorAction(ACTION_OPEN); }
-		else if(Payload == "togglelight") performLightAction(ACTION_TOGGLE);
-		else if(Payload == "togglelock") performLockAction(ACTION_TOGGLE);
-		else {
-			DEBUG_PRINT(F("Payload command not recognized"));
+// PubSubClient's parser waits for missing bytes. Only enter it with a whole
+// packet buffered; a stalled partial packet is discarded without waiting here.
+static bool mqtt_frame_ready() {
+	static bool partial = false;
+	static uint32_t partial_since = 0;
+	const size_t available = wificlient.available();
+	if (!available) { partial = false; return true; }
+	uint8_t header[5];
+	const size_t count = wificlient.peekBytes(header, available < 5 ? available : 5);
+	uint32_t remaining = 0, multiplier = 1;
+	for (size_t i=1; i<count; ++i) {
+		remaining += (header[i]&127)*multiplier;
+		if (!(header[i]&128)) {
+			const size_t total = i+1+remaining;
+			if (total > mqttclient.getBufferSize()) { wificlient.stop(); partial=false; return false; }
+			if (available >= total) { partial=false; return true; }
+			break;
 		}
-		return;
+		if (i==4) { wificlient.stop(); partial=false; return false; }
+		multiplier *= 128;
+	}
+	if (!partial) { partial=true; partial_since=millis(); }
+	else if (uint32_t(millis()-partial_since)>=1000) { wificlient.stop(); partial=false; }
+	return false;
+}
+
+void mqtt_callback(char* topic, byte* payload, unsigned int length) {
+	if (mqttclient.incomingRetained()) { ++mqtt_retained_dropped; return; }
+	const String incoming(topic);
+	const bool state_topic = incoming == mqtt_topic + "/IN/STATE";
+	const bool legacy_topic = incoming == mqtt_topic || incoming.startsWith(mqtt_topic + "/IN/");
+	switch (og_network::command(payload, length, false, state_topic, legacy_topic)) {
+		case og_network::Command::TOGGLE: performDoorAction(ACTION_TOGGLE); break;
+		case og_network::Command::OPEN: performDoorAction(ACTION_OPEN); break;
+		case og_network::Command::CLOSE: performDoorAction(ACTION_CLOSE); break;
+		case og_network::Command::LIGHT: performLightAction(ACTION_TOGGLE); break;
+		case og_network::Command::LOCK: performLockAction(ACTION_TOGGLE); break;
+		default: break;
 	}
 }
 
@@ -1231,6 +1267,9 @@ void do_setup() {
 	if (!secplus2_identity_ready) Serial.println(F("Security+ 2.0 disabled: identity storage unavailable or invalid"));
 	og.options_setup();
 	mqtt_buffer_ready = mqttclient.setBufferSize(2048);
+	mqttclient.setSocketTimeout(1);
+	wificlient.setTimeout(1000);
+	httpclient.setTimeout(5000);
 	secplus1_garage.set_panel_emulation_disabled(og.options[OPTION_PEM].ival != 0);
 	og.init_sensors();
 	curr_mode = og.get_mode();
@@ -1436,9 +1475,7 @@ void check_status_ap() {
 }
 
 bool mqtt_connect_subscribe() {
-	static og_local::Interval mqtt_retry;
-	static uint32_t retry_ms = 0;
-	if(mqtt_retry.due(millis(), retry_ms)) {
+	if (!network_delivery_busy() && mqtt_retry.ready(millis())) {
 		if (!mqttclient.connected()) {
 			DEBUG_PRINT(F("MQTT Not connected- (Re)connect MQTT"));
 			boolean ret;
@@ -1455,11 +1492,11 @@ bool mqtt_connect_subscribe() {
 				mqttclient.subscribe((mqtt_topic +"/IN/#").c_str());
 				mqttclient.publish((mqtt_topic+"/OUT/STATUS").c_str(), "online", true);
 				DEBUG_PRINTLN(F("......Success, Subscribed to MQTT Topic"));
-				retry_ms = 5000; // if successful, don't check for 5 seconds
+				mqtt_retry.attempt_result(millis(), true);
 				return true;
 			}else {
 				DEBUG_PRINTLN(F("......Failed to Connect to MQTT"));
-				retry_ms = 60000; // if unsuccessful, try again in 60 seconds
+				mqtt_retry.attempt_result(millis(), false);
 				return false;
 			}
 		}
@@ -1467,22 +1504,25 @@ bool mqtt_connect_subscribe() {
 	return false;
 }
 
-void iftttNotify(String s){
+bool iftttNotify(String s){
+	http.setTimeout(5000);
 	DEBUG_PRINTLN(" Sending IFTTT Notification");
 	http.begin(httpclient, "http://maker.ifttt.com/trigger/opengarage/with/key/"+og.options[OPTION_IFTT].sval);
 	http.addHeader("Content-Type", "application/json");
-	http.POST("{\"value1\":\""+s+"\"}");
+	const int code = http.POST("{\"value1\":\""+s+"\"}");
 	String payload = http.getString();
 	http.end();
-	if(payload.indexOf("Congratulations") >= 0) {
+	const bool ok = code == 200 && payload.indexOf("Congratulations") >= 0;
+	if(ok) {
 		DEBUG_PRINTLN(" Successfully updated IFTTT");
 	}else{
 		DEBUG_PRINT(" Error from IFTTT: ");
 		DEBUG_PRINTLN(payload);
 	}
+	return ok;
 }
 
-void emailNotify(String s){
+bool emailNotify(String s){
 	DEBUG_PRINTLN(" Sending EMail notification");
 	DEBUG_PRINTLN(GET_FREE_HEAP);
 	EMailSender::EMailMessage email_message;
@@ -1499,7 +1539,9 @@ void emailNotify(String s){
 		emailSend.setSMTPPort(email_port);
 		DEBUG_PRINTLN(GET_FREE_HEAP);
 		EMailSender::Response resp = emailSend.send(email_recip, email_message);
+		return resp.status;
 	}
+	return false;
 }
 
 void mqttNotify(String s){
@@ -1510,24 +1552,48 @@ void mqttNotify(String s){
 }
 
 void perform_notify(String s) {
-	// Offline events remain in the local log; never queue them for reconnect.
+	// One short-lived delivery slot, never an offline/reconnect replay queue.
 	if (WiFi.status() != WL_CONNECTED || !WiFi.localIP()) return;
-	DEBUG_PRINT(F("Sending Notify to connected systems, value:"));
-	DEBUG_PRINTLN(s);
+	if (pending_notification.length()) ++notification_dropped;
+	pending_notification = s; notification_ms = millis();
+}
 
-	// IFTTT notification
-	if(og.options[OPTION_IFTT].sval.length()>7) { // key size is at least 8
-		iftttNotify(s);
+void service_notifications() {
+	if (!pending_notification.length()) return;
+	if (WiFi.status() != WL_CONNECTED || !WiFi.localIP() ||
+	    uint32_t(millis()-notification_ms)>30000) {
+		pending_notification=""; ++notification_dropped; return;
 	}
-
-	// Email notification
-	if(og.options[OPTION_EMEN].ival>0) {
-		emailNotify(s);
+	if (network_delivery_busy()) return;
+	String message = pending_notification; pending_notification="";
+	if (og.options[OPTION_MQEN].ival) mqttNotify(message);
+	if (og.options[OPTION_IFTT].sval.length()>7 && ifttt_retry.ready(millis())) {
+		if (iftttNotify(message)) ifttt_retry.success(); else ifttt_retry.failure(millis());
 	}
+	if (WiFi.status()==WL_CONNECTED && og.options[OPTION_EMEN].ival && email_retry.ready(millis())) {
+		if (emailNotify(message)) email_retry.success(); else email_retry.failure(millis());
+	}
+}
 
-	//Mqtt notification
-	if(og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval)) {
-		mqttNotify(s);
+void service_cloud() {
+	static bool seeking = false;
+	static uint32_t seek_started = 0;
+	const bool online = WiFi.status()==WL_CONNECTED && WiFi.localIP();
+	const bool connected = otf->getCloudStatus()==OTF::CONNECTED;
+	const bool idle = !network_delivery_busy();
+	if (connected) { cloud_retry.success(); seeking=false; }
+	if (!online || !idle) seeking=false;
+	if (online && idle && !connected && !seeking && cloud_retry.ready(millis())) {
+		seeking=true; seek_started=millis();
+	}
+	// A WebSocket handshake spans multiple polls. Back off a failed window,
+	// not each individual poll, or a healthy handshake can never complete.
+	// Keep serving status/commands on an established cloud connection during
+	// warnings. Only connection attempts wait for an idle device.
+	otf->loop(online && (connected || (idle && seeking)));
+	if (otf->getCloudStatus()==OTF::CONNECTED) { cloud_retry.success(); seeking=false; }
+	else if (seeking && uint32_t(millis()-seek_started)>=5000) {
+		seeking=false; cloud_retry.failure(millis());
 	}
 }
 
@@ -1568,7 +1634,7 @@ void process_dynamics(byte event) {
 					s+= og.options[OPTION_ATI].ival;
 					s+= " minutes.";
 					if(ato & OG_AUTO_CLOSE) {
-						s+= " It will be auto-closed shortly";
+						s+= " Auto-close has been requested";
 					} else {
 						s+= " This is a reminder for you.";
 					}
@@ -1594,7 +1660,7 @@ void process_dynamics(byte event) {
 					s+= " UTC. Current hour:";
 					s+= curr_utc_hour;
 					if(atob & OG_AUTO_CLOSE) {
-						s+= " It will be auto-closed shortly";
+						s+= " Auto-close has been requested";
 					} else {
 						s+= " This is a reminder for you.";
 					}
@@ -1843,6 +1909,7 @@ void process_alarm() {
 		return;
 	}
 	if (warning_audio.tick(millis())) {
+		hold_network_delivery();
 		og.alarm=0; running=false;
 			switch (og.options[OPTION_SECV].ival) {
 				case 2: // SecPlus 2
@@ -2026,12 +2093,14 @@ void do_loop() {
 					og.state = OG_STATE_CONNECTING; break;
 				}
 				MDNS.update();
-				otf->loop();
+				service_cloud();
 				updateServer->handleClient();
 
 				//Handle MQTT
 				if(og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval)) { // if enabled and mqtt server looks valid
-					if (!mqttclient.connected()) {
+					const bool mqtt_connected = mqttclient.connected();
+					mqtt_retry.observe(millis(), mqtt_connected);
+					if (!mqtt_connected) {
 						mqtt_id = get_ap_ssid();
 						mqtt_topic = og.options[OPTION_MQTP].sval;
 						if(mqtt_topic.length()==0) mqtt_topic = og.options[OPTION_NAME].sval;
@@ -2039,7 +2108,7 @@ void do_loop() {
 						mqttclient.setCallback(mqtt_callback);
 						mqtt_connect_subscribe();
 					}
-					else {mqttclient.loop();} //Processes MQTT Pings/keep alives
+					else if (mqtt_frame_ready()) {mqttclient.loop();} //Processes MQTT Pings/keep alives
 				}
 			} else {
 				og.state = OG_STATE_CONNECTING;
@@ -2064,6 +2133,7 @@ void do_loop() {
 	process_ui();
 
 	process_alarm();
+	if (curr_mode == OG_MOD_STA) service_notifications();
 	if (!og.alarm && !ip_audio_active) startup_audio.tick(millis());
 	if (setup_reboot_pending && !startup_audio.active() && !og.alarm) {
 		setup_reboot_pending=false;

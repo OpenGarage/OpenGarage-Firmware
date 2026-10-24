@@ -17,6 +17,8 @@ node tests/test_cloud_options.mjs
 g++ -std=c++11 -Wall -Wextra -Werror tests/test_local_time.cpp -o /tmp/og-test-local-time
 /tmp/og-test-local-time
 python3 tests/test_offline_automation.py
+python3 tests/test_mqtt_packets.py
+python3 tests/test_network_delivery.py
 python3 tests/test_debug_response.py
 python3 tests/test_update_security.py
 python3 tests/test_options_security.py
@@ -51,3 +53,10 @@ offline automation harness executes the production automation function with
 controlled time and outputs, including boot before synchronization, the hour-23
 rule and the manual-open exception. Hardware offline/reconnect checks are still
 required; these tests do not establish network-call latency.
+
+MQTT packet tests compile the vendored parser against a fake transport with
+AddressSanitizer/UBSan (leak detection disabled for sandbox compatibility). They
+cover retain metadata for QoS0/1 across reconnects, callbacks that publish, bounded
+command payloads, partial-frame deadlines, and retry backoff. Network delivery
+tests execute the real notification/cloud scheduling functions with fake services.
+They do not prove TLS, DNS or SMTP responsiveness on hardware.

@@ -61,7 +61,7 @@ struct Garage {
 } secplus1_garage,secplus2_garage;
 unsigned read_cnt=10,secplus2_client_id=0x12342908;
 bool secplus2_identity_ready=true;
-unsigned mqtt_json_failures=0,mqtt_json_bytes=0;
+unsigned mqtt_json_failures=0,mqtt_json_bytes=0,mqtt_retained_dropped=0,notification_dropped=0;
 bool mqtt_buffer_ready=true;
 String mqtt_topic="test";
 String get_mac(){return "00:00:00:00:00:01";}
@@ -99,7 +99,7 @@ for hardware in (0, 1):
         for baseline in (station, ap):
             for offset in range(7):
                 data = next(iterator)
-                mqtt_extra = {'mqtt_json_failures', 'mqtt_json_bytes', 'mqtt_buffer_ready'}
+                mqtt_extra = {'mqtt_json_failures', 'mqtt_json_bytes', 'mqtt_buffer_ready', 'mqtt_retained_dropped', 'notification_dropped'}
                 assert set(data) == baseline | ((extra | mqtt_extra) if offset == 6 else set()), data
                 if offset == 6:
                     assert data['active_security_protocol'] == protocol

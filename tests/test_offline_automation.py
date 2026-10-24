@@ -84,5 +84,5 @@ connecting=loop[loop.index('case OG_STATE_CONNECTING:'):loop.index('case OG_STAT
 assert 'og.restart()' not in connecting
 assert 'otf->on(' not in connecting
 notify=source[source.index('void perform_notify(String s) {'):source.index('void process_dynamics')]
-assert notify.index('WiFi.status() != WL_CONNECTED') < notify.index('iftttNotify(s)')
+assert notify.index('WiFi.status() != WL_CONNECTED') < notify.index('pending_notification = s')
 print('offline startup integration: PASS')
