@@ -14,6 +14,7 @@
 		<tr><td><input type='file' name='file' accept='.bin' id='file'></td></tr>
 		<tr><td><b>Device key: </b><input type='password' name='dkey' size=16 maxlength=64 id='dkey'></td></tr>
 		<tr><td><label id='msg'></label></td></tr>
+		<tr><td><progress id='upload_progress' max='100' value='0' style='width:100%' aria-label='Firmware upload progress'></progress></td></tr>
 		</table>
 		<div data-role='controlgroup' data-type='horizontal'>
 		<a href='#' data-role='button' data-inline='true' data-theme='a' id='btn_back'>Back</a>
@@ -34,23 +35,23 @@ $('#btn_back').click(function(e){
 	e.preventDefault(); goback();
 });
 $('#btn_submit').click(function(e){
+	e.preventDefault();
 	var files= id('file').files;
 	if(files.length==0) {show_msg('Please select a firmware file.',3000,'red'); return;}
 	if(id('dkey').value=='') {
 		if(!confirm('You did not input a device key. Are you sure?')) return;
 	}
-	var btn = id('btn_submit');
 	show_msg('Uploading. Please wait...',0,'gray');
 	var fd = new FormData();
 	var file = files[0];
 	fd.append('file', file, file.name);
-	fd.append('dkey', id('dkey').value);
 	var xhr = new XMLHttpRequest();
 	xhr.timeout = 300000;
 	xhr.upload.onprogress = function (evt) {
 		if (evt.lengthComputable) {
 			const pct = Math.round((evt.loaded / evt.total) * 100);
-			show_msg(`Uploading... (${pct}%)`,0,'gray');
+			id('upload_progress').value=pct;
+			show_msg(pct===100 ? 'Upload sent. Verifying firmware...' : `Uploading... (${pct}%)`,0,'gray');
 		}
 	};
 	xhr.onreadystatechange = function() {
@@ -71,6 +72,8 @@ $('#btn_submit').click(function(e){
 		show_msg('A network error occurred during the upload.');
 	};
 	xhr.open('POST', '//' + window.location.hostname + ':8080' + window.location.pathname, true);
+        xhr.setRequestHeader('X-OG-Device-Key', 'hex:' + Array.from(new TextEncoder().encode(id('dkey').value), b=>b.toString(16).padStart(2,'0')).join(''));
+
 	xhr.send(fd);
 });
 </script>

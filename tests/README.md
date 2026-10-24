@@ -13,13 +13,23 @@ g++ -std=c++11 -Wall -Wextra -Werror tests/test_body_device_key.cpp -o /tmp/og-t
 /tmp/og-test-body-key
 node tests/test_identity_button.mjs
 node tests/test_pending_switches.mjs
+node tests/test_cloud_options.mjs
 python3 tests/test_debug_response.py
+python3 tests/test_update_security.py
+python3 tests/test_options_security.py
 g++ -std=c++11 -Wall -Wextra -Werror tests/test_audio_timing.cpp -o /tmp/og-test-audio
 /tmp/og-test-audio
 ```
 
 These test production distance-consensus, health, identity lifecycle and exact POST-body authentication helpers without Arduino dependencies. The Node test checks the Security+ option visibility, exclusive Panel Emulate selection, and client-ID button's JavaScript, request body, cancellation and placement.
 They do not replace sensor checks on hardware.
+
+The upload test runs the production callbacks against observable flash/network
+stubs, including rejected authentication, cancellation, multiple files, write
+failures and retry. The options test exercises production serialization and save
+logic for write-only secrets and Blynk-to-OTC migration, and checks escaped MQTT
+status payloads against the configured packet capacity. A real browser/device
+upload and broker subscription remain necessary integration checks.
 
 For the real-widget slider regression, supply local copies of the exact
 `jquery-1.9.1.min.js` and `jquery.mobile-1.3.1.js` assets referenced by the page:

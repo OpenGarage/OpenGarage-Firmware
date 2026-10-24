@@ -322,7 +322,7 @@ function show() {
 		$('#lbl_beat').text(jd.rcnt).css('color','black');
 		$('#lbl_rssi').text((jd.rssi>-71?'Good':(jd.rssi>-81?'Weak':'Poor')) +' ('+ jd.rssi +' dBm)');
 		if(jd.cld==0) $('#lbl_cld').text('None');
-		else if(jd.cld==1) {$('#lbl_cld').text('Blynk '+['(disconnected)','(connected)'][jd.clds]);}
+		else if(jd.cld==1) {$('#lbl_cld').text('Blynk retired — configure OTC in Edit Options');}
 		else {$('#lbl_cld').text('OTC '+['(not enabled)','(connecting...)','(disconnected)','(connected)'][jd.clds]);}
 		$('#head_name').text(jd.name);
 		$('#btn_click').html(jd.door>=2?'Toggle Door':(jd.door?'Close Door':'Open Door')).button('refresh');

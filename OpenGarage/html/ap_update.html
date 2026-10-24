@@ -101,6 +101,7 @@
         </div>
 
         <p id='msg'></p>
+        <progress id='upload_progress' max='100' value='0' style='width:100%' aria-label='Firmware upload progress'></progress>
         <button type='button' id='btn_submit'>Upload Firmware</button>
     </form>
 </main>
@@ -128,7 +129,6 @@
         const fd = new FormData();
         const file = files[0];
         fd.append('file', file, file.name);
-        fd.append('dkey', id('dkey').value);
 
         const xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function() {
@@ -147,8 +147,9 @@
         };
         xhr.upload.onprogress = function (evt) {
         if (evt.lengthComputable) {
-            const pct = Math.max(5, Math.min(100, Math.round((evt.loaded / evt.total) * 100)));
-            show_msg('Uploading...('+pct+'%) Please wait.', 'gray');
+            const pct = Math.min(100, Math.round((evt.loaded / evt.total) * 100));
+            id('upload_progress').value=pct;
+            show_msg(pct===100 ? 'Upload sent. Verifying firmware...' : 'Uploading...('+pct+'%) Please wait.', 'gray');
         }
         };
         // The submission URL correctly targets port 8080 as required
@@ -157,6 +158,8 @@
         xhr.timeout = 300000; // 300s
         xhr.ontimeout = function(){ show_msg('Upload timed out. Please try again.', 'red'); };
         xhr.onerror   = function(){ show_msg('Network error during upload.', 'red'); };
+        xhr.setRequestHeader('X-OG-Device-Key', 'hex:' + Array.from(new TextEncoder().encode(id('dkey').value), b=>b.toString(16).padStart(2,'0')).join(''));
+
         xhr.send(fd);
     });
 </script>

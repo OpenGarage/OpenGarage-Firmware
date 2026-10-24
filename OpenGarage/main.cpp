@@ -20,18 +20,14 @@
  * <http://www.gnu.org/licenses/>.
  */
 
- #if defined(SERIAL_DEBUG)
-	#define BLYNK_DEBUG
-	#define BLYNK_PRINT Serial
-#endif
-
-#include <BlynkSimpleEsp8266.h>
 #include <DNSServer.h>
 #include <PubSubClient.h>
 #include <OpenThingsFramework.h>
 #include <Request.h>
 #include <Response.h>
 
+#include "json_escape.h"
+#include "update_auth.h"
 #include "pitches.h"
 #include "OpenGarage.h"
 #include "espconnect.h"
@@ -40,10 +36,6 @@ OpenGarage og;
 OTF::OpenThingsFramework *otf = NULL;
 ESP8266WebServer *updateServer = NULL;
 DNSServer *dns = NULL;
-
-WidgetLED blynk_door(BLYNK_PIN_DOOR);
-WidgetLED blynk_car(BLYNK_PIN_CAR);
-WidgetLED blynk_dval(BLYNK_PIN_DVAL);
 
 static Ticker aux_ticker;
 static Ticker ip_ticker;
@@ -54,6 +46,14 @@ static WiFiClient httpclient;
 PubSubClient mqttclient(wificlient);
 String mqtt_topic;
 String mqtt_id;
+static uint32_t mqtt_json_failures = 0;
+static uint32_t mqtt_json_bytes = 0;
+static bool mqtt_buffer_ready = false;
+static bool update_authorized = false, update_failed = false, update_started = false;
+static bool update_tail_pending = false;
+static bool update_file_seen = false;
+static uint8_t update_tail = 0;
+static size_t update_received = 0, update_capacity = 0;
 
 static String scanned_ssids;
 static byte read_cnt = 0;
@@ -137,7 +137,7 @@ void otf_send_compressed_P(OTF::Response& res, const __FlashStringHelper* conten
 	res.writeHeader(F("Content-Length"), len);
 	res.writeHeader(F("Vary"), F("Accept-Encoding"));
 	res.writeHeader(F("Content-Encoding"), F("gzip"));
-	res.writeHeader(F("Cache-Control"), F("public, max-age=86400"));
+	res.writeHeader(F("Cache-Control"), F("no-cache"));
 	res.writeHeader(F("Connection"), F("close"));
 	res.writeBodyData(content, len);
 	DEBUG_PRINT(len);
@@ -418,7 +418,7 @@ json += F(",\"fwv\":");
 		}
 	}
 	json += F(",\"name\":\"");
-	json += og.options[OPTION_NAME].sval;
+	append_json_escaped(json, og.options[OPTION_NAME].sval);
 	json += F("\",\"mac\":\"");
 	json += get_mac();
 	json += F("\",\"cid\":");
@@ -430,8 +430,7 @@ json += F(",\"fwv\":");
 	json += cld;
 	if(cld>CLOUD_NONE) {
 		json += F(",\"clds\":");
-		if(cld==CLOUD_BLYNK) json += (Blynk.connected()?1:0);
-		else if(cld==CLOUD_OTC) json += (otf->getCloudStatus());
+		if(cld==CLOUD_OTC) json += (otf->getCloudStatus());
 		else json += "0";
 	}
 	if(og.options[OPTION_TSN].ival) {
@@ -461,6 +460,9 @@ static void append_debug_details(const OTF::Request &req, String &json) {
 		json += secplus2_identity_ready ? F("true") : F("false");
 	}
 	append_health_json(json);
+	json += F(",\"mqtt_json_failures\":"); json += mqtt_json_failures;
+	json += F(",\"mqtt_json_bytes\":"); json += mqtt_json_bytes;
+	json += F(",\"mqtt_buffer_ready\":"); json += mqtt_buffer_ready ? 1 : 0;
 }
 
 void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
@@ -472,11 +474,11 @@ void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
 	json += F(",\"fwv\":");
 	json += og.options[OPTION_FWV].ival;
 	json += F(",\"name\":\"");
-	json += og.options[OPTION_NAME].sval;
+	append_json_escaped(json, og.options[OPTION_NAME].sval);
 	json += F("\",\"mac\":\"");
 	json += get_mac();
 	json += F("\",\"mqtt_topic\":\"");
-	json += mqtt_topic;
+	append_json_escaped(json, mqtt_topic);
 	json += F("\",\"devip\":\"");
 	json += WiFi.localIP().toString();
 	json += F("\",\"cid\":");
@@ -502,7 +504,7 @@ void sta_logs_fill_json(String& json, OTF::Response &res) {
 	json = "";
 	json.reserve(2048); // reserve capacity to reduce the overhead of String's +=
 	json += F("{\"name\":\"");
-	json += og.options[OPTION_NAME].sval;
+	append_json_escaped(json, og.options[OPTION_NAME].sval);
 	json += F("\",\"starttime\":");
 	json += start_utc_time;
 	json += F(",\"time\":");
@@ -813,6 +815,30 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 	OptionStruct *o = og.options;
 
 	byte usi = 0;
+	const char *cloud = req.getQueryParameter("cld");
+	if (cloud && strcmp(cloud, "0") != 0 && strcmp(cloud, "2") != 0) {
+		otf_send_result(res, HTML_DATA_OUTOFBOUND, "cld: Blynk support retired"); return;
+	}
+	for (const char *field : {"auth", "apwd", "iftt", "mqpw"}) {
+		const String clear_name = String("clear_") + field;
+		const char *clear = req.getQueryParameter(clear_name.c_str());
+		const char *value = req.getQueryParameter(field);
+		if (clear && (strcmp(clear, "1") != 0 || (value && *value))) {
+			otf_send_result(res, HTML_DATA_FORMATERROR, field); return;
+		}
+	}
+	const char *new_auth = req.getQueryParameter("auth");
+	const bool otc_selected = cloud ? strcmp(cloud, "2") == 0 : og.options[OPTION_CLD].ival == CLOUD_OTC;
+	if (otc_selected && (req.getQueryParameter("clear_auth") ||
+		(new_auth && *new_auth ? strlen(new_auth) < 32 :
+		 og.options[OPTION_CLD].ival != CLOUD_OTC || og.options[OPTION_AUTH].sval.length() < 32))) {
+		otf_send_result(res, HTML_DATA_OUTOFBOUND, "auth: OTC requires a token"); return;
+	}
+	// Bound MQTT-controlled user strings; escaping can expand each byte sixfold.
+	for (const char *field : {"name", "mqtp"}) {
+		const char *value = req.getQueryParameter(field);
+		if (value && strlen(value) > 64) { otf_send_result(res, HTML_DATA_OUTOFBOUND, field); return; }
+	}
 	char *pem_value = req.getQueryParameter("pem");
 	if (pem_value != NULL) {
 		const char *requested_secv = req.getQueryParameter("secv");
@@ -942,11 +968,18 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 				uint ival = String(sval).toInt();
 				o->ival = ival;
 			} else {
-				o->sval = String(sval);
+				// Secret fields are write-only. Blank means preserve; explicit clear
+				// flags below remove them without round-tripping stored credentials.
+				if (*sval || (i!=OPTION_APWD && i!=OPTION_AUTH && i!=OPTION_IFTT && i!=OPTION_MQPW))
+					o->sval = String(sval);
 			}
 		}
 	}
 
+	for (byte field : {byte(OPTION_AUTH), byte(OPTION_APWD), byte(OPTION_IFTT), byte(OPTION_MQPW)}) {
+		const String clear_name = String("clear_") + og.options[field].name;
+		if (req.getQueryParameter(clear_name.c_str())) og.options[field].sval = "";
+	}
 	if(usi) {
 		og.options[OPTION_DVIP].sval = dvip;
 		og.options[OPTION_GWIP].sval = gwip;
@@ -1001,7 +1034,8 @@ void sta_options_fill_json(String& json) {
 	OptionStruct *o = og.options;
 	for(byte i=0;i<NUM_OPTIONS;i++,o++) {
 		if(!o->max) {
-			if(i==OPTION_PASS || i==OPTION_DKEY || i==OPTION_MQPW) { // do not output password or device key or MQTT password
+			if(i==OPTION_PASS || i==OPTION_DKEY || i==OPTION_MQPW ||
+			   i==OPTION_APWD || i==OPTION_AUTH || i==OPTION_IFTT) { // Stored secrets are write-only
 				continue;
 			} else {
 				json += F("\"");
@@ -1012,17 +1046,17 @@ void sta_options_fill_json(String& json) {
 				if(o->sval.length()==0) {
 					switch(i) {
 					case OPTION_MQTP:
-						json += og.options[OPTION_NAME].sval;
+						append_json_escaped(json, og.options[OPTION_NAME].sval);
 						break;
 					case OPTION_HOST:
-						json += get_ap_ssid();
+						append_json_escaped(json, get_ap_ssid());
 						break;
 					//case OPTION_NTP1: // leave NPT1 empty if using default
 					//json += DEFAULT_NTP1;
 					//break;
 					}
 				} else {
-					json += o->sval;
+					append_json_escaped(json, o->sval);
 				}
 				json += F("\"");
 				json += ",";
@@ -1035,6 +1069,10 @@ void sta_options_fill_json(String& json) {
 			json += ",";
 		}
 	}
+	json += F("\"auth_set\":"); json += og.options[OPTION_AUTH].sval.length() ? 1 : 0;
+	json += F(",\"apwd_set\":"); json += og.options[OPTION_APWD].sval.length() ? 1 : 0;
+	json += F(",\"iftt_set\":"); json += og.options[OPTION_IFTT].sval.length() ? 1 : 0;
+	json += F(",");
 	// append has_swrx variable
 	json += F("\"has_swrx\":");
 	json += og.has_swrx;
@@ -1063,6 +1101,10 @@ void on_ap_scan(const OTF::Request &req, OTF::Response &res) {
 
 void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_STA) return;
+	const char *cloud = req.getQueryParameter("cld");
+	if (cloud && strcmp(cloud, "otc") != 0 && strcmp(cloud, "none") != 0) {
+		otf_send_result(res, HTML_DATA_OUTOFBOUND, "cld: Blynk support retired"); return;
+	}
 	char *ssid = req.getQueryParameter("ssid");
 	if(ssid!=NULL&&strlen(ssid)!=0) {
 		og.options[OPTION_SSID].sval = ssid;
@@ -1072,22 +1114,16 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 		char *cld = req.getQueryParameter("cld");
 		char *auth = req.getQueryParameter("auth");
 		if(cld!=NULL&&strlen(cld)!=0&&auth!=NULL&&strlen(auth)!=0) {
-			if(strcmp(cld, "blynk")==0 || strcmp(cld, "otc")==0) {
+			if(strcmp(cld, "otc")==0) {
 				char *bdmn = req.getQueryParameter("bdmn");
 				char *bprt = req.getQueryParameter("bprt");
-				if(strcmp(cld, "blynk")==0) {
-					og.options[OPTION_BDMN].sval=(bdmn==NULL||strlen(bdmn)==0)?DEFAULT_BLYNK_DMN:bdmn;
-					og.options[OPTION_BPRT].ival=(bprt==NULL||strlen(bprt)==0)?DEFAULT_BLYNK_PRT:String(bprt).toInt();
-					og.options[OPTION_CLD].ival = CLOUD_BLYNK;
-				} else {
 					og.options[OPTION_BDMN].sval=(bdmn==NULL||strlen(bdmn)==0)?DEFAULT_OTC_DMN:bdmn;
 					og.options[OPTION_BPRT].ival=(bprt==NULL||strlen(bprt)==0)?DEFAULT_OTC_PRT:String(bprt).toInt();
 					og.options[OPTION_CLD].ival = CLOUD_OTC;
-				}
 				og.options[OPTION_AUTH].sval = auth;
 				og.options_save();
 				DEBUG_PRINTLN(og.options[OPTION_CLD].ival);
-				DEBUG_PRINTLN(og.options[OPTION_AUTH].sval);
+
 				DEBUG_PRINTLN(og.options[OPTION_BDMN].sval);
 				DEBUG_PRINTLN(og.options[OPTION_BPRT].ival);
 			} else {
@@ -1189,6 +1225,7 @@ void do_setup() {
 	Serial.println(secplus2_client_id, HEX);
 	if (!secplus2_identity_ready) Serial.println(F("Security+ 2.0 disabled: identity storage unavailable or invalid"));
 	og.options_setup();
+	mqtt_buffer_ready = mqttclient.setBufferSize(2048);
 	secplus1_garage.set_panel_emulation_disabled(og.options[OPTION_PEM].ival != 0);
 	og.init_sensors();
 	curr_mode = og.get_mode();
@@ -1225,6 +1262,7 @@ void do_setup() {
 	}
 	if(!updateServer) {
 		updateServer = new ESP8266WebServer(8080);
+		updateServer->collectHeaders("X-OG-Device-Key");
 		DEBUG_PRINT(F("update server started"));
 	}
 	led_blink_ms = LED_FAST_BLINK;
@@ -1285,68 +1323,96 @@ void on_update(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_AP) {
 		otf_send_compressed_P(res, (const __FlashStringHelper*)ap_update_html_gz, ap_update_html_gz_len);
 	} else {
-		if(req.isCloudRequest()) otf_send_result(res, HTML_NOT_PERMITTED, "fw update");
+		if(req.isCloudRequest()) {
+			otf_send_result(res, HTML_NOT_PERMITTED, "fw update");
+			return;
+		}
 		otf_send_compressed_P(res, (const __FlashStringHelper*)sta_update_html_gz, sta_update_html_gz_len);
 	}
 }
 
+// Hold the final byte until authorized finalization. Aborting with end(false)
+// cannot commit a complete image, even if an upload fills the staging capacity.
+static void cancel_firmware_upload() {
+	if (update_started) Update.end(false);
+	update_started = false;
+	update_authorized = false;
+	update_tail_pending = false;
+}
+
 void on_firmware_upload_fin() {
-
-	// Verify the device key.
-	if(!(updateServer->hasArg("dkey") && (updateServer->arg("dkey") == og.options[OPTION_DKEY].sval))) {
+	update_file_seen = false;
+	if (!update_authorized) {
+		cancel_firmware_upload();
 		updateserver_send_result(HTML_UNAUTHORIZED);
-		Update.end(false); // Update.reset(); FAB
 		return;
 	}
-
-	// finish update and check error
-	if(!Update.end(true) || Update.hasError()) {
+	if (update_failed || !update_started || !update_tail_pending ||
+		!update_key_matches(updateServer->header("X-OG-Device-Key").c_str(), og.options[OPTION_DKEY].sval.c_str()) ||
+		Update.write(&update_tail, 1) != 1) {
+		cancel_firmware_upload();
 		updateserver_send_result(HTML_UPLOAD_FAILED);
-		DEBUG_PRINTLN(F("OTA update failed: "));
-		Update.printError(Serial);
 		return;
 	}
-
-	updateserver_send_result(HTML_SUCCESS);
-	//restart_ticker.once_ms(1000, og.restart);
-	restart_in(1000);
+	const bool ok = Update.end(true) && !Update.hasError();
+	update_started = false;
+	update_authorized = false;
+	update_tail_pending = false;
+	updateserver_send_result(ok ? HTML_SUCCESS : HTML_UPLOAD_FAILED);
+	if (ok) restart_in(1000);
 }
 
 void on_update_options() {
 	updateServer->sendHeader("Access-Control-Allow-Origin", "*");
 	updateServer->sendHeader("Access-Control-Max-Age", "10000");
 	updateServer->sendHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");
-	updateServer->sendHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+	updateServer->sendHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, X-OG-Device-Key");
 	updateServer->send(200, "text/plain", "");
 }
 
 void on_firmware_upload() {
 	HTTPUpload& upload = updateServer->upload();
-	if(upload.status == UPLOAD_FILE_START){
+	if (upload.status == UPLOAD_FILE_START) {
+		// Reject multiple files within one request, without finalizing either.
+		if (update_file_seen) {
+			const bool authorized = update_authorized;
+			cancel_firmware_upload();
+			update_authorized = authorized;
+			update_failed = true; return;
+		}
+		update_file_seen = true;
+		update_authorized = update_key_matches(updateServer->header("X-OG-Device-Key").c_str(),
+			og.options[OPTION_DKEY].sval.c_str());
+		update_failed = false;
+		update_received = 0;
+		update_tail_pending = false;
+		if (!update_authorized) return;
 		if (og.options[OPTION_SECV].ival == 2) secplus2_garage.finish_release();
 		if (og.options[OPTION_SECV].ival == 1) secplus1_garage.finish_release();
-		if(curr_mode == OG_MOD_STA) {
-			DEBUG_PRINTLN(F("Stopping all network clients"));
+		if (curr_mode == OG_MOD_STA) {
 			WiFiUDP::stopAll();
-			Blynk.disconnect(); // disconnect Blynk during firmware upload
 			mqttclient.disconnect();
 		}
-		DEBUG_PRINT(F("prepare to upload: "));
-		DEBUG_PRINTLN(upload.filename);
-		uint32_t maxSketchSpace = (ESP.getFreeSketchSpace()-0x1000)&0xFFFFF000;
-		if(!Update.begin(maxSketchSpace)) {
-			DEBUG_PRINTLN(F("not enough space"));
+		update_capacity = (ESP.getFreeSketchSpace()-0x1000)&0xFFFFF000;
+		update_started = Update.begin(update_capacity);
+		update_failed = !update_started;
+	} else if (upload.status == UPLOAD_FILE_WRITE) {
+		if (!update_authorized || update_failed || !update_started) return;
+		if (upload.currentSize > update_capacity - update_received) {
+			update_failed = true; return;
 		}
-	} else if(upload.status == UPLOAD_FILE_WRITE) {
-		DEBUG_PRINT(".");
-		if(Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-			DEBUG_PRINTLN(F("size mismatch"));
+		if (upload.currentSize) {
+			if (update_tail_pending && Update.write(&update_tail, 1) != 1) update_failed = true;
+			const size_t length = upload.currentSize - 1;
+			if (!update_failed && length && Update.write(upload.buf, length) != length) update_failed = true;
+			update_tail = upload.buf[length];
+			update_tail_pending = true;
+			update_received += upload.currentSize;
 		}
-	} else if(upload.status == UPLOAD_FILE_END) {
-		DEBUG_PRINTLN(F("upload completed"));
-	} else if(upload.status == UPLOAD_FILE_ABORTED){
-		Update.end();
-		DEBUG_PRINTLN(F("upload aborted"));
+	} else if (upload.status == UPLOAD_FILE_ABORTED) {
+		cancel_firmware_upload();
+		update_file_seen = false;
+		update_failed = true;
 	}
 	delay(0);
 }
@@ -1395,12 +1461,6 @@ bool mqtt_connect_subscribe() {
 	return false;
 }
 
-void blynkNotify(String s){
-	// Blynk notification
-	DEBUG_PRINTLN(F(" Sending blynk notification"));
-	Blynk.notify(s);
-}
-
 void iftttNotify(String s){
 	DEBUG_PRINTLN(" Sending IFTTT Notification");
 	http.begin(httpclient, "http://maker.ifttt.com/trigger/opengarage/with/key/"+og.options[OPTION_IFTT].sval);
@@ -1446,10 +1506,6 @@ void mqttNotify(String s){
 void perform_notify(String s) {
 	DEBUG_PRINT(F("Sending Notify to connected systems, value:"));
 	DEBUG_PRINTLN(s);
-
-	if(og.options[OPTION_CLD].ival==CLOUD_BLYNK && Blynk.connected()){
-		blynkNotify(s);
-	}
 
 	// IFTTT notification
 	if(og.options[OPTION_IFTT].sval.length()>7) { // key size is at least 8
@@ -1740,64 +1796,16 @@ void check_status() {
 				}
 				String msg;
 				sta_controller_fill_json(msg);
-				mqttclient.publish((mqtt_topic + "/OUT/JSON").c_str(),msg.c_str());
+				mqtt_json_bytes = msg.length();
+				const String topic = mqtt_topic + "/OUT/JSON";
+				if (!mqtt_buffer_ready || msg.length() + topic.length() + 7 > mqttclient.getBufferSize() ||
+					!mqttclient.publish(topic.c_str(), msg.c_str())) ++mqtt_json_failures;
 			}
 			// Send status report every 15 seconds: we don't need to send updates frequently if there is no status change.
 			force_mqtt_update_timeout= curr_utc_time + 15;
 		}
 
 		// Process dynamics: automation and notifications
-		// report status to Blynk
-		if(og.options[OPTION_CLD].ival==CLOUD_BLYNK && Blynk.connected()) {
-			DEBUG_PRINTLN(F(" Update Blynk (State Refresh)"));
-
-			static uint old_distance = 0;
-			static byte old_door_status = 0xff, old_vehicle_status = 0xff;
-			static float old_tempC = -100;
-			static float old_humid = -100;
-			static byte old_light_status = 255;
-			static byte old_lock_status = 255;
-
-			// to reduce traffic, only send updated values
-			if(distance != old_distance) {  Blynk.virtualWrite(BLYNK_PIN_DIST, distance); old_distance = distance; }
-			if(door_status != old_door_status) {
-				switch(door_status) {
-					case DOOR_STATUS_OPEN:
-						blynk_door.setColor("#E02040"); // Red for Open
-						blynk_door.on();
-						break;
-					case DOOR_STATUS_STOPPED:
-						blynk_door.setColor("#E0E000"); // Yellow for Stopped
-						blynk_door.on();
-						break;
-					case DOOR_STATUS_OPENING:
-						blynk_door.setColor("#D000D0"); // Purple for Opening
-						blynk_door.on();
-						break;
-					case DOOR_STATUS_CLOSING:
-						blynk_door.setColor("#20A0E0"); // Cyan for Closing
-						blynk_door.on();
-						break;
-					case DOOR_STATUS_CLOSED:
-						//blynk_door.setColor("#20E080"); // Green for Closed
-						blynk_door.off();
-						break;
-					default:
-						blynk_door.setColor("#808080"); // Gray for Unknown
-						blynk_door.on();
-						break;
-				}
-				blynk_dval.setValue(door_status);
-				old_door_status = door_status;
-			}
-			if(vehicle_status != old_vehicle_status) { (vehicle_status==1) ? blynk_car.on() : blynk_car.off(); old_vehicle_status = vehicle_status; }
-			// hack to simulate temp humid changes
-			if(old_tempC != tempC) { Blynk.virtualWrite(BLYNK_PIN_TEMP, tempC); old_tempC = tempC; }
-			if(old_humid != humid) { Blynk.virtualWrite(BLYNK_PIN_HUMID,humid); old_humid = humid; }
-			if(old_light_status != light_status) { Blynk.virtualWrite(BLYNK_PIN_LIGHT, light_status); old_light_status = light_status; }
-			if(old_lock_status != lock_status) { Blynk.virtualWrite(BLYNK_PIN_LOCK, lock_status); old_lock_status = lock_status; }
-		}
-
 		process_dynamics(event);
 		checkstatus_timeout = curr_utc_time + og.options[OPTION_RIV].ival;
 	}
@@ -1999,15 +2007,6 @@ void do_loop() {
 				//DEBUG_PRINTLN(og.options[OPTION_HTP].ival);
 			}
 
-			if(og.options[OPTION_CLD].ival==CLOUD_BLYNK) {
-				DEBUG_PRINTLN(F("Attempt to connect to Blynk:"));
-				DEBUG_PRINT(og.options[OPTION_BDMN].sval);
-				DEBUG_PRINT(":");
-				DEBUG_PRINTLN(og.options[OPTION_BPRT].ival);
-				Blynk.config(og.options[OPTION_AUTH].sval.c_str(), og.options[OPTION_BDMN].sval.c_str(), (uint16_t) og.options[OPTION_BPRT].ival); // use the config function
-				if(Blynk.connect()) {DEBUG_PRINTLN(F("Blynk connected"));}
-				else {DEBUG_PRINTLN(F("Blynk failed!"));}
-			}
 			led_blink_ms = 0;
 			og.set_led(LOW);
 			og.state = OG_STATE_CONNECTED;
@@ -2058,10 +2057,6 @@ void do_loop() {
 				otf->loop();
 				updateServer->handleClient();
 
-				if(og.options[OPTION_CLD].ival==CLOUD_BLYNK) {
-					Blynk.run();
-				}
-
 				//Handle MQTT
 				if(og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval)) { // if enabled and mqtt server looks valid
 					if (!mqttclient.connected()) {
@@ -2101,35 +2096,5 @@ void do_loop() {
 	if (setup_reboot_pending && !startup_audio.active() && !og.alarm) {
 		setup_reboot_pending=false;
 		restart_in(1000);
-	}
-}
-
-BLYNK_WRITE(BLYNK_PIN_RELAY) {
-	static bool last_button_state = 0;
-	bool current_button_state = param.asInt();
-	if (last_button_state && !current_button_state) { // on button release
-		DEBUG_PRINTLN(F("Received Blynk generated button request"));
-		performDoorAction(ACTION_TOGGLE);
-	}
-	last_button_state = current_button_state;
-}
-
-BLYNK_WRITE(BLYNK_PIN_LIGHT) {
-	if (og.options[OPTION_SECV].ival == 2 && !secplus2_garage.status_valid()) return;
-	if (og.options[OPTION_SECV].ival == 1 && !secplus1_garage.light_lock_valid()) return;
-	bool requested_light_state = param.asInt();
-	if (requested_light_state != light_status) {
-		DEBUG_PRINTLN(F("Received Blynk generated light change request"));
-		performLightAction(ACTION_TOGGLE);
-	}
-}
-
-BLYNK_WRITE(BLYNK_PIN_LOCK) {
-	if (og.options[OPTION_SECV].ival == 2 && !secplus2_garage.status_valid()) return;
-	if (og.options[OPTION_SECV].ival == 1 && !secplus1_garage.light_lock_valid()) return;
-	bool requested_lock_state = param.asInt();
-	if (requested_lock_state != lock_status) {
-		DEBUG_PRINTLN(F("Received Blynk generated lock change request"));
-		performLockAction(ACTION_TOGGLE);
 	}
 }

@@ -24,7 +24,7 @@
 #define _DEFINES_H
 
 /** Firmware version, hardware version, and maximal values */
-#define OG_FWV     125 // Firmware version: 125 means 1.2.5
+#define OG_FWV     126 // Firmware version: 126 means 1.2.6 (development)
 
 /** GPIO pins */
 #define PIN_RELAY  15 // NodeMCU D8. Relay for triggering door action (for non-Security+).
@@ -54,8 +54,6 @@
 #define DEFAULT_NTP2    "time.cloudflare.com"
 #define DEFAULT_NTP3    "time.windows.com"
 
-#define DEFAULT_BLYNK_DMN  "blynk.openthings.io"
-#define DEFAULT_BLYNK_PRT  8080
 #define DEFAULT_OTC_DMN    "ws.cloud.openthings.io"
 #define DEFAULT_OTC_PRT    80
 
@@ -144,20 +142,10 @@ enum {
 
 enum { // cloud settings
 	CLOUD_NONE = 0,
-	CLOUD_BLYNK,
+	CLOUD_BLYNK_RETIRED, // Reserved on-disk value 1; never connect.
 	CLOUD_OTC,
 };
 
-#define BLYNK_PIN_DOOR  V0
-#define BLYNK_PIN_RELAY V1
-#define BLYNK_PIN_DVAL  V2
-#define BLYNK_PIN_DIST  V3
-#define BLYNK_PIN_CAR   V4
-#define BLYNK_PIN_IP    V5
-#define BLYNK_PIN_TEMP  V6
-#define BLYNK_PIN_HUMID V7
-#define BLYNK_PIN_LIGHT V8
-#define BLYNK_PIN_LOCK  V9
 
 #define DEFAULT_LOG_SIZE  100
 #define MAX_LOG_SIZE      500
@@ -226,7 +214,7 @@ typedef enum {
 	OPTION_USI,     // use static IP
 	OPTION_SSID,    // wifi ssid
 	OPTION_PASS,    // wifi password
-	OPTION_CLD,     // Cloud connection (0: no; 1: Blynk: 2: OTC)
+	OPTION_CLD,     // Cloud connection (0: no; 1: retired Blynk; 2: OTC)
 	OPTION_AUTH,    // Cloud authentication token
 	OPTION_BDMN,    // Cloud server (for backward compatibility, it's named bdmn)
 	OPTION_BPRT,    // Cloud port (for backward compatibility, it's named bprt)

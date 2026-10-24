@@ -18,6 +18,7 @@ stub = r'''
 #include <iostream>
 #include <cstring>
 #include <cstdint>
+#include "OpenGarage/json_escape.h"
 #define F(x) x
 #define HEX 16
 #define STRING_RESERVE_SIZE 256
@@ -29,6 +30,7 @@ struct String : std::string {
   template<class T> String& operator+=(T n) { append(std::to_string(n)); return *this; }
   String& operator+=(const char *s) { append(s); return *this; }
   String& operator+=(const String &s) { append(s); return *this; }
+  String& operator+=(char c) { push_back(c); return *this; }
 };
 namespace OTF {
 struct Request { const char *value; const char *getQueryParameter(const char*) const { return value; } };
@@ -57,6 +59,8 @@ struct Garage {
 } secplus1_garage,secplus2_garage;
 unsigned read_cnt=10,secplus2_client_id=0x12342908;
 bool secplus2_identity_ready=true;
+unsigned mqtt_json_failures=0,mqtt_json_bytes=0;
+bool mqtt_buffer_ready=true;
 String mqtt_topic="test";
 String get_mac(){return "00:00:00:00:00:01";}
 void otf_send_json(OTF::Response&,const String &json){std::cout<<json<<'\n';}
@@ -76,7 +80,7 @@ int main() {
 '''
 with tempfile.TemporaryDirectory(prefix='og-db-test-') as scratch:
     binary = str(Path(scratch) / 'test')
-    subprocess.run(['g++', '-std=c++11', '-x', 'c++', '-', '-o', binary],
+    subprocess.run(['g++', '-std=c++11', '-I', str(Path(__file__).resolve().parents[1]), '-x', 'c++', '-', '-o', binary],
                    input=stub + '\n'.join(functions) + runner, text=True, check=True)
     results = [json.loads(line) for line in subprocess.check_output([binary], text=True).splitlines()]
 
@@ -93,7 +97,8 @@ for hardware in (0, 1):
         for baseline in (station, ap):
             for offset in range(7):
                 data = next(iterator)
-                assert set(data) == baseline | (extra if offset == 6 else set()), data
+                mqtt_extra = {'mqtt_json_failures', 'mqtt_json_bytes', 'mqtt_buffer_ready'}
+                assert set(data) == baseline | ((extra | mqtt_extra) if offset == 6 else set()), data
                 if offset == 6:
                     assert data['active_security_protocol'] == protocol
                     if hardware and protocol == 2:

@@ -21,6 +21,7 @@
  */
 
 #include "espconnect.h"
+#include "json_escape.h"
 
 String scan_network() {
 	DEBUG_PRINTLN(F("scan network"));
@@ -34,7 +35,7 @@ String scan_network() {
 	wirelessinfo = "{\"ssids\":[";
 	for(int i=0;i<n;i++) {
 		wirelessinfo += "\"";
-		wirelessinfo += WiFi.SSID(i);
+		append_json_escaped(wirelessinfo, WiFi.SSID(i));
 		wirelessinfo += "\"";
 		if(i<n-1) wirelessinfo += ",\r\n";
 	}

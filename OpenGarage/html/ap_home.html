@@ -250,7 +250,6 @@
             <label>Cloud Connection</label>
             <div class="radio-group">
                 <label><input type='radio' id='none' name='token' onclick='toggle_cld()' checked>No, configure later.</label>
-                <label><input type='radio' id='blynk' name='token' onclick='toggle_cld()'>Use Blynk Token.</label>
                 <label><input type='radio' id='otc' name='token' onclick='toggle_cld()'>Use OpenThings Cloud (OTC) Token.</label>
             </div>
         </div>
@@ -258,7 +257,7 @@
         <div id='tb_cld' hidden>
             <div class="form-group">
                 <label for="auth">Token</label>
-                <input type='text' id='auth'>
+                <input type='password' id='auth'>
             </div>
             <div class="form-group">
                 <label for="bdmn">Server</label>
@@ -284,7 +283,6 @@ function show_msg(s,c){id('msg').innerHTML='<font color='+c+'>'+s+'</font>';}
 var tci;
 function toggle_cld(){
   id('tb_cld').hidden=true;
-  if(eval_cb('blynk')) {id('tb_cld').hidden=false;id('bdmn').value='blynk.openthings.io';id('bprt').value='8080';}
   if(eval_cb('otc')) {id('tb_cld').hidden=false;id('bdmn').value='ws.cloud.openthings.io';id('bprt').value='80';}
 }
 function tryConnect(){
@@ -318,9 +316,9 @@ function sf(){
   };
     var secv_val = document.querySelector('input[name="secv"]:checked').value;
   var comm='cc?ssid='+encodeURIComponent(id('ssid').value)+'&pass='+encodeURIComponent(id('pass').value)+'&host='+encodeURIComponent(id('host').value)+'&secv='+secv_val;
-  if(eval_cb('otc')||eval_cb('blynk')){
+  if(eval_cb('otc')){
     if(id('auth').value.length<32) {show_msg('Cloud token is too short!','red');return;}
-    comm+='&cld='+(eval_cb('blynk')?'blynk':'otc');
+    comm+='&cld=otc';
     comm+='&auth='+encodeURIComponent(id('auth').value);
     comm+='&bdmn='+id('bdmn').value;
     comm+='&bprt='+id('bprt').value;
