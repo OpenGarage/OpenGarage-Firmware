@@ -23,6 +23,22 @@
 #include "espconnect.h"
 #include "json_escape.h"
 
+og_wifi::Recovery station_recovery;
+uint8_t station_disconnect_reason = 0;
+static WiFiEventHandler station_disconnect_handler;
+
+void service_station_network(const char *ssid, const char *pass, bool critical_busy, bool motion_busy) {
+	const auto action = station_recovery.step(millis(), WiFi.status() == WL_CONNECTED && WiFi.localIP(), critical_busy, motion_busy);
+	if (action == og_wifi::Recovery::Action::NONE) return;
+	WiFi.setAutoReconnect(false);
+	WiFi.disconnect(false, false); // retain credentials; never write them on retry
+	if (action == og_wifi::Recovery::Action::CONNECT) {
+		// Explicit null BSSID clears a previous targeted attempt's lock.
+		WiFi.begin(ssid, pass, 0, nullptr);
+	}
+}
+
+
 String scan_network() {
 	DEBUG_PRINTLN(F("scan network"));
 	WiFi.mode(WIFI_STA);
@@ -77,10 +93,21 @@ void start_network_sta(const char *ssid, const char *pass, const char *hostname,
 	if(hostname != NULL) {
 		WiFi.hostname(hostname);
 	}
-	WiFi.begin(ssid, pass);
+	if (staonly) {
+		// Configured station mode has one reconnect owner. AP provisioning keeps
+		// its existing trial-connect flow and does not run this manager.
+		WiFi.setAutoReconnect(false);
+		WiFi.disconnect(false, false);
+		station_disconnect_handler = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected &event) {
+			station_disconnect_reason = event.reason;
+		});
+		station_recovery.start(millis());
+	} else {
+		WiFi.begin(ssid, pass);
+		WiFi.setAutoReconnect(true);
+	}
 	WiFi.setSleep(false); // work-around for ARP issue: disable sleep mode
 	WiFi.setOutputPower(20.5);
-	WiFi.setAutoReconnect(true); // enable auto reconnect
 }
 
 void start_network_sta_with_ap(const char *ssid, const char *pass, const char *hostname) {

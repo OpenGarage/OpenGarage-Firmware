@@ -20,6 +20,10 @@ stub = r'''
 #include <cstdint>
 #include "OpenGarage/json_escape.h"
 #include "OpenGarage/local_time.h"
+#include "OpenGarage/wifi_manager.h"
+og_wifi::Recovery station_recovery;
+uint8_t station_disconnect_reason=0;
+uint32_t millis(){return 100;}
 og_local::Clock local_clock;
 #define F(x) x
 #define HEX 16
@@ -99,7 +103,7 @@ for hardware in (0, 1):
         for baseline in (station, ap):
             for offset in range(7):
                 data = next(iterator)
-                mqtt_extra = {'mqtt_json_failures', 'mqtt_json_bytes', 'mqtt_buffer_ready', 'mqtt_retained_dropped', 'notification_dropped'}
+                mqtt_extra = {'mqtt_json_failures', 'mqtt_json_bytes', 'mqtt_buffer_ready', 'mqtt_retained_dropped', 'notification_dropped', 'wifi_recovery', 'wifi_attempts', 'wifi_timeouts', 'wifi_disconnects', 'wifi_retry_in_ms', 'wifi_disconnect_reason'}
                 assert set(data) == baseline | ((extra | mqtt_extra) if offset == 6 else set()), data
                 if offset == 6:
                     assert data['active_security_protocol'] == protocol

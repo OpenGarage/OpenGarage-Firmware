@@ -19,6 +19,9 @@ g++ -std=c++11 -Wall -Wextra -Werror tests/test_local_time.cpp -o /tmp/og-test-l
 python3 tests/test_offline_automation.py
 python3 tests/test_mqtt_packets.py
 python3 tests/test_network_delivery.py
+g++ -std=c++11 -Wall -Wextra -Werror tests/test_wifi_manager.cpp -o /tmp/og-test-wifi
+/tmp/og-test-wifi
+python3 tests/test_wifi_adapter.py
 python3 tests/test_debug_response.py
 python3 tests/test_update_security.py
 python3 tests/test_options_security.py
@@ -60,3 +63,12 @@ cover retain metadata for QoS0/1 across reconnects, callbacks that publish, boun
 command payloads, partial-frame deadlines, and retry backoff. Network delivery
 tests execute the real notification/cloud scheduling functions with fake services.
 They do not prove TLS, DNS or SMTP responsiveness on hardware.
+
+WiFi recovery tests cover initial connection, failed association/DHCP deadlines,
+healthy and short-lived sessions, capped retry backoff, local-action gating and
+uptime rollover. The adapter harness executes the production SDK-call wrapper;
+AP provisioning keeps its separate trial-connect path. These tests do not verify
+AP ranking, roaming or real radio behavior.
+The WiFi recovery suite also covers the 60-second stale-movement deferral cap,
+while preserving separate warning/command/upload/restart gates. This cap applies
+to offline recovery, not permission to roam away from a healthy busy connection.

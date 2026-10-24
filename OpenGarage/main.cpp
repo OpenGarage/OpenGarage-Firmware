@@ -478,6 +478,12 @@ static void append_debug_details(const OTF::Request &req, String &json) {
 	json += F(",\"mqtt_buffer_ready\":"); json += mqtt_buffer_ready ? 1 : 0;
 	json += F(",\"mqtt_retained_dropped\":"); json += mqtt_retained_dropped;
 	json += F(",\"notification_dropped\":"); json += notification_dropped;
+	json += F(",\"wifi_recovery\":\""); json += station_recovery.status(); json += F("\"");
+	json += F(",\"wifi_attempts\":"); json += station_recovery.attempts();
+	json += F(",\"wifi_timeouts\":"); json += station_recovery.timeouts();
+	json += F(",\"wifi_disconnects\":"); json += station_recovery.disconnects();
+	json += F(",\"wifi_retry_in_ms\":"); json += station_recovery.retry_in_ms(millis());
+	json += F(",\"wifi_disconnect_reason\":"); json += station_disconnect_reason;
 }
 
 void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
@@ -1937,21 +1943,11 @@ void do_loop() {
 	LoopMeasurement loop_measurement;
 	static uint32_t sta_address = 0;
 	static bool station_tune_played = false;
-	static og_local::ReconnectBackoff reconnect_backoff;
 	if (curr_mode == OG_MOD_STA && (og.state == OG_STATE_CONNECTING || og.state == OG_STATE_CONNECTED)) {
 		time_keeping();
 		check_status();
-		const bool online = WiFi.status() == WL_CONNECTED && WiFi.localIP();
-		const bool busy = og.alarm || update_started || identity_restart_pending ||
-			setup_reboot_pending || secplus2_garage.command_pending();
-		if (reconnect_backoff.due(millis(), online, busy)) {
-			// An entire attempt has had at least two minutes, including DHCP.
-			// Stop SDK retry before starting a fresh SSID-only attempt. No flash write.
-			WiFi.setAutoReconnect(false);
-			WiFi.disconnect(false, false);
-			WiFi.begin(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str());
-			WiFi.setAutoReconnect(true);
-		}
+		const bool motion_busy = door_status == DOOR_STATUS_OPENING || door_status == DOOR_STATUS_CLOSING;
+		service_station_network(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), network_delivery_busy(), motion_busy);
 
 	}
 	switch(og.state) {

@@ -43,6 +43,11 @@
 #include <WiFiUdp.h>
 #include <time.h>
 #include "defines.h"
+#include "wifi_manager.h"
+
+extern og_wifi::Recovery station_recovery;
+extern uint8_t station_disconnect_reason;
+void service_station_network(const char *ssid, const char *pass, bool critical_busy, bool motion_busy);
 #include "htmls.h"
 
 String scan_network();

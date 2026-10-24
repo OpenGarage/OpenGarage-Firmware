@@ -3,19 +3,6 @@
 #include <cstdio>
 int main() {
   using namespace og_local;
-  ReconnectBackoff retry;
-  assert(!retry.due(0, false, false));
-  assert(!retry.due(119999, false, false));
-  assert(!retry.due(120000, false, true));
-  assert(retry.due(120001, false, false));
-  assert(!retry.due(360000, false, false));
-  assert(retry.due(360001, false, false));
-  assert(retry.due(840001, false, false));
-  assert(retry.delay_ms == 600000);
-  assert(!retry.due(840002, true, false));
-  assert(retry.delay_ms == 120000);
-  assert(!retry.due(0xfffffff0U, false, false));
-  assert(retry.due(uint32_t(0xfffffff0U + 120000U), false, false));
   Clock clock;
   clock.tick(1000, 0); assert(!clock.valid && clock.utc == 0);
   OpenDuration open;

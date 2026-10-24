@@ -11,19 +11,6 @@ struct Interval {
     started = true; last = now; return true;
   }
 };
-// Interim SSID-only recovery. Replaced by the AP-selection manager later.
-struct ReconnectBackoff {
-  bool waiting = false;
-  uint32_t since = 0, delay_ms = 120000;
-  bool due(uint32_t now, bool online, bool busy) {
-    if (online) { waiting = false; delay_ms = 120000; return false; }
-    if (!waiting) { waiting = true; since = now; return false; }
-    if (busy || uint32_t(now - since) < delay_ms) return false;
-    since = now;
-    delay_ms = delay_ms < 300000 ? delay_ms * 2 : 600000;
-    return true;
-  }
-};
 struct OpenDuration {
   bool active = false;
   uint32_t since = 0;
