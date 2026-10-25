@@ -21,6 +21,9 @@ stub = r'''
 #include "OpenGarage/json_escape.h"
 #include "OpenGarage/local_time.h"
 #include "OpenGarage/wifi_manager.h"
+#include "OpenGarage/wifi_selection.h"
+og_wifi::Selection station_selection;
+const char *station_selection_status(){return "Idle";}
 og_wifi::Recovery station_recovery;
 uint8_t station_disconnect_reason=0;
 uint32_t millis(){return 100;}
@@ -46,7 +49,7 @@ struct Option { int ival=125; String sval="test"; };
 enum { OPTION_FWV, OPTION_NAME, OPTION_SECV };
 struct { Option options[3]; int has_swrx=1; int read_distance(){return 100;} } og;
 struct IP { String toString(){return "192.0.2.1";} };
-struct { IP localIP(){return {};} int RSSI(){return -50;} String BSSIDstr(){return "00:00:00:00:00:00";} } WiFi;
+struct { IP localIP(){return {};} int RSSI(){return -50;} int channel(){return 1;} String BSSIDstr(){return "00:00:00:00:00:00";} } WiFi;
 struct ResetInfo { unsigned reason=0; };
 struct {
   unsigned getChipId(){return 123;} unsigned getFreeHeap(){return 30000;}
@@ -103,7 +106,7 @@ for hardware in (0, 1):
         for baseline in (station, ap):
             for offset in range(7):
                 data = next(iterator)
-                mqtt_extra = {'mqtt_json_failures', 'mqtt_json_bytes', 'mqtt_buffer_ready', 'mqtt_retained_dropped', 'notification_dropped', 'wifi_recovery', 'wifi_attempts', 'wifi_timeouts', 'wifi_disconnects', 'wifi_retry_in_ms', 'wifi_disconnect_reason'}
+                mqtt_extra = {'mqtt_json_failures', 'mqtt_json_bytes', 'mqtt_buffer_ready', 'mqtt_retained_dropped', 'notification_dropped', 'wifi_recovery', 'wifi_attempts', 'wifi_timeouts', 'wifi_disconnects', 'wifi_retry_in_ms', 'wifi_disconnect_reason', 'wifi_selection', 'wifi_scans', 'wifi_roams', 'wifi_smoothed_rssi', 'wifi_channel'}
                 assert set(data) == baseline | ((extra | mqtt_extra) if offset == 6 else set()), data
                 if offset == 6:
                     assert data['active_security_protocol'] == protocol

@@ -2,17 +2,17 @@
 #include <stdint.h>
 
 namespace og_wifi {
-// Own every configured-STA attempt. No scans/roaming yet: this is the SSID-only
-// recovery foundation (also the fallback for the later AP-selection policy).
+// Own every configured-STA attempt. Selection may insert an asynchronous scan
+// before an attempt; plain SSID recovery remains available without selection.
 // A result needs both association and an IP, not just an SDK status transition.
 class Recovery {
  public:
-  enum class State : uint8_t { STOPPED, WAITING, CONNECTING, ONLINE };
-  enum class Action : uint8_t { NONE, CONNECT, DISCONNECT };
+  enum class State : uint8_t { STOPPED, WAITING, SCANNING, CONNECTING, ONLINE };
+  enum class Action : uint8_t { NONE, CONNECT, DISCONNECT, SCAN };
   void start(uint32_t now) {
     *this = Recovery(); state_ = State::WAITING; since_ = now;
   }
-  Action step(uint32_t now, bool online, bool critical_busy, bool motion_busy = false) {
+  Action step(uint32_t now, bool online, bool critical_busy, bool motion_busy = false, bool select = false) {
     if (state_ == State::STOPPED) return Action::NONE;
     if (online) {
       motion_wait_ = false;
@@ -41,15 +41,27 @@ class Recovery {
       if (motion_busy && !motion_wait_) { motion_wait_ = true; motion_since_ = now; }
       if (critical_busy || (motion_busy && uint32_t(now-motion_since_) < 60000)) return Action::NONE;
       motion_wait_ = false;
+      if (select && !scan_ready_) { state_ = State::SCANNING; return Action::SCAN; }
+      scan_ready_ = false;
       state_ = State::CONNECTING; since_ = now; ++attempts_;
       return Action::CONNECT;
     }
     return Action::NONE;
   }
+  void scan_finished(uint32_t now) {
+    if (state_ != State::SCANNING) return;
+    state_ = State::WAITING; since_ = now; wait_ms_ = 0; scan_ready_ = true;
+  }
+  // A confirmed idle roam is an intentional migration, not a failed session.
+  void roam(uint32_t now) {
+    state_ = State::WAITING; since_ = now; wait_ms_ = 0; scan_ready_ = true;
+    motion_wait_ = false;
+  }
   State state() const { return state_; }
   const char *status() const {
     switch (state_) {
       case State::WAITING: return "Waiting to reconnect";
+      case State::SCANNING: return "Scanning access points";
       case State::CONNECTING: return "Connecting";
       case State::ONLINE: return "Connected";
       default: return "Inactive";
@@ -70,7 +82,7 @@ class Recovery {
   }
   State state_ = State::STOPPED;
   uint32_t since_ = 0, wait_ms_ = 0, next_delay_ = 5000;
-  bool motion_wait_ = false;
+  bool motion_wait_ = false, scan_ready_ = false;
   uint32_t motion_since_ = 0;
   uint32_t attempts_ = 0, timeouts_ = 0, disconnects_ = 0;
 };

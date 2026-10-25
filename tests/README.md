@@ -21,6 +21,8 @@ python3 tests/test_mqtt_packets.py
 python3 tests/test_network_delivery.py
 g++ -std=c++11 -Wall -Wextra -Werror tests/test_wifi_manager.cpp -o /tmp/og-test-wifi
 /tmp/og-test-wifi
+g++ -std=c++11 -Wall -Wextra -Werror tests/test_wifi_selection.cpp -o /tmp/og-test-selection
+/tmp/og-test-selection
 python3 tests/test_wifi_adapter.py
 python3 tests/test_debug_response.py
 python3 tests/test_update_security.py
@@ -67,8 +69,10 @@ They do not prove TLS, DNS or SMTP responsiveness on hardware.
 WiFi recovery tests cover initial connection, failed association/DHCP deadlines,
 healthy and short-lived sessions, capped retry backoff, local-action gating and
 uptime rollover. The adapter harness executes the production SDK-call wrapper;
-AP provisioning keeps its separate trial-connect path. These tests do not verify
-AP ranking, roaming or real radio behavior.
+AP provisioning keeps its separate trial-connect path. The selection suite covers ranking, candidate confirmation, failed-target
+cooldown, scan backoff, dwell, hidden-network fallback and rollover. The adapter
+checks asynchronous scans, credential/security filtering and clearing the BSSID
+lock on fallback. These tests do not establish real radio or mesh behavior.
 The WiFi recovery suite also covers the 60-second stale-movement deferral cap,
 while preserving separate warning/command/upload/restart gates. This cap applies
 to offline recovery, not permission to roam away from a healthy busy connection.

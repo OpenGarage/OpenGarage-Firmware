@@ -144,6 +144,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <tr><td><b>HTTP Port:</b></td><td><input type='text' size=5 maxlength=5 id='htp' value=0 data-mini='true'></td></tr>
 <tr><td><b>Host Name:</b></td><td><input type='text' size=15 maxlength=32 id='host' data-mini='true' placeholder='(optional)'></td></tr>
 <tr><td><b>NTP Server:</b></td><td><input type='text' size=15 maxlength=64 id='ntp1' data-mini='true' placeholder='(optional)'></td></tr>
+<tr><td>WiFi AP Selection:</td><td><select id='wfr' data-mini='true'><option value=1>Automatic</option><option value=0>Off</option></select></td></tr>
 <tr><td colspan=2><input type='checkbox' id='usi' data-mini='true' onclick='update_usi()'><label for='usi'>Use Static IP</label></td></tr>
 <tr class='si'><td><b>Device IP:</b></td><td><input type='text' size=15 maxlength=15 id='dvip' data-mini='true'></td></tr>
 <tr class='si'><td><b>Gateway IP:</b></td><td><input type='text' size=15 maxlength=15 id='gwip' data-mini='true'></td></tr>
@@ -280,7 +281,7 @@ if(secret_error) {show_msg(secret_error);return;}
 if(confirm('Submit changes?')) {
 comm='co?dkey='+encodeURIComponent(get_and_save_dkey());
 bc('sn1');bc('sn2');bc('sno');bc('dth');bc('vth');bc('riv');bc('bas');bc('alm');
-bc('lsz');bc('tsn');bc('htp');bc('cdt');bc('dri');bc('ati');bc('atib');
+bc('wfr');bc('lsz');bc('tsn');bc('htp');bc('cdt');bc('dri');bc('ati');bc('atib');
 comm+='&aoo='+($('#aoo').is(':checked')?1:0);
 if(security_capable){
 comm+='&secv='+$('input[name="secv"]:checked').val();
@@ -406,6 +407,7 @@ update_sno();
 $('#dth').val(jd.dth);
 $('#vth').val(jd.vth);
 $('#riv').val(jd.riv);
+$('#wfr').val(jd.wfr===0 ? 0 : 1).selectmenu('refresh');
 $('#bas').val(jd.bas);
 $('#htp').val(jd.htp);
 $('#cdt').val(jd.cdt);

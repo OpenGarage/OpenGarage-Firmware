@@ -59,6 +59,8 @@ static String pending_notification;
 static uint32_t notification_ms = 0, notification_dropped = 0;
 static uint32_t local_action_ms = 0;
 static bool local_action_seen = false;
+static uint32_t wifi_door_event_ms = 0;
+static bool wifi_door_event_seen = false;
 static bool update_authorized = false, update_failed = false, update_started = false;
 static bool update_tail_pending = false;
 static bool update_file_seen = false;
@@ -484,6 +486,11 @@ static void append_debug_details(const OTF::Request &req, String &json) {
 	json += F(",\"wifi_disconnects\":"); json += station_recovery.disconnects();
 	json += F(",\"wifi_retry_in_ms\":"); json += station_recovery.retry_in_ms(millis());
 	json += F(",\"wifi_disconnect_reason\":"); json += station_disconnect_reason;
+	json += F(",\"wifi_selection\":\""); json += station_selection_status(); json += F("\"");
+	json += F(",\"wifi_scans\":"); json += station_selection.scans();
+	json += F(",\"wifi_roams\":"); json += station_selection.roams();
+	json += F(",\"wifi_smoothed_rssi\":"); json += station_selection.smoothed();
+	json += F(",\"wifi_channel\":"); json += WiFi.channel();
 }
 
 void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
@@ -1841,6 +1848,7 @@ void check_status() {
 
 		// Log door status changes (only record opened, closed, stopped status changes, as the other statuses are transient)
 		if(event == DOOR_EVENT_JUST_OPENED || event == DOOR_EVENT_JUST_CLOSED || event == DOOR_EVENT_JUST_STOPPED) {
+			wifi_door_event_seen = true; wifi_door_event_ms = millis();
 			// write log record
 			DEBUG_PRINTLN(" Update Local Log");
 			LogStruct l;
@@ -1947,7 +1955,9 @@ void do_loop() {
 		time_keeping();
 		check_status();
 		const bool motion_busy = door_status == DOOR_STATUS_OPENING || door_status == DOOR_STATUS_CLOSING;
-		service_station_network(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), network_delivery_busy(), motion_busy);
+		service_station_network(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), network_delivery_busy(), motion_busy, og.options[OPTION_WFR].ival != 0,
+			(local_action_seen && uint32_t(millis()-local_action_ms)<30000) ||
+			(wifi_door_event_seen && uint32_t(millis()-wifi_door_event_ms)<30000));
 
 	}
 	switch(og.state) {
