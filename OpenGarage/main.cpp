@@ -212,6 +212,9 @@ static void append_health_json(String &json) {
 	if (health_stats.min_heap()==UINT32_MAX) json += ESP.getFreeHeap();
 	else json += health_stats.min_heap();
 	json += F(",\"max_loop_us\":"); json += health_stats.max_loop_us();
+	// Untouched continuation-stack watermark since boot (bytes), not current
+	// free stack or the separate SDK/interrupt stack. Never repaint during soak.
+	json += F(",\"min_free_cont_stack\":"); json += ESP.getFreeContStack();
 	if (!og.has_swrx) return;
 	if (og.options[OPTION_SECV].ival == 1) {
 		json += F(",\"secplus1_parity_errors\":"); json += secplus1_garage.get_parity_errors();
