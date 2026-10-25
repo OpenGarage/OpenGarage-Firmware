@@ -28,6 +28,7 @@
 
 #include "json_escape.h"
 #include "update_auth.h"
+#include "firmware_update.h"
 #include "local_time.h"
 #include "network_policy.h"
 #include "pitches.h"
@@ -62,10 +63,7 @@ static bool local_action_seen = false;
 static uint32_t wifi_door_event_ms = 0;
 static bool wifi_door_event_seen = false;
 static bool update_authorized = false, update_failed = false, update_started = false;
-static bool update_tail_pending = false;
 static bool update_file_seen = false;
-static uint8_t update_tail = 0;
-static size_t update_received = 0, update_capacity = 0;
 
 static String scanned_ssids;
 static byte read_cnt = 0;
@@ -704,6 +702,7 @@ static bool network_delivery_busy() {
 }
 
 void performDoorAction(uint8_t action, bool force_alarm_off = false) {
+	if (firmware_update.busy() || firmware_update.phase()==FirmwareUpdatePhase::Success) return;
 	if (identity_restart_pending) return;
 	// Check if the requested action is valid based on the current door state
 	bool isValidAction = false;
@@ -754,6 +753,7 @@ void performDoorAction(uint8_t action, bool force_alarm_off = false) {
 }
 
 void performLightAction(uint8_t action) {
+	if (firmware_update.busy() || firmware_update.phase()==FirmwareUpdatePhase::Success) return;
 	hold_network_delivery();
 	switch(action) {
 		case ACTION_TOGGLE:
@@ -775,6 +775,7 @@ void performLightAction(uint8_t action) {
 }
 
 void performLockAction(uint8_t action) {
+	if (firmware_update.busy() || firmware_update.phase()==FirmwareUpdatePhase::Success) return;
 	hold_network_delivery();
 	switch(action) {
 		case ACTION_TOGGLE:
@@ -1322,7 +1323,7 @@ void do_setup() {
 	}
 	if(!updateServer) {
 		updateServer = new ESP8266WebServer(8080);
-		updateServer->collectHeaders("X-OG-Device-Key");
+		updateServer->collectHeaders("X-OG-Device-Key", "X-OG-Upload-Token", "X-OG-Release-Id", "X-OG-Signature", "X-OG-Allow-Downgrade");
 		DEBUG_PRINT(F("update server started"));
 	}
 	led_blink_ms = LED_FAST_BLINK;
@@ -1391,90 +1392,169 @@ void on_update(const OTF::Request &req, OTF::Response &res) {
 	}
 }
 
-// Hold the final byte until authorized finalization. Aborting with end(false)
-// cannot commit a complete image, even if an upload fills the staging capacity.
+// All update entry points share the same service and early authorization.
+static char prepare_body[1024];
+static size_t prepare_length = 0;
+static bool prepare_seen = false, prepare_ok = false;
+static String upload_credential;
+static bool upload_signed = false;
+
+static bool updater_busy() {
+ // Existing five-second local-action hold covers pending Sec+1 requests/releases.
+ return og.state == OG_STATE_WAIT_RESTART || network_delivery_busy() || firmware_update.busy() ||
+   firmware_update.phase() == FirmwareUpdatePhase::Success;
+}
+static bool updater_key_ok() {
+ return update_key_matches(updateServer->header("X-OG-Device-Key").c_str(),
+                           og.options[OPTION_DKEY].sval.c_str());
+}
+// Header-stage admission never consumes a token or changes updater state.
+static bool updater_body_authorized() {
+ if (updateServer->method() != HTTP_POST) return false;
+ const String &path = updateServer->uri();
+ bool authorized;
+ if (path == "/update" || path == "/update/prepare") authorized=updater_key_ok();
+ else if (path == "/update/upload")
+  authorized=firmware_update.token_valid(updateServer->header("X-OG-Upload-Token").c_str());
+ else return false;
+ if (!authorized || updater_busy()) {
+  // Explicit pre-body refusal: this request has not written or installed anything.
+  updateServer->sendHeader("Access-Control-Allow-Origin", "*");
+  updateServer->sendHeader("Cache-Control", "no-store");
+  updateServer->sendHeader("Connection", "close");
+  updateServer->send(authorized ? 409 : 401, "application/json",
+    authorized ? "{\"result\":64,\"item\":\"Device busy; wait a few seconds and try again\"}" :
+                 "{\"result\":2,\"item\":\"Check the device key or prepare a new upload token\"}");
+  return false;
+ }
+ return true;
+}
 static void cancel_firmware_upload() {
-	if (update_started) Update.end(false);
-	update_started = false;
-	update_authorized = false;
-	update_tail_pending = false;
+ if (update_started) firmware_update.abort_upload();
+ update_started = update_authorized = false;
+ upload_credential = "";
+}
+static void quiesce_for_update() {
+ if (og.options[OPTION_SECV].ival == 2) secplus2_garage.finish_release();
+ if (og.options[OPTION_SECV].ival == 1) secplus1_garage.finish_release();
+ cancel_diagnostic_audio();
+ if (curr_mode == OG_MOD_STA) {
+  mqttclient.disconnect(); WiFiUDP::stopAll();
+ }
+ // OTF0.2.5 has no disconnect API. Close its sockets (and pending local clients)
+ // without deleting the framework or changing its registered routes.
+ WiFiClient::stopAllExcept(&updateServer->client());
+ updateServer->client().keepAlive(5,2,3);
 }
 
 void on_firmware_upload_fin() {
-	update_file_seen = false;
-	if (!update_authorized) {
-		cancel_firmware_upload();
-		updateserver_send_result(HTML_UNAUTHORIZED);
-		return;
-	}
-	if (update_failed || !update_started || !update_tail_pending ||
-		!update_key_matches(updateServer->header("X-OG-Device-Key").c_str(), og.options[OPTION_DKEY].sval.c_str()) ||
-		Update.write(&update_tail, 1) != 1) {
-		cancel_firmware_upload();
-		updateserver_send_result(HTML_UPLOAD_FAILED);
-		return;
-	}
-	const bool ok = Update.end(true) && !Update.hasError();
-	update_started = false;
-	update_authorized = false;
-	update_tail_pending = false;
-	updateserver_send_result(ok ? HTML_SUCCESS : HTML_UPLOAD_FAILED);
-	if (ok) restart_in(1000);
+ const bool authenticated = update_authorized &&
+  (upload_signed ? upload_credential == updateServer->header("X-OG-Upload-Token") : updater_key_ok());
+ bool ok = false;
+ if (authenticated && !update_failed && update_file_seen)
+  ok = upload_signed ? firmware_update.finish_verified() : firmware_update.finish_manual();
+ if (!ok) cancel_firmware_upload();
+ update_file_seen = update_started = update_authorized = false;
+ upload_credential = "";
+ updateserver_send_result(ok ? HTML_SUCCESS : authenticated ? HTML_UPLOAD_FAILED : HTML_UNAUTHORIZED,
+                          ok ? "Update complete; rebooting" : firmware_update.message());
+ // Service schedules the reboot; no second independent timer.
 }
 
 void on_update_options() {
-	updateServer->sendHeader("Access-Control-Allow-Origin", "*");
-	updateServer->sendHeader("Access-Control-Max-Age", "10000");
-	updateServer->sendHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");
-	updateServer->sendHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, X-OG-Device-Key");
-	updateServer->send(200, "text/plain", "");
+ updateServer->sendHeader("Access-Control-Allow-Origin", "*");
+ updateServer->sendHeader("Access-Control-Max-Age", "10000");
+ updateServer->sendHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");
+ updateServer->sendHeader("Access-Control-Allow-Headers", "Content-Type, X-OG-Device-Key, X-OG-Upload-Token, X-OG-Release-Id, X-OG-Signature, X-OG-Allow-Downgrade");
+ updateServer->send(200, "text/plain", "");
 }
 
 void on_firmware_upload() {
-	HTTPUpload& upload = updateServer->upload();
-	if (upload.status == UPLOAD_FILE_START) {
-		// Reject multiple files within one request, without finalizing either.
-		if (update_file_seen) {
-			const bool authorized = update_authorized;
-			cancel_firmware_upload();
-			update_authorized = authorized;
-			update_failed = true; return;
-		}
-		update_file_seen = true;
-		update_authorized = update_key_matches(updateServer->header("X-OG-Device-Key").c_str(),
-			og.options[OPTION_DKEY].sval.c_str());
-		update_failed = false;
-		update_received = 0;
-		update_tail_pending = false;
-		if (!update_authorized) return;
-		if (og.options[OPTION_SECV].ival == 2) secplus2_garage.finish_release();
-		if (og.options[OPTION_SECV].ival == 1) secplus1_garage.finish_release();
-		if (curr_mode == OG_MOD_STA) {
-			WiFiUDP::stopAll();
-			mqttclient.disconnect();
-		}
-		update_capacity = (ESP.getFreeSketchSpace()-0x1000)&0xFFFFF000;
-		update_started = Update.begin(update_capacity);
-		update_failed = !update_started;
-	} else if (upload.status == UPLOAD_FILE_WRITE) {
-		if (!update_authorized || update_failed || !update_started) return;
-		if (upload.currentSize > update_capacity - update_received) {
-			update_failed = true; return;
-		}
-		if (upload.currentSize) {
-			if (update_tail_pending && Update.write(&update_tail, 1) != 1) update_failed = true;
-			const size_t length = upload.currentSize - 1;
-			if (!update_failed && length && Update.write(upload.buf, length) != length) update_failed = true;
-			update_tail = upload.buf[length];
-			update_tail_pending = true;
-			update_received += upload.currentSize;
-		}
-	} else if (upload.status == UPLOAD_FILE_ABORTED) {
-		cancel_firmware_upload();
-		update_file_seen = false;
-		update_failed = true;
-	}
-	delay(0);
+ HTTPUpload& upload = updateServer->upload();
+ if (upload.status == UPLOAD_FILE_START) {
+  if (update_file_seen) {
+   firmware_update.reject("Only one firmware file is allowed"); update_failed=true;
+   updateServer->client().stop(); return;
+  }
+  update_file_seen=true; update_failed=false;
+  upload_signed=updateServer->uri()=="/update/upload";
+  upload_credential=updateServer->header("X-OG-Upload-Token");
+  update_authorized=upload_signed ? firmware_update.token_valid(upload_credential.c_str()) : updater_key_ok();
+  if (!update_authorized || updater_busy()) {
+   update_failed=true;updateServer->client().stop();return;
+  }
+  const bool begun=upload_signed ? firmware_update.begin_verified(upload.filename.c_str(),upload_credential.c_str()) :
+                                  firmware_update.begin_manual_file(upload.filename.c_str());
+  if (!begun) {update_failed=true;updateServer->client().stop();return;}
+  update_started=true;quiesce_for_update();
+ } else if (upload.status == UPLOAD_FILE_WRITE) {
+  if (!update_authorized || update_failed || !update_started || !upload.currentSize) return;
+  bool ok=upload_signed ? firmware_update.write_verified(upload.buf,upload.currentSize) :
+                         firmware_update.write_manual(upload.buf,upload.currentSize);
+  if (!ok) {update_failed=true;updateServer->client().stop();}
+ } else if (upload.status == UPLOAD_FILE_ABORTED) {
+  cancel_firmware_upload();update_file_seen=false;update_failed=true;
+ }
+ delay(0);
+}
+
+static void on_prepare_upload() {
+ HTTPUpload &upload=updateServer->upload();
+ if (upload.status==UPLOAD_FILE_START) {
+  if (prepare_seen) {prepare_ok=false;updateServer->client().stop();return;}
+  prepare_seen=true;prepare_length=0;prepare_ok=updater_key_ok() && !updater_busy();
+  if (!prepare_ok) {updateServer->client().stop();return;}
+ } else if (upload.status==UPLOAD_FILE_WRITE) {
+  if (!prepare_ok) return;
+  if (upload.currentSize>sizeof(prepare_body)-prepare_length) {
+   prepare_ok=false;updateServer->client().stop();return;
+  }
+  memcpy(prepare_body+prepare_length,upload.buf,upload.currentSize);prepare_length+=upload.currentSize;
+ } else if (upload.status==UPLOAD_FILE_ABORTED) {
+  prepare_seen=prepare_ok=false;prepare_length=0;
+ }
+}
+static void on_prepare_fin() {
+ bool ok=prepare_seen && prepare_ok && prepare_length && updater_key_ok() && !updater_busy();
+ prepare_seen=prepare_ok=false;
+ char token[17]={};
+ String id=updateServer->header("X-OG-Release-Id");
+ String sig=updateServer->header("X-OG-Signature");
+ if (ok && (id.length()>31 || sig.length()>144)) ok=false;
+ const bool attempted=ok;
+ if (ok) ok=firmware_update.prepare_verified(reinterpret_cast<uint8_t*>(prepare_body),prepare_length,
+     sig.c_str(),id.c_str(),updateServer->header("X-OG-Allow-Downgrade")=="1",token);
+ prepare_length=0;
+ if (!ok) {updateserver_send_result(HTML_UPLOAD_FAILED, attempted ? firmware_update.message() : "Preparation rejected; check key, release and device status");return;}
+ String json=F("{\"result\":1,\"upload_token\":\"");json+=token;json+=F("\"}");
+ updateServer->sendHeader("Access-Control-Allow-Origin","*");
+ updateServer->sendHeader("Cache-Control","no-store");
+ updateServer->send(200,"application/json",json);
+}
+static void on_update_info() {
+ String json=F("{\"product\":\"opengarage-stock\",\"target\":\"");json+=firmware_update.target();
+ json+=F("\",\"version\":");json+=OG_FWV;
+ json+=F(",\"base_url\":\"https://firmware.opengarage.io\",\"file_extension\":\".bin\",\"configured\":true}");
+ updateServer->sendHeader("Access-Control-Allow-Origin","*");updateServer->sendHeader("Cache-Control","no-store");
+ updateServer->send(200,"application/json",json);
+}
+static void on_update_status() {
+ String json=F("{\"phase\":\"");json+=firmware_update.phase_name();
+ json+=F("\",\"message\":\"");append_json_escaped(json,String(firmware_update.message()));
+ json+=F("\",\"bytes_done\":");json+=firmware_update.bytes_done();
+ json+=F(",\"bytes_total\":");json+=firmware_update.bytes_total();json+='}';
+ updateServer->sendHeader("Access-Control-Allow-Origin","*");updateServer->sendHeader("Cache-Control","no-store");
+ updateServer->send(200,"application/json",json);
+}
+static void register_update_routes() {
+ updateServer->onBodyAuthorization(updater_body_authorized);
+ updateServer->on("/update",HTTP_POST,on_firmware_upload_fin,on_firmware_upload);
+ updateServer->on("/update/upload",HTTP_POST,on_firmware_upload_fin,on_firmware_upload);
+ updateServer->on("/update/prepare",HTTP_POST,on_prepare_fin,on_prepare_upload);
+ updateServer->on("/update/info",HTTP_GET,on_update_info);
+ updateServer->on("/update/status",HTTP_GET,on_update_status);
+ for(const char *path : {"/update","/update/upload","/update/prepare","/update/info","/update/status"})
+  updateServer->on(path,HTTP_OPTIONS,on_update_options);
 }
 
 void check_status_ap() {
@@ -1951,6 +2031,7 @@ void process_alarm() {
 }
 
 void do_loop() {
+	firmware_update.loop();
 	LoopMeasurement loop_measurement;
 	static uint32_t sta_address = 0;
 	static bool station_tune_played = false;
@@ -1985,8 +2066,7 @@ void do_loop() {
 			otf->on("/ad", on_auto_detect);
 			// FIXME get update ap updates working.
 			otf->on("/update", on_update, OTF::HTTP_GET);
-			updateServer->on("/update", HTTP_POST, on_firmware_upload_fin, on_firmware_upload);
-			updateServer->on("/update", HTTP_OPTIONS, on_update_options);
+			register_update_routes();
 			otf->on("/resetall",on_reset_all);
 			otf->onMissingPage(on_home);
 			updateServer->begin();
@@ -2014,8 +2094,7 @@ void do_loop() {
 			otf->on("/db", on_sta_debug);
 			// FIXME get sta updates working.
 			otf->on("/update", on_update, OTF::HTTP_GET);
-			updateServer->on("/update", HTTP_POST, on_firmware_upload_fin, on_firmware_upload);
-			updateServer->on("/update", HTTP_OPTIONS, on_update_options);
+			register_update_routes();
 			otf->on("/clearlog", on_clear_log);
 			otf->on("/s2id_gen", on_regenerate_secplus2_id, OTF::HTTP_POST);
 			otf->on("/resetall",on_reset_all);

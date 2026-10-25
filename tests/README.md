@@ -26,6 +26,10 @@ g++ -std=c++11 -Wall -Wextra -Werror tests/test_wifi_selection.cpp -o /tmp/og-te
 python3 tests/test_wifi_adapter.py
 python3 tests/test_debug_response.py
 python3 tests/test_update_security.py
+python3 tests/test_update_parser.py
+python3 tests/test_firmware_release.py
+python3 tests/test_firmware_service.py
+node tests/test_updater_page.cjs
 python3 tests/test_options_security.py
 g++ -std=c++11 -Wall -Wextra -Werror tests/test_audio_timing.cpp -o /tmp/og-test-audio
 /tmp/og-test-audio
@@ -76,3 +80,9 @@ lock on fallback. These tests do not establish real radio or mesh behavior.
 The WiFi recovery suite also covers the 60-second stale-movement deferral cap,
 while preserving separate warning/command/upload/restart gates. This cap applies
 to offline recovery, not permission to roam away from a healthy busy connection.
+
+Updater service host tests require OpenSSL development headers/libcrypto and the
+pinned ArduinoJson7.1.0 dependency (run the PlatformIO build first). They execute
+production service logic with host crypto/flash adapters, not ESP8266 BearSSL
+assembly. Parser tests execute its byte/line readers and pre-body admission gate; complete socket/multipart
+behavior and memory/latency still require the bench.

@@ -1,168 +1,204 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>OpenGarage Firmware Update</title>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <style>
-        :root{
-          --bg:#f6f7fb; --fg:#0f172a; --muted:#586380;
-          --card:#fff; --border:#e2e8f0;
-          --accent:#2563eb;
-        }
-        @media (prefers-color-scheme: dark){
-          :root{
-            --bg:#0b1220; --fg:#e6eaff; --muted:#a3acc7;
-            --card:#0f172a; --border:#1e293b;
-            --accent:#60a5fa;
-          }
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            margin: 0;
-            padding: 20px;
-            color: var(--fg);
-        }
-        main {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: var(--card);
-            padding: 25px 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-        h1 {
-            text-align: center;
-            color: var(--fg);
-            margin-top: 0;
-            margin-bottom: 25px;
-        }
-        .form-group {
-            margin-bottom: 18px;
-        }
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }
-        input[type="password"],
-        input[type="file"] {
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid var(--border);
-            border-radius: 5px;
-            box-sizing: border-box;
-            background-color: transparent;
-            color: inherit;
-        }
-        /* Style file input button */
-        input[type="file"]::file-selector-button {
-            font-weight: 600;
-            color: var(--accent);
-            background-color: transparent;
-            border: 1px solid var(--accent);
-            border-radius: 5px;
-            padding: 8px 12px;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            color: #fff;
-            background-color: var(--accent);
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #msg {
-            text-align: left;
-            font-weight: 600;
-            margin-bottom: 20px;
-            min-height: 20px;
-        }
-    </style>
-</head>
-<body>
-
-<main>
-    <h1>Firmware Update</h1>
-    <form method='POST' action='/update' id='fm' enctype='multipart/form-data'>
-        <div class="form-group">
-            <label for="file">Firmware File (.bin)</label>
-            <input type='file' name='file' accept='.bin' id='file'>
-        </div>
-        <div class="form-group">
-            <label for="dkey">Device Key</label>
-            <input type='password' name='dkey' id='dkey'>
-        </div>
-
-        <p id='msg'></p>
-        <progress id='upload_progress' max='100' value='0' style='width:100%' aria-label='Firmware upload progress'></progress>
-        <button type='button' id='btn_submit'>Upload Firmware</button>
-    </form>
-</main>
-
-<script>
-    function id(s) { return document.getElementById(s); }
-    function show_msg(s, c) {
-        const msgEl = id('msg');
-        msgEl.innerHTML = `<font color=${c}>${s}</font>`;
-    }
-
-    id('btn_submit').addEventListener('click', function(e){
-        e.preventDefault();
-        const files = id('file').files;
-        if (files.length === 0) {
-            show_msg('Please select a firmware file.', 'red');
-            return;
-        }
-        if (id('dkey').value === '') {
-            if (!confirm('You did not input a device key. Are you sure?')) return;
-        }
-
-        show_msg('Uploading... Please wait.', 'gray');
-
-        const fd = new FormData();
-        const file = files[0];
-        fd.append('file', file, file.name);
-
-        const xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                const jd = JSON.parse(xhr.responseText);
-                if (jd.result === 1) {
-                    show_msg('Update successful! The device is rebooting. You may close this page now.', 'green');
-                } else if (jd.result === 2) {
-                    show_msg('Authentication failed. Check device key and try again.', 'red');
-                } else {
-                    show_msg('Update failed. Please try again.', 'red');
-                }
-            } else if (xhr.readyState === 4) {
-                show_msg('Upload failed. Could not connect to the update server.', 'red');
-            }
-        };
-        xhr.upload.onprogress = function (evt) {
-        if (evt.lengthComputable) {
-            const pct = Math.min(100, Math.round((evt.loaded / evt.total) * 100));
-            id('upload_progress').value=pct;
-            show_msg(pct===100 ? 'Upload sent. Verifying firmware...' : 'Uploading...('+pct+'%) Please wait.', 'gray');
-        }
-        };
-        // The submission URL correctly targets port 8080 as required
-        const uploadUrl = '//' + window.location.hostname + ':8080/update';
-        xhr.open('POST', uploadUrl, true);
-        xhr.timeout = 300000; // 300s
-        xhr.ontimeout = function(){ show_msg('Upload timed out. Please try again.', 'red'); };
-        xhr.onerror   = function(){ show_msg('Network error during upload.', 'red'); };
-        xhr.setRequestHeader('X-OG-Device-Key', 'hex:' + Array.from(new TextEncoder().encode(id('dkey').value), b=>b.toString(16).padStart(2,'0')).join(''));
-
-        xhr.send(fd);
-    });
-</script>
-
-</body>
-</html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenGarage Firmware Update</title>
+<style>
+:root{color-scheme:light dark;--bg:#f4f6fa;--card:#fff;--fg:#182234;--muted:#58647a;--line:#dce2eb;--accent:#2563eb}
+@media(prefers-color-scheme:dark){:root{--bg:#111827;--card:#1f2937;--fg:#f3f4f6;--muted:#c0cad8;--line:#465267;--accent:#79a7ff}}
+*{box-sizing:border-box}body{margin:0;padding:24px 16px;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif}main{max-width:620px;margin:auto}h1{font-size:1.5rem;margin:0 0 8px}h2{font-size:1.1rem;margin:0 0 14px}section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin:16px 0}p{margin:8px 0}.muted,small{color:var(--muted)}label{display:block;margin-bottom:6px}input,select,button{font:inherit}input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg)}button,.button{display:inline-block;padding:10px 16px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--fg);cursor:pointer;text-decoration:none}button.primary{background:#2563eb;border-color:#2563eb;color:white}button:disabled{opacity:.5;cursor:default}.buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}a{color:var(--accent)}progress{width:100%;height:18px;accent-color:var(--accent)}#msg{white-space:pre-wrap;overflow-wrap:anywhere}#status_panel{border-left:4px solid var(--accent)}[hidden]{display:none!important}:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.release-picker{display:flex;gap:8px;align-items:stretch}.release-picker select{min-width:0;flex:1}.icon-button{flex:none;width:46px;padding:8px;font-size:1.5rem;line-height:1}dialog{width:min(580px,calc(100% - 32px));max-height:80vh;padding:24px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg)}dialog::backdrop{background:#0008}#notes_body{white-space:pre-wrap;overflow-wrap:anywhere;max-height:50vh;overflow:auto}
+</style></head><body><main>
+<h1>OpenGarage Firmware Update</h1>
+<p class="muted" id="current">Connecting to device…</p>
+<p>Keep OpenGarage powered and this page open during the update. Device operation pauses while firmware uploads.</p>
+<section><label for="dkey">Device key</label><input type="password" id="dkey" maxlength="64" autocomplete="current-password"></section>
+<section id="online_section" hidden><h2>One-Click Firmware Update</h2><label for="release">Firmware release</label><div class="release-picker"><select id="release" disabled><option>Loading…</option></select><button id="btn_refresh" class="icon-button" title="Refresh releases" aria-label="Refresh releases">&#8635;</button></div><p class="muted" id="catalog_msg"></p><div class="buttons"><button id="btn_notes" disabled>Release Notes</button><button class="primary" id="btn_install" disabled>Install Update</button></div></section>
+<section><h2>Manual Firmware Update</h2><label for="file">Firmware file (.bin)</label><input type="file" id="file" accept=".bin"><div class="buttons"><button id="btn_submit">Upload Firmware</button></div></section>
+<section id="status_panel" hidden aria-live="polite"><p id="msg"></p><progress id="upload_progress" max="100" value="0" hidden aria-label="Firmware transfer progress"></progress></section>
+<a id="btn_back" class="button" href="/">← Back to OpenGarage</a>
+</main><dialog id="notes_dialog" aria-labelledby="notes_title"><h2 id="notes_title">Release Notes</h2><div id="notes_body" aria-live="polite"></div><div class="buttons"><a id="notes_github" target="_blank" rel="noopener noreferrer">View on GitHub</a><button id="btn_notes_close" autofocus>Close</button></div></dialog><script>
+'use strict';
+const apMode=true;
+function id(s){return document.getElementById(s);}
+const apiBase='http://'+window.location.hostname+':8080/update';
+let deviceInfo=null,releases=[],busy=false,locked=false;
+function show_msg(text){id('status_panel').hidden=false;id('msg').textContent=text;}
+function progress(text,pct){id('upload_progress').hidden=false;id('upload_progress').value=pct;show_msg(text+' ('+pct+'%)');}
+function controls(){for(const name of ['btn_refresh','btn_submit','file','dkey','release'])id(name).disabled=busy||locked;id('btn_install').disabled=busy||locked||!releases.length||!deviceInfo;id('btn_notes').disabled=busy||locked||!releases.length||apMode;}
+function set_busy(value){busy=value;controls();}
+function version_label(v){return Math.floor(v/100)+'.'+Math.floor(v/10)%10+'.'+v%10;}
+function key_header(){return 'hex:'+Array.from(new TextEncoder().encode(id('dkey').value),b=>b.toString(16).padStart(2,'0')).join('');}
+function release_url(path){
+ if(typeof path!=='string'||!path.startsWith('/v1/releases/')||path.includes('..')||/[?#\\]/.test(path))throw Error('Invalid release path.');
+ const url=new URL(path,deviceInfo.base_url);if(url.origin!==new URL(deviceInfo.base_url).origin)throw Error('Invalid release host.');return url.href;
+}
+function request(url,{method='GET',headers={},body=null,binary=false,limit=0,upload=false,label='',timeout=20000}={}){
+ return new Promise((resolve,reject)=>{
+  const xhr=new XMLHttpRequest();xhr.open(method,url,true);xhr.timeout=timeout;
+  xhr.responseType=binary?'arraybuffer':'text';
+  for(const [name,value] of Object.entries(headers))xhr.setRequestHeader(name,value);
+  // Credentials are sent only to the local controller, never catalog/image URLs.
+  xhr.upload.onprogress=function(e){if(upload&&e.lengthComputable){const p=Math.round(e.loaded/e.total*100);progress(p===100?'Upload sent; verifying firmware':'Uploading',p);}};
+  xhr.onprogress=function(e){if(limit&&e.loaded>limit){xhr.abort();return;}if(label&&e.lengthComputable)progress(label,Math.round(e.loaded/e.total*100));};
+  xhr.onload=()=>{if(xhr.status!==200){const e=Error('Request rejected (HTTP '+xhr.status+').');e.status=xhr.status;return reject(e);}const r=xhr.response;if(limit&&(binary?r.byteLength:r.length)>limit)return reject(Error('Response exceeds expected size.'));resolve(r);};
+  const failed=()=>reject(Error(upload?'Update not confirmed. Check the device before trying again.':'Request failed. Check the device key, connection and whether the device is busy.'));
+  xhr.onerror=failed;xhr.ontimeout=failed;xhr.onabort=failed;xhr.send(body);
+ });
+}
+async function load_catalog(){
+ if(busy||locked)return;set_busy(true);releases=[];id('catalog_msg').textContent='Checking releases…';
+ try{
+  deviceInfo=JSON.parse(await request(apiBase+'/info'));
+  if(deviceInfo.product!=='opengarage-stock'||!deviceInfo.configured||!Number.isInteger(deviceInfo.version)||!/^https:\/\//.test(deviceInfo.base_url))throw Error('Online updates are unavailable on this device.');
+  id('current').textContent='Current: '+version_label(deviceInfo.version);
+  if(apMode)return; // AP updates are local/manual only; no internet requests.
+  const catalog=JSON.parse(await request(deviceInfo.base_url+'/v1/manifest.json',{limit:65536}));
+  if(catalog.schema!==2||!Array.isArray(catalog.releases))throw Error('Invalid release catalog.');
+  releases=catalog.releases.filter(r=>Number.isInteger(r.version)&&r.version>=126&&r.version<=255&&typeof r.id==='string'&&Array.isArray(r.targets)&&r.targets.includes(deviceInfo.target));
+  releases.forEach(r=>{release_url(r.descriptor);release_url(r.signature);});releases.sort((a,b)=>b.version-a.version);
+  id('release').replaceChildren(...releases.map((r,i)=>{const o=document.createElement('option');o.value=String(i);o.textContent=version_label(r.version)+(r.version===deviceInfo.version?' (current version)':'');return o;}));
+  id('catalog_msg').textContent=releases.length?'Select a release to install.':'No online releases are available yet. You can still upload a file below.';
+ }catch(e){releases=[];id('release').replaceChildren();id('catalog_msg').textContent=e.message+' Manual upload remains available.';}
+ finally{set_busy(false);}
+}
+let notesRequest=0;
+function close_notes(){++notesRequest;id('notes_dialog').close();}
+async function open_notes(){
+ const r=releases[Number(id('release').value)];if(!r||busy||locked||apMode)return;
+ const serial=++notesRequest,tag=version_label(r.version);
+ id('notes_title').textContent='Release Notes — '+tag;
+ id('notes_body').textContent='Loading…';
+ id('notes_github').href='https://github.com/OpenGarage/OpenGarage-Firmware/releases/tag/'+encodeURIComponent(tag);
+ id('notes_dialog').showModal();
+ try{
+  const data=JSON.parse(await request('https://api.github.com/repos/OpenGarage/OpenGarage-Firmware/releases/tags/'+encodeURIComponent(tag),{headers:{Accept:'application/vnd.github.full+json'},limit:262144}));
+  if(serial!==notesRequest)return;
+  // Plain text prevents release-note markup from injecting scripts or credentials UI.
+  id('notes_body').textContent=String(data.body_text||data.body||'No release notes provided.').slice(0,65536);
+ }catch(e){if(serial===notesRequest)id('notes_body').textContent=e.status===404?'Release notes have not been published yet.':'Unable to load release notes. Use View on GitHub to read them.';}
+}
+async function descriptor(release){
+ const [raw,signatureText]=await Promise.all([request(release_url(release.descriptor),{binary:true,limit:1024}),request(release_url(release.signature),{limit:145})]);
+ const d=JSON.parse(new TextDecoder().decode(raw)),signature=signatureText.trim(),a=d.targets&&d.targets[deviceInfo.target];
+ if(d.schema!==1||d.product!=='opengarage-stock'||d.id!==release.id||d.version!==release.version||!a||!Number.isInteger(a.size)||a.size<1024||a.size>1044464||a.min_flash!==4194304||!/^[0-9a-f]{64}$/i.test(a.sha256)||!/^[0-9a-f]{128,144}$/i.test(signature)||!a.file.endsWith('.bin'))throw Error('Invalid signed release information.');
+ return {raw,signature,artifact:a,url:release_url(a.file)};
+}
+async function upload_file(file,name,token){
+ const fd=new FormData();fd.append('file',file,name);
+ const headers=token?{'X-OG-Upload-Token':token}:{'X-OG-Device-Key':key_header()};
+ // One attempt only. A lost response must never automatically repeat a flash.
+ locked=true;controls();
+ let text;
+ try{text=await request(apiBase+(token?'/upload':''),{method:'POST',headers,body:fd,upload:true,timeout:150000});}
+ catch(e){
+  // Only explicit pre-body refusals prove this request did not install an image.
+  // Idle status alone is ambiguous: a successful update may already have rebooted.
+  if(e.status===401||e.status===409){locked=false;throw Error(e.status===401?'Check the device key and try again.':'Device busy. Wait a few seconds and try again.');}
+  throw e;
+ }
+ let r;try{r=JSON.parse(text);}catch(e){throw Error('Update not confirmed. Check the device before trying again.');}
+ if(r.result!==1){locked=false;throw Error(r.result===2?'Check the device key and try again.':r.item||'Update rejected.');}
+ id('upload_progress').value=100;show_msg('Update successful. OpenGarage is restarting. Wait about 20 seconds, then use Back to OpenGarage.');
+}
+async function install_release(){
+ if(busy||locked)return;
+ const r=releases[Number(id('release').value)];if(!r||!deviceInfo)return;
+ if(!id('dkey').value){show_msg('Enter the device key.');return;}
+ const older=r.version<=deviceInfo.version;
+ if(!confirm((older?'Reinstall or downgrade to ':'Install ')+version_label(r.version)+'? OpenGarage will restart.'))return;
+ set_busy(true);id('upload_progress').hidden=true;
+ try{
+  show_msg('Loading release information…');const d=await descriptor(r);
+  const bytes=await request(d.url,{binary:true,limit:d.artifact.size,label:'Downloading',timeout:90000});
+  if(bytes.byteLength!==d.artifact.size)throw Error('Downloaded firmware size does not match.');
+  show_msg('Checking download…');if(sha256_bytes(new Uint8Array(bytes))!==d.artifact.sha256.toLowerCase())throw Error('Downloaded firmware checksum does not match. Nothing was uploaded.');
+  const fd=new FormData();fd.append('file',new Blob([d.raw]),'release.json');
+  show_msg('Authorizing update…');
+  const p=JSON.parse(await request(apiBase+'/prepare',{method:'POST',headers:{'X-OG-Device-Key':key_header(),'X-OG-Release-Id':r.id,'X-OG-Signature':d.signature,'X-OG-Allow-Downgrade':older?'1':'0'},body:fd}));
+  if(p.result!==1||!p.upload_token)throw Error(p.item||'Update preparation rejected.');
+  await upload_file(new Blob([bytes]),d.artifact.file.split('/').pop(),p.upload_token);
+ }catch(e){show_msg(e.message);}finally{set_busy(false);}
+}
+async function manual_update(){
+ if(busy||locked)return;const file=id('file').files[0];
+ if(!file||!file.name.endsWith('.bin')||file.size<1024||file.size>1044464){show_msg('Select an OpenGarage .bin firmware file (up to 1 MB).');return;}
+ if(!id('dkey').value){show_msg('Enter the device key.');return;}
+ if(!confirm('Upload '+file.name+'? OpenGarage will restart.'))return;
+ set_busy(true);id('upload_progress').hidden=true;
+ try{show_msg('Starting upload…');await upload_file(file,file.name,null);}catch(e){show_msg(e.message);}finally{set_busy(false);}
+}
+// SHA-256 works on local HTTP as well as HTTPS; adapted from OpenSprinkler.
+function sha256_bytes(bytes) {
+		const constants = [
+			0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+			0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+			0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+			0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+			0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+			0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+			0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+			0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+		];
+		const state = new Uint32Array([
+			0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,
+			0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19
+		]);
+		const words = new Uint32Array(64);
+		const total = Math.ceil((bytes.length + 9) / 64) * 64;
+		const bitHigh = Math.floor(bytes.length / 0x20000000);
+		const bitLow = (bytes.length << 3) >>> 0;
+		function byte_at(position) {
+			if (position < bytes.length) return bytes[position];
+			if (position === bytes.length) return 0x80;
+			if (position >= total - 8) {
+				const offset = position - (total - 8);
+				const value = offset < 4 ? bitHigh : bitLow;
+				return (value >>> ((3 - (offset & 3)) * 8)) & 0xff;
+			}
+			return 0;
+		}
+		function rotate_right(value, bits) {
+			return (value >>> bits) | (value << (32 - bits));
+		}
+		for (let block = 0; block < total; block += 64) {
+			for (let i = 0; i < 16; i++) {
+				const position = block + i * 4;
+				words[i] = ((byte_at(position) << 24) | (byte_at(position + 1) << 16) |
+					(byte_at(position + 2) << 8) | byte_at(position + 3)) >>> 0;
+			}
+			for (let i = 16; i < 64; i++) {
+				const s0 = rotate_right(words[i - 15], 7) ^ rotate_right(words[i - 15], 18) ^
+					(words[i - 15] >>> 3);
+				const s1 = rotate_right(words[i - 2], 17) ^ rotate_right(words[i - 2], 19) ^
+					(words[i - 2] >>> 10);
+				words[i] = (words[i - 16] + s0 + words[i - 7] + s1) >>> 0;
+			}
+			let a=state[0],b=state[1],c=state[2],d=state[3];
+			let e=state[4],f=state[5],g=state[6],h=state[7];
+			for (let i = 0; i < 64; i++) {
+				const sum1 = rotate_right(e, 6) ^ rotate_right(e, 11) ^ rotate_right(e, 25);
+				const choice = (e & f) ^ (~e & g);
+				const temp1 = (h + sum1 + choice + constants[i] + words[i]) >>> 0;
+				const sum0 = rotate_right(a, 2) ^ rotate_right(a, 13) ^ rotate_right(a, 22);
+				const majority = (a & b) ^ (a & c) ^ (b & c);
+				const temp2 = (sum0 + majority) >>> 0;
+				h=g; g=f; f=e; e=(d+temp1)>>>0; d=c; c=b; b=a; a=(temp1+temp2)>>>0;
+			}
+			state[0]=(state[0]+a)>>>0; state[1]=(state[1]+b)>>>0;
+			state[2]=(state[2]+c)>>>0; state[3]=(state[3]+d)>>>0;
+			state[4]=(state[4]+e)>>>0; state[5]=(state[5]+f)>>>0;
+			state[6]=(state[6]+g)>>>0; state[7]=(state[7]+h)>>>0;
+		}
+		return Array.from(state, function(value) {
+			return value.toString(16).padStart(8, '0');
+		}).join('');
+	}
+id('btn_notes').addEventListener('click',open_notes);
+id('btn_notes_close').addEventListener('click',close_notes);
+id('notes_dialog').addEventListener('cancel',()=>{++notesRequest;});
+id('btn_refresh').addEventListener('click',load_catalog);
+id('btn_install').addEventListener('click',install_release);
+id('btn_submit').addEventListener('click',manual_update);
+id('btn_back').href='http://'+window.location.hostname+'/';
+window.addEventListener('beforeunload',e=>{if(busy){e.preventDefault();e.returnValue='';}});
+load_catalog();
+</script></body></html>
