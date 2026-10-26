@@ -5,7 +5,26 @@
 :root{color-scheme:light dark;--bg:#f4f6fa;--card:#fff;--fg:#182234;--muted:#58647a;--line:#dce2eb;--accent:#2563eb}
 @media(prefers-color-scheme:dark){:root{--bg:#111827;--card:#1f2937;--fg:#f3f4f6;--muted:#c0cad8;--line:#465267;--accent:#79a7ff}}
 *{box-sizing:border-box}body{margin:0;padding:24px 16px;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,sans-serif}main{max-width:620px;margin:auto}h1{font-size:1.5rem;margin:0 0 8px}h2{font-size:1.1rem;margin:0 0 14px}section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin:16px 0}p{margin:8px 0}.muted,small{color:var(--muted)}label{display:block;margin-bottom:6px}input,select,button{font:inherit}input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg)}button,.button{display:inline-block;padding:10px 16px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--fg);cursor:pointer;text-decoration:none}button.primary{background:#2563eb;border-color:#2563eb;color:white}button:disabled{opacity:.5;cursor:default}.buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}a{color:var(--accent)}progress{width:100%;height:18px;accent-color:var(--accent)}#msg{white-space:pre-wrap;overflow-wrap:anywhere}#status_panel{border-left:4px solid var(--accent)}[hidden]{display:none!important}:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
-.release-picker{display:flex;gap:8px;align-items:stretch}.release-picker select{min-width:0;flex:1}.icon-button{flex:none;width:46px;padding:8px;font-size:1.5rem;line-height:1}dialog{width:min(580px,calc(100% - 32px));max-height:80vh;padding:24px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg)}dialog::backdrop{background:#0008}#notes_body{white-space:pre-wrap;overflow-wrap:anywhere;max-height:50vh;overflow:auto}
+.release-picker{display:flex;gap:8px;align-items:stretch}.release-picker select{min-width:0;flex:1}.icon-button{flex:none;width:46px;padding:8px;font-size:1.5rem;line-height:1}dialog{width:min(580px,calc(100% - 32px));max-height:80vh;padding:24px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg)}dialog::backdrop{background:#0008}#notes_body{overflow-wrap:anywhere;max-height:50vh;overflow:auto}
+#notes_body.plain{white-space:pre-wrap}
+    #notes_body h1,#notes_body h2{ font-size:18px; }
+    #notes_body h3,#notes_body h4,#notes_body h5,#notes_body h6{ font-size:16px; }
+    #notes_body h1,#notes_body h2,#notes_body h3,#notes_body h4,#notes_body h5,#notes_body h6{ text-align:left; margin:1.2em 0 .5em; line-height:1.3; }
+    #notes_body p,#notes_body ul,#notes_body ol,#notes_body pre,#notes_body blockquote,.notes-table{ margin:0 0 1em; }
+    #notes_body > :first-child{ margin-top:0; }
+    #notes_body > :last-child{ margin-bottom:0; }
+    #notes_body ul,#notes_body ol{ padding-left:1.6em; }
+    #notes_body li{ margin:.35em 0; }
+    #notes_body li > ul,#notes_body li > ol{ margin-bottom:0; }
+    #notes_body a{ color:var(--accent); }
+    #notes_body code,#notes_body tt{ font-family:monospace; background:var(--bg); }
+    #notes_body pre{ max-width:100%; padding:10px; overflow:auto; white-space:pre; background:var(--bg); }
+    #notes_body blockquote{ padding-left:12px; border-left:3px solid var(--line); }
+    #notes_body hr{ border:0; border-top:1px solid var(--line); margin:1em 0; }
+    .notes-table{ max-width:100%; overflow:auto; }
+    #notes_body table{ border-collapse:collapse; overflow-wrap:normal; }
+    #notes_body th,#notes_body td{ border:1px solid var(--line); padding:6px 10px; text-align:left; }
+    #notes_body th{ background:var(--bg); }
 </style></head><body><main>
 <h1>OpenGarage Firmware Update</h1>
 <p class="muted" id="current">Connecting to device…</p>
@@ -60,6 +79,76 @@ async function load_catalog(){
  }catch(e){releases=[];id('release').replaceChildren();id('catalog_msg').textContent=e.message+' Manual upload remains available.';}
  finally{set_busy(false);}
 }
+// Limited formatting renderer shared with OpenSprinkler; no Markdown dependency.
+	// Never attach parsed nodes to the page. Rebuild a small HTML subset without
+	// copying source attributes, custom elements, styles or resource-bearing nodes.
+	function render_release_notes(container, data) {
+		const limit = 65536;
+		const fallback = typeof data.body_text === 'string' && data.body_text.trim() ? data.body_text : data.body;
+		const text = typeof fallback === 'string' && fallback.trim() ? fallback : 'No release notes were provided for this version.';
+		container.classList.add('plain');
+		container.textContent = text.slice(0, limit) + (text.length > limit ? '\n[Notes truncated. Open on GitHub to read the full release.]' : '');
+		if (typeof data.body_html !== 'string' || !data.body_html.trim() || data.body_html.length > limit) return;
+		try {
+			// A detached template keeps scripts AND image/iframe requests inert during
+			// parsing. DOMParser HTML documents can load passive external resources.
+			const template = document.implementation.createHTMLDocument('').createElement('template');
+			template.innerHTML = data.body_html;
+			const allowed = new Set('h1 h2 h3 h4 h5 h6 p br hr strong b em i del code tt pre blockquote ul ol li a table thead tbody tfoot tr th td caption'.split(' '));
+			const blocked = new Set('script style iframe object embed svg math form input template base meta link head audio video source noscript'.split(' '));
+			let count = 0;
+			function copy(node, parent, depth) {
+				if (++count > 4096 || depth > 32) throw new Error('Notes structure exceeds limits');
+				if (node.nodeType === 3) {
+					parent.appendChild(document.createTextNode(node.textContent));
+					return;
+				}
+				if (node.nodeType !== 1 || node.namespaceURI !== 'http://www.w3.org/1999/xhtml') return;
+				const tag = node.localName;
+				if (tag === 'img' || (tag === 'input' && node.getAttribute('type') === 'checkbox')) {
+					parent.appendChild(document.createTextNode(tag === 'img' ? (node.getAttribute('alt') || '') :
+						(node.hasAttribute('checked') ? '[x] ' : '[ ] ')));
+					return;
+				}
+				if (blocked.has(tag)) return;
+				let element = allowed.has(tag) ? document.createElement(tag) : document.createDocumentFragment();
+				if (tag === 'a') {
+					let url;
+					const href = node.getAttribute('href') || '';
+					try { url = new URL(href); } catch (error) {}
+					if (url && /^https:\/\//i.test(href) && !/[\u0000-\u0020\u007f]/.test(href) &&
+						url.protocol === 'https:' && !url.username && !url.password) {
+						element.href = url.href;
+						element.target = '_blank';
+						element.rel = 'noopener noreferrer';
+					} else element = document.createDocumentFragment();
+				}
+				if (tag === 'ol' && /^-?\d{1,6}$/.test(node.getAttribute('start') || ''))
+					element.setAttribute('start', node.getAttribute('start'));
+				if (tag === 'pre') element.tabIndex = 0;
+				for (const child of node.childNodes) copy(child, element, depth + 1);
+				if (tag === 'a' && !element.textContent.trim()) return;
+				if (tag === 'table') {
+					const wrapper = document.createElement('div');
+					wrapper.className = 'notes-table';
+					wrapper.tabIndex = 0;
+					wrapper.setAttribute('role', 'region');
+					wrapper.setAttribute('aria-label', 'Release notes table');
+					wrapper.appendChild(element);
+					element = wrapper;
+				}
+				parent.appendChild(element);
+			}
+			const content = document.createDocumentFragment();
+			for (const child of template.content.childNodes) copy(child, content, 0);
+			if (!content.textContent.trim()) return;
+			container.replaceChildren(content);
+			container.classList.remove('plain');
+		} catch (error) {
+			// The already-installed plain-text fallback is safe even for malformed HTML.
+		}
+	}
+
 let notesRequest=0;
 function close_notes(){++notesRequest;id('notes_dialog').close();}
 async function open_notes(){
@@ -72,8 +161,7 @@ async function open_notes(){
  try{
   const data=JSON.parse(await request('https://api.github.com/repos/OpenGarage/OpenGarage-Firmware/releases/tags/'+encodeURIComponent(tag),{headers:{Accept:'application/vnd.github.full+json'},limit:262144}));
   if(serial!==notesRequest)return;
-  // Plain text prevents release-note markup from injecting scripts or credentials UI.
-  id('notes_body').textContent=String(data.body_text||data.body||'No release notes provided.').slice(0,65536);
+  render_release_notes(id('notes_body'),data);
  }catch(e){if(serial===notesRequest)id('notes_body').textContent=e.status===404?'Release notes have not been published yet.':'Unable to load release notes. Use View on GitHub to read them.';}
 }
 async function descriptor(release){

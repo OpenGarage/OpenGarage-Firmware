@@ -86,3 +86,16 @@ pinned ArduinoJson7.1.0 dependency (run the PlatformIO build first). They execut
 production service logic with host crypto/flash adapters, not ESP8266 BearSSL
 assembly. Parser tests execute its byte/line readers and pre-body admission gate; complete socket/multipart
 behavior and memory/latency still require the bench.
+
+Release-note rendering uses the same limited, allowlisted GitHub HTML subset as
+OpenSprinkler, with plain-text fallback. Run the browser test with Playwright
+available on `NODE_PATH` and Chromium selected by `BROWSER_PATH`:
+
+```sh
+node tests/test_updater_notes.cjs
+UPDATER_GENERATED=1 node tests/test_updater_notes.cjs
+```
+
+All requests are intercepted. The test covers formatting, inert embedded resources,
+unsafe links, input/depth/node limits, fallback, and mobile/desktop layout. The
+second command checks the compressed page embedded in `htmls.h`.

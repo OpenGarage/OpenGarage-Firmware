@@ -7,7 +7,7 @@ assert.equal(html,apHtml.replace('const apMode=true;','const apMode=false;').rep
 assert(!/<(?:script|link)[^>]+(?:src|href)=/i.test(html));
 const script=html.match(/<script>([\s\S]*?)<\/script>/)[1].replace(/load_catalog\(\);\s*$/,'');
 function harness(ap=false){
- const elements={};const el=id=>elements[id]??=( {value:'',files:[],disabled:false,hidden:false,textContent:'',showModal(){this.open=true;},close(){this.open=false;},addEventListener(){},replaceChildren(...x){this.options=x;this.value=x.length?'0':'';}} );
+ const elements={};const el=id=>elements[id]??=( {value:'',files:[],disabled:false,hidden:false,textContent:'',classList:{add(){},remove(){}},showModal(){this.open=true;},close(){this.open=false;},addEventListener(){},replaceChildren(...x){this.options=x;this.value=x.length?'0':'';}} );
  const calls=[];let consent=true,fail=false,corrupt=false;
  const image=Buffer.alloc(2048,0x5a);const hash=crypto.createHash('sha256').update(image).digest('hex');
  const release={id:'1.2.6',version:126,targets:['og-esp8266-4m-v1'],descriptor:'/v1/releases/1.2.6/release.json',signature:'/v1/releases/1.2.6/release.sig'};
