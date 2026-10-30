@@ -16,7 +16,7 @@ bool busy=false;bool network_delivery_busy(){return busy;}
 enum {OPTION_MQEN,OPTION_IFTT,OPTION_EMEN};
 struct Option {unsigned ival=0;String sval;};struct {Option options[3];}og;
 String pending_notification;uint32_t notification_ms=0,notification_dropped=0;
-og_network::Backoff email_retry(60000,600000),ifttt_retry(60000,600000),cloud_retry(5000,300000);
+og_network::Backoff email_retry(60000,600000),ifttt_retry(60000,600000);
 unsigned mqtt_sent=0,email_sent=0,ifttt_sent=0;bool email_ok=false,ifttt_ok=false;
 void mqttNotify(String){++mqtt_sent;}
 bool iftttNotify(String){++ifttt_sent;return ifttt_ok;}
@@ -40,13 +40,13 @@ int main(){
  now=0xfffffff0U;perform_notify("wrap");now=20;service_notifications();assert(mqtt_sent==5);
  busy=true;service_cloud();assert(cloud.local==1 && cloud.cloud==0);
  busy=false;service_cloud();assert(cloud.cloud==1);service_cloud();assert(cloud.cloud==2); // handshake must continue
- now+=5000;service_cloud();assert(cloud.cloud==3);service_cloud();assert(cloud.cloud==3); // window expired
- now+=4999;service_cloud();assert(cloud.cloud==3);
- now+=1;service_cloud();assert(cloud.cloud==4);
+ now+=5000;service_cloud();assert(cloud.cloud==3);service_cloud();assert(cloud.cloud==4); // OTF owns pacing
  cloud.status=OTF::CONNECTED;service_cloud();service_cloud();assert(cloud.cloud==6);
  busy=true;service_cloud();assert(cloud.cloud==7); // established cloud stays live during alarm
  cloud.status=OTF::DISCONNECTED;service_cloud();assert(cloud.cloud==7); // reconnect still waits
  WiFi.online=false;service_cloud();assert(cloud.cloud==7);
+ busy=false;service_cloud();assert(cloud.cloud==7); // offline even when idle
+ WiFi.online=true;service_cloud();assert(cloud.cloud==8);
  puts("notification ordering, expiry, offline discard and cloud backoff: PASS");
 }
 '''

@@ -52,6 +52,7 @@ struct IP { String toString(){return "192.0.2.1";} };
 struct { IP localIP(){return {};} int RSSI(){return -50;} int channel(){return 1;} String BSSIDstr(){return "00:00:00:00:00:00";} } WiFi;
 struct ResetInfo { unsigned reason=0; };
 struct {
+  unsigned getMaxFreeBlockSize(){return 28000;}
   unsigned getFreeContStack(){return 1536;}
   unsigned getChipId(){return 123;} unsigned getFreeHeap(){return 30000;}
   unsigned getFlashChipRealSize(){return 4194304;}
@@ -96,7 +97,7 @@ with tempfile.TemporaryDirectory(prefix='og-db-test-') as scratch:
 
 station = set('rcnt fwv name mac mqtt_topic devip cid rssi bssid build Freeheap flash_size has_swrx'.split())
 ap = set('dist fwv has_swrx'.split())
-common = set('active_security_protocol free_heap reset_reason reset_reason_code uptime_s min_free_heap max_loop_us min_free_cont_stack time_valid'.split())
+common = set('active_security_protocol free_heap largest_free_heap_block build_time otf_revision reset_reason reset_reason_code uptime_s min_free_heap max_loop_us min_free_cont_stack time_valid'.split())
 one = {'secplus1_' + k for k in 'parity_errors invalid_frames rx_overflows tx_deferrals expired_commands door_age_ms light_lock_age_ms'.split()}
 two = {'secplus2_' + k for k in 'client_id identity_ready status_age_ms query_failures action_write_failures tx_deferrals expired_commands control_fault recovery'.split()}
 assert len(results) == 84
@@ -119,3 +120,12 @@ print('/db: 84 AP/station, compact/verbose, hardware and protocol response cases
 for item in results:
     if "min_free_cont_stack" in item:
         assert item["min_free_cont_stack"] == 1536
+
+# Keep the diagnostic identity tied to the exact dependency pin used by the build.
+otf_pin = re.search(r'OpenThings-Framework-Firmware-Library\.git#([0-9a-f]{40})',
+                    Path('OpenGarage/platformio.ini').read_text()).group(1)
+for item in results:
+    if 'otf_revision' in item:
+        assert item['otf_revision'] == otf_pin
+        assert item['largest_free_heap_block'] == 28000
+        assert len(item['build_time']) == 8

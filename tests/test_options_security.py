@@ -95,6 +95,13 @@ code += 'int main(){\n' + setup + r'''
   otc.values["auth"]=std::string(32,'b');result=0;validate(otc);assert(result==0);
   otc.values["clear_auth"]="1";result=0;validate(otc);assert(result!=0);
  }
+ for(const char* port:{"8080","08080"}){
+  Request reserved;reserved.values["htp"]=port;result=0;validate(reserved);
+  assert(result==HTML_DATA_OUTOFBOUND);
+ }
+ for(const char* port:{"80","8081","65535"}){
+  Request allowed;allowed.values["htp"]=port;result=0;validate(allowed);assert(result==0);
+ }
  Request conflict;conflict.values["apwd"]="new";conflict.values["clear_apwd"]="1";
  result=0;validate(conflict);assert(result!=0);
  og.options[OPTION_NAME].sval=String(64,'\x01');

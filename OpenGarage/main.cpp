@@ -54,7 +54,6 @@ static uint32_t mqtt_json_bytes = 0;
 static bool mqtt_buffer_ready = false;
 static uint32_t mqtt_retained_dropped = 0;
 static og_network::MqttRecovery mqtt_retry;
-static og_network::Backoff cloud_retry(5000, 300000);
 static og_network::Backoff email_retry(60000, 600000), ifttt_retry(60000, 600000);
 static String pending_notification;
 static uint32_t notification_ms = 0, notification_dropped = 0;
@@ -203,6 +202,9 @@ static void append_age(String &json, uint32_t age) {
 static void append_health_json(String &json) {
 	json += F(",\"active_security_protocol\":"); json += og.options[OPTION_SECV].ival;
 	json += F(",\"free_heap\":"); json += ESP.getFreeHeap();
+	json += F(",\"largest_free_heap_block\":"); json += ESP.getMaxFreeBlockSize();
+	json += F(",\"build_time\":\""); json += F(__TIME__); json += F("\"");
+	json += F(",\"otf_revision\":\"4b6070f31209c5c7bf6df080e4c0d1fbc3c4b547\"");
 	json += F(",\"reset_reason\":\""); json += ESP.getResetReason(); json += F("\"");
 	json += F(",\"reset_reason_code\":"); json += ESP.getResetInfoPtr()->reason;
 	json += F(",\"uptime_s\":"); json += health_stats.uptime_s();
@@ -883,6 +885,10 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 	for (const char *field : {"name", "mqtp"}) {
 		const char *value = req.getQueryParameter(field);
 		if (value && strlen(value) > 64) { otf_send_result(res, HTML_DATA_OUTOFBOUND, field); return; }
+	}
+	const char *http_port = req.getQueryParameter("htp");
+	if (http_port && String(http_port).toInt() == 8080) {
+		otf_send_result(res, HTML_DATA_OUTOFBOUND, "htp: port 8080 is reserved for firmware updates"); return;
 	}
 	char *pem_value = req.getQueryParameter("pem");
 	if (pem_value != NULL) {
@@ -1672,25 +1678,12 @@ void service_notifications() {
 }
 
 void service_cloud() {
-	static bool seeking = false;
-	static uint32_t seek_started = 0;
 	const bool online = WiFi.status()==WL_CONNECTED && WiFi.localIP();
 	const bool connected = otf->getCloudStatus()==OTF::CONNECTED;
-	const bool idle = !network_delivery_busy();
-	if (connected) { cloud_retry.success(); seeking=false; }
-	if (!online || !idle) seeking=false;
-	if (online && idle && !connected && !seeking && cloud_retry.ready(millis())) {
-		seeking=true; seek_started=millis();
-	}
-	// A WebSocket handshake spans multiple polls. Back off a failed window,
-	// not each individual poll, or a healthy handshake can never complete.
-	// Keep serving status/commands on an established cloud connection during
-	// warnings. Only connection attempts wait for an idle device.
-	otf->loop(online && (connected || (idle && seeking)));
-	if (otf->getCloudStatus()==OTF::CONNECTED) { cloud_retry.success(); seeking=false; }
-	else if (seeking && uint32_t(millis()-seek_started)>=5000) {
-		seeking=false; cloud_retry.failure(millis());
-	}
+	// OTF owns jittered reconnect backoff and resets it only after a healthy
+	// session. Keep established sessions live during warnings; defer new
+	// connection work while local actions are busy. Local HTTP is always served.
+	otf->loop(online && (connected || !network_delivery_busy()));
 }
 
 void process_dynamics(byte event) {
