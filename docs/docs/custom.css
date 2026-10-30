@@ -99,3 +99,20 @@ ul > li {
   border: 1px solid #ccc;
   border-radius: 4px;
 }
+
+/* Shared guide screenshot styling, matching the OpenSprinkler guides. */
+.img-border {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px;
+}
+.img-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100%;
+}
+.guide-screenshot {
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+}
