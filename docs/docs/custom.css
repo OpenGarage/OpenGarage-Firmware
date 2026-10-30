@@ -64,6 +64,9 @@ hr.double {
   padding: 2px 5px;
   border-radius: 3px;
 }
+.txt_red {
+  color: red;
+}
 table th,
 table td {
   padding: 6px 10px;

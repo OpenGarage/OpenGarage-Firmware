@@ -4,9 +4,6 @@ OpenThings Cloud (OTC) lets you access OpenGarage remotely without router port f
 
 OTC is available in **stock firmware 1.2.0 and later**. You do not need it for local access or the Home Assistant integration. The alternative ESPHome firmware uses Home Assistant for remote access and does not use OTC.
 
-!!! note
-    Blynk is no longer supported starting with **firmware 1.2.6**. Use an OTC token for cloud access; a Blynk token cannot be used as an OTC token.
-
 !!! warning
     Treat your OTC token as a password. It grants remote access to the controller, including most settings and controls. Keep it private.
 

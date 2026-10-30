@@ -6,11 +6,14 @@ For official firmware release notes, visit the [OpenGarage Firmware Releases](ht
 
 ## Documentation
 
-- [FAQ](faq.md)
-- [User Manual (latest)](manual/index.html)
-- [API Reference (latest)](api/index.html)
-- [Remote Access with OTC](guides/remote-access-otc.md)
-- [Setting Up Email Notifications](guides/email-notifications.md)
+- [**FAQ**](faq.md)
+- [**User Manual** (latest)](manual/index.html)
+- [**API Reference** (latest)](api/index.html)
+- **Guides**
+    - [Remote Access with OTC](guides/remote-access-otc.md)
+    - [Setting Up Email Notifications](guides/email-notifications.md)
+    - [DIY Security+ 3.0 Adapter](guides/diy-security-adapter.md)
+    - [Using OpenGarage with IFTTT](guides/using-opengarage-with-ifttt.md)
 
 ## Latest Firmware
 

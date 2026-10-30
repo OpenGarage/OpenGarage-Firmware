@@ -287,7 +287,7 @@ Editing any option requires the Device Key (except when accessed remotely via OT
 
 
 * **IFTTT Key**: Webhook service key for IFTTT integration.
-    * Create an [IFTTT](https://ifttt.com/) account, search "Webhook" service and create a key, then copy your key here. You can then create **applets** triggered by the `opengarage` event name, with SMS, email, or push notification as the action. The notification message is passed via parameter `value1`.
+    * Create an [IFTTT](https://ifttt.com/) account, search "Webhook" service and create a key, then copy your key here. You can then create **applets** triggered by the `opengarage` event name, with SMS, email, or push notification as the action. The notification message is passed via parameter `value1`. See [Using OpenGarage with IFTTT](../guides/using-opengarage-with-ifttt.md) for illustrated instructions.
 
 * **Choose Notification Events**: Select which events generate notifications. Applies to Email, IFTTT, and MQTT.
 
@@ -321,7 +321,7 @@ Editing any option requires the Device Key (except when accessed remotely via OT
 
 * **NTP Server** `[effective after reboot]`: Custom time server; defaults to `pool.ntp.org` if blank.
 
-* **WiFi AP Selection**: **Automatic** (default) selects the strongest available access point for your network name and can move to a better one if the signal stays weak. **Off** disables AP selection and roaming; automatic reconnection still works.
+* **WiFi AP Selection**: **Automatic** (default) selects the strongest available access point for your network name and can move to a better one if the signal stays weak. This is useful for mesh networks or multiple access points sharing the same WiFi network name (SSID). **Off** disables AP selection and roaming; automatic reconnection still works.
 
 * **Use Static IP** `[effective after reboot]`: Manually assign a fixed IP instead of DHCP.
     * Requires manual entry of **Device IP**, **Gateway IP**, **Subnet**, and **DNS1**.

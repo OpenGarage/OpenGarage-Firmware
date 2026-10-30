@@ -18,7 +18,7 @@ OpenGarage is an **open-source, WiFi-enabled smart** garage door controller that
 
 * **v2.3+** directly supports Security+ 2.0 and 1.0, as well as dry-contact 12VDC systems.
 * **v2.2** supports traditional dry-contact, AC and higher-voltage systems.
-* Security+ 3.0 (white learn button) requires a modified remote (i.e. sacrifice remote).
+* Security+ 3.0 (white learn button) requires a “sacrifice remote” as an adapter; see the [DIY Security+ 3.0 Adapter](guides/diy-security-adapter.md) guide.
 
 See the [product page](https://opensprinkler.com/product/opengarage/) for help choosing hardware and the [user manual](manual/index.html) for wiring instructions.
 
@@ -115,6 +115,6 @@ We have a [detailed blog post](https://opensprinkler.com/introducing-opengarage-
 
 **Q: Can I still use Blynk?**
 <br>
-Blynk support was removed in **firmware 1.2.6**. Use [OpenThings Cloud (OTC)](guides/remote-access-otc.md) for remote access with stock firmware. A Blynk token cannot be used as an OTC token.
+Blynk support was removed in **firmware 1.2.6**, and the OpenThings Blynk server will be retired soon. Use [OpenThings Cloud (OTC)](guides/remote-access-otc.md) for remote access with stock firmware. A Blynk token cannot be used as an OTC token.
 
 ---

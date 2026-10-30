@@ -22,6 +22,8 @@ nav:
   - 'Guides':
     - 'Remote Access with OTC': 'guides/remote-access-otc.md'
     - 'Setting Up Email Notifications': 'guides/email-notifications.md'
+    - 'DIY Security+ 3.0 Adapter': 'guides/diy-security-adapter.md'
+    - 'Using OpenGarage with IFTTT': 'guides/using-opengarage-with-ifttt.md'
   - 'Archived':
     - 'Previous Manuals and API docs': 'archive.md'
 extra_css:

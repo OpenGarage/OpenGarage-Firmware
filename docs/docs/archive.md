@@ -20,12 +20,12 @@ Documentation for earlier OpenGarage firmware versions. Versions 1.2.5 and 1.2.4
 
 ### Blynk Legacy App
 
-!!! info
-    Blynk support was removed in firmware 1.2.6. The instructions below apply only to the Blynk **legacy app** and will **NOT** work with the new Blynk IoT app.
+!!! warning "Archived — Blynk is no longer supported"
+    These instructions are retained for historical reference because older manuals link here. They are no longer supported setup instructions. Blynk support was removed from firmware 1.2.6, and the OpenThings Blynk server will be retired soon; use [OpenThings Cloud (OTC)](guides/remote-access-otc.md) for remote access instead. The legacy instructions do not apply to the new Blynk IoT app.
 
-The Blynk **legacy app** is discontinued and no longer available in the official app stores. On Android phones, you may still find the legacy `.apk` from third-party websites and install it manually. To use it:
+The Blynk **legacy app** is discontinued and no longer available in the official app stores. The former setup procedure is preserved below:
 
-* Follow the [Blynk (Legacy) App Support Article](https://openthings.freshdesk.com/a/solutions/articles/5000872170) to request a Blynk account on the `openthings.io` cloud server.
+* Archived reference: [Blynk (Legacy) App Support Article](https://openthings.freshdesk.com/a/solutions/articles/5000872170).
 
 * Launch the app, sign in with your account credentials, tap the **QR code** icon, and scan the appropriate QR code below. This creates a project in the app, and the Blynk token will be emailed to you (you can copy the token manually from the Project Settings in the app).
 
