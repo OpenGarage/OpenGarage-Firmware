@@ -17,7 +17,7 @@ For official firmware release notes, visit the [OpenGarage Firmware Releases](ht
 
 ## Latest Firmware
 
-**OpenGarage stock firmware 1.2.6 — coming soon.** See the [firmware update instructions](#firmware-update-instructions).
+**OpenGarage stock firmware 1.2.6.** See the [firmware update instructions](#firmware-update-instructions).
 
 ## Using Home Assistant?
 
@@ -93,7 +93,7 @@ The release notes of each firmware can be found on [GitHub](https://github.com/O
 
 | Download | SHA-256 | Documentation |
 |:---------|:--------|:--------------|
-| **`1.2.6.bin`** (coming soon) | — | [[Manual](1.2.6/manual.md)], [[API](1.2.6/api.md)] |
+| [**`1.2.6.bin`**](assets/bins/og_1.2.6.bin) | [Checksum](assets/bins/og_1.2.6.bin.sha256) | [[Manual](1.2.6/manual.md)], [[API](1.2.6/api.md)] |
 | [`1.2.5.bin`](assets/bins/og_1.2.5.bin) | [Checksum](assets/bins/og_1.2.5.bin.sha256) | [[Manual](1.2.5/manual.md)], [[API](1.2.5/api.md)] |
 | [`1.2.4.bin`](assets/bins/og_1.2.4.bin) | [Checksum](assets/bins/og_1.2.4.bin.sha256) | [[Manual](1.2.4/manual.md)], [[API](1.2.4/api.md)] |
 | [`1.2.3.bin`](assets/bins/og_1.2.3.bin) | | [Archive](archive.md) |
@@ -111,7 +111,7 @@ The release notes of each firmware can be found on [GitHub](https://github.com/O
 | [`1.0.4.bin`](assets/bins/og_1.0.4.bin) | | [Archive](archive.md) |
 | [`1.0.3.bin`](assets/bins/og_1.0.3.bin) | | |
 
-<br>To verify a downloaded firmware, save its `.bin` and checksum files in the same folder, then run `sha256sum -c og_1.2.5.bin.sha256` (or substitute the version you downloaded).
+<br>To verify a downloaded firmware, save its `.bin` and checksum files in the same folder, then run `sha256sum -c og_1.2.6.bin.sha256` (or substitute the version you downloaded).
 
 
 
