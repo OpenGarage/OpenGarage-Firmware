@@ -42,7 +42,7 @@ Some error replies include an `item` field naming the rejected parameter or expl
 |`dist`   |Distance sensor value (unit: cm)|
 |`sn2`    |Switch sensor value (present only if switch sensor is enabled)|
 |<a id="jc_door"></a>`door`   |Door status (`0:closed; 1:open; 2:stopped (partially open); 3:closing; 4:opening; 5:unknown`)|
-|`vehicle`|Vehicle status (`0:vehicle not detected; 1:detected; 2:unknown`)|
+|`vehicle`|Vehicle status (`0:vehicle not detected; 1:detected; 2:unknown; 3:not available`)|
 |`rcnt`   |Read count (increments every time sensor values are updated)|
 |`fwv`    |Firmware version|
 |`name`   |Device name|
@@ -50,7 +50,7 @@ Some error replies include an `item` field naming the rejected parameter or expl
 |`cid`    |WiFi chip ID|
 |`rssi`   |WiFi signal strength (dBm)|
 | <span class="hl"><code>cld</code></span> | <span class="hl">Cloud option (<code>0:none; 1:retired Blynk (inactive); 2:OTC</code>)</span> |
-| <span class="hl"><code>clds</code></span> | <span class="hl">Cloud connection status (present only when <code>cld &gt; 0</code>); retired Blynk reports 0. For OTC: <code>0:not enabled; 1:connecting; 2:disconnected; 3:connected</code></span> |
+| <span class="hl"><code>clds</code></span> | <span class="hl">Cloud connection status (present only when <code>cld &gt; 0</code>); retired Blynk reports 0. For OTC: <code>0:not enabled; 1:unable to connect (displayed as connecting); 2:disconnected; 3:connected</code></span> |
 |`temp`   |temperature reading (Celsius), only if T/H sensor is enabled|
 |`humid`  |humidity reading (relative percentage), only if T/H sensor is enabled|
 |`secv`   |Security+ version (`2:v2.0; 1:v1.0; 0:None`)|

@@ -97,7 +97,7 @@ We have a [detailed blog post](https://opensprinkler.com/introducing-opengarage-
 
 **Q: My OpenGarage fails to join or stay connected to my WiFi network.**
 
-1. **Check the mode:** Is the unit still in **AP** (Access Point) mode (fast-blinking LED, twice a second)? If so, follow [WiFi Configuration](manual/index.html#step-2-wifi-configuration) in the user manual.
+1. **Check the mode:** Is the unit still in **AP** (Access Point) mode (fast-blinking LED)? If so, follow [WiFi Configuration](manual/index.html#step-2-wifi-configuration) in the user manual.
 2. **Changed router/SSID/password recently?** Follow the [Reset WiFi](manual/index.html#step-4-button-actions) instructions.
 3. **Router compatibility checklist:**
     * **2.4 GHz only:** The controller's ESP8266 chip is compatible with 2.4 GHz only. Make sure your router has 2.4 GHz enabled and uses a different SSID than 5 GHz.

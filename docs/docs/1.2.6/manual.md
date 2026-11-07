@@ -111,7 +111,7 @@ This section walks you through powering on your OpenGarage, connecting it to you
     * **Either select or enter** your WiFi router's name (SSID) and type its password.
     * **Host Name** *(Optional)* : Enter a custom hostname (e.g. `myog`). This makes it easy to access the device later using a domain name like `http://myog.local`.
     * **Security+ Detection** *(Optional, OpenGarage v2.3+ only)* : If you have wired your v2.3+ to your garage opener, click **Detect** to automatically detect the Security+ protocol version. This feature is hidden on OpenGarage v2.2 and earlier as they do not support Security+.
-    * **Cloud Token** *(Optional)* : If you already have an OTC token (see the [Cloud Connection](#step-5-cloud-connection) section), enter it here. Otherwise, select `No` and you can configure it later.
+    * **Cloud Connection** *(Optional)*: If you already have an OTC token (see [Cloud Connection](#step-5-cloud-connection)), select the OTC option and enter it. Otherwise, select **No, configure later**.
 * Click **Submit**. Upon a successful connection, you will hear a short tune from the buzzer. Your WiFi credentials are saved and the device reboots into WiFi **Client Mode**, where it automatically obtains a **Device IP** address from your router. This device IP is typically displayed at the bottom of the screen upon the completion of this step.
 
 #### Step 3: Access the Device Locally on Your Network
@@ -186,7 +186,7 @@ You can also perform several key operations including:
 
 * **Open/Close/Toggle door**
     * In dry-contact and Security+ 1.0 modes, Open/Close requests use the same toggle action as the wall button. Only Security+ 2.0 provides directional Open and Close commands.
-* **Reboot Device**
+* **Reboot**
 * **Reset WiFi**
 * **Clear Log**
 * **Toggle Light and Remote Lock** (*Security+ 2.0/1.0 only*)
@@ -194,7 +194,7 @@ You can also perform several key operations including:
 
 All of these actions require the **Device Key** (default: `opendoor`), except when accessed remotely via OTC token, where the key is not required. For convenience, the key is cached in your browser and can be cleared by clicking the ✖ icon next to it.
 
-The homepage also provides navigation links to **Edit Options**, **Show Log**, **Firmware Update**, and the **User Manual**.
+The homepage also provides navigation links to **Options**, **View Log**, **Firmware Update**, and the **User Manual**.
 
 #### Security+ Communication
 
@@ -319,7 +319,7 @@ Editing any option requires the Device Key (except when accessed remotely via OT
     * If left blank, defaults to the WiFi AP name (refer to [WiFi configuration](#step-2-wifi-configuration)).
     * Allows access via `http://<hostname>.local/` instead of numeric IP.
 
-* **NTP Server** `[effective after reboot]`: Custom time server; defaults to `pool.ntp.org` if blank.
+* **NTP Server** `[effective after reboot]`: Custom time server. If blank, OG uses `time.google.com`, `time.cloudflare.com`, and `time.windows.com`.
 
 * **WiFi AP Selection**: **Automatic** (default) selects the strongest available access point for your network name and can move to a better one if the signal stays weak. This is useful for mesh networks or multiple access points sharing the same WiFi network name (SSID). **Off** disables AP selection and roaming; automatic reconnection still works.
 

@@ -77,7 +77,7 @@ If one-click update is unavailable or does not work, use Manual Firmware Upload.
 2. On the Firmware Update page, enter your **Device Key** and select the downloaded `.bin` file.
     * *If your OpenGarage is in WiFi AP (Access Point) mode, the firmware update page is available at `http://192.168.4.1/update`.*
 3. Click **Upload Firmware** (or **Submit** on older firmware).
-4. Wait for completion and the device to restart.
+4. Wait for completion and the device to restart. After upgrading from older firmware, reload the page to avoid using cached older pages.
 
 ### Troubleshooting
 * **Firmware Corruption**: If the firmware upload fails and the device no longer boots, you'll need to re-flash the firmware using a [USB-serial programmer](https://opensprinkler.com/product/usb-programmer/).
