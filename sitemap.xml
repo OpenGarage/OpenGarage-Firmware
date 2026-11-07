@@ -2,30 +2,67 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://OpenGarage.github.io/OpenGarage-Firmware/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-11-07</lastmod>
+         <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://OpenGarage.github.io/OpenGarage-Firmware/archive/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-11-07</lastmod>
+         <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://OpenGarage.github.io/OpenGarage-Firmware/faq/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-11-07</lastmod>
+         <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://OpenGarage.github.io/OpenGarage-Firmware/1.2.4/api/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-11-07</lastmod>
+         <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://OpenGarage.github.io/OpenGarage-Firmware/1.2.4/manual/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-11-07</lastmod>
+         <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://OpenGarage.github.io/OpenGarage-Firmware/1.2.5/api/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-11-07</lastmod>
+         <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://OpenGarage.github.io/OpenGarage-Firmware/1.2.5/manual/</loc>
-         <lastmod>2026-09-16</lastmod>
+         <lastmod>2026-11-07</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://OpenGarage.github.io/OpenGarage-Firmware/1.2.6/api/</loc>
+         <lastmod>2026-11-07</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://OpenGarage.github.io/OpenGarage-Firmware/1.2.6/manual/</loc>
+         <lastmod>2026-11-07</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://OpenGarage.github.io/OpenGarage-Firmware/guides/diy-security-adapter/</loc>
+         <lastmod>2026-11-07</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://OpenGarage.github.io/OpenGarage-Firmware/guides/email-notifications/</loc>
+         <lastmod>2026-11-07</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://OpenGarage.github.io/OpenGarage-Firmware/guides/remote-access-otc/</loc>
+         <lastmod>2026-11-07</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://OpenGarage.github.io/OpenGarage-Firmware/guides/using-opengarage-with-ifttt/</loc>
+         <lastmod>2026-11-07</lastmod>
+         <changefreq>daily</changefreq>
     </url>
 </urlset>

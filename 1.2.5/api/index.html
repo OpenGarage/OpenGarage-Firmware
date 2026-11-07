@@ -48,11 +48,18 @@
                 <li class="toctree-l1"><a class="reference internal" href="../../faq/">FAQ</a>
                 </li>
               </ul>
-              <p class="caption"><span class="caption-text">Firmware v1.2.5 <span class="nav-new-badge" aria-label="New">NEW</span></span></p>
+              <p class="caption"><span class="caption-text">Firmware v1.2.6 <span class="nav-new-badge" aria-label="New">NEW</span></span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.6/manual/">User Manual</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.6/api/">API Reference</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Firmware v1.2.5</span></p>
               <ul class="current">
                   <li class="toctree-l1"><a class="reference internal" href="../manual/">User Manual</a>
                   </li>
-                  <li class="toctree-l1 current"><a class="reference internal current" href="#">API Reference</a>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">API Reference</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#1-overview">1. Overview</a>
         <ul>
@@ -91,11 +98,15 @@
     </ul>
                   </li>
               </ul>
-              <p class="caption"><span class="caption-text">Firmware v1.2.4</span></p>
+              <p class="caption"><span class="caption-text">Guides</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.4/manual/">User Manual</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/remote-access-otc/">Remote Access with OTC</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.4/api/">API Reference</a>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/email-notifications/">Setting Up Email Notifications</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/diy-security-adapter/">DIY Security+ 3.0 Adapter</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../guides/using-opengarage-with-ifttt/">Using OpenGarage with IFTTT</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">Archived</span></p>
@@ -117,7 +128,7 @@
         <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
-          <li class="breadcrumb-item">Firmware v1.2.5 <span class="nav-new-badge" aria-label="New">NEW</span></li>
+          <li class="breadcrumb-item">Firmware v1.2.5</li>
       <li class="breadcrumb-item active">API Reference</li>
     <li class="wy-breadcrumbs-aside">
           <a href="https://github.com/OpenGarage/OpenGarage-Firmware/edit/master/docs/1.2.5/api.md" class="icon icon-github"> Edit on GitHub</a>
@@ -543,7 +554,7 @@
 </tr>
 <tr>
 <td style="text-align: left;"><code>emen</code></td>
-<td style="text-align: left;">Email enable (<code><u>0:disabled</u>; 1:enabled</code>)</td>
+<td style="text-align: left;"><a href="../../guides/email-notifications/">Email enable</a> (<code><u>0:disabled</u>; 1:enabled</code>)</td>
 </tr>
 <tr>
 <td style="text-align: left;"><code>smtp</code></td>
@@ -711,7 +722,7 @@
 </ul>
 <p><span class="hl">Blynk light/lock state-setting requests are ignored while the corresponding opener status is invalid. Existing Blynk indicators may still show last-known values; use <code>/jc</code> for validity information.</span></p>
 <h4 id="otc-openthings-token">OTC (OpenThings Token)</h4>
-<p>OTC is based on our own <a href="https://github.com/openthingsio">OpenThingsFramework (OTF) proxy</a>.</p>
+<p>OTC is based on our own <a href="https://github.com/openthingsio">OpenThingsFramework (OTF) proxy</a>. For token creation and device setup, see <a href="../../guides/remote-access-otc/">Remote Access with OTC</a>.</p>
 <ul>
 <li>Default server domain name (<code>bdmn</code>) is <code>ws.cloud.openthings.io</code></li>
 <li>Default server port (<code>bprt</code>) is: <code>80</code>. Change these accordingly if using your own OTC server.</li>
@@ -809,7 +820,7 @@
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
         <a href="../manual/" class="btn btn-neutral float-left" title="User Manual"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../../1.2.4/manual/" class="btn btn-neutral float-right" title="User Manual">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../../guides/remote-access-otc/" class="btn btn-neutral float-right" title="Remote Access with OTC">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -839,7 +850,7 @@
       <span><a href="../manual/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../../1.2.4/manual/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../../guides/remote-access-otc/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>

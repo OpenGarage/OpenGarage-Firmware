@@ -41,7 +41,7 @@
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
-                <li class="toctree-l1 current"><a class="reference internal current" href="#">Home</a>
+                <li class="toctree-l1 current"><a class="reference internal current" href=".">Home</a>
     <ul class="current">
     <li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a>
     </li>
@@ -63,7 +63,9 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#firmware-update-instructions">Firmware Update Instructions</a>
         <ul>
-    <li class="toctree-l3"><a class="reference internal" href="#update-steps">Update Steps</a>
+    <li class="toctree-l3"><a class="reference internal" href="#one-click-firmware-update">One-Click Firmware Update</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#manual-firmware-upload">Manual Firmware Upload</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#troubleshooting">Troubleshooting</a>
     </li>
@@ -78,18 +80,29 @@
                 <li class="toctree-l1"><a class="reference internal" href="faq/">FAQ</a>
                 </li>
               </ul>
-              <p class="caption"><span class="caption-text">Firmware v1.2.5 <span class="nav-new-badge" aria-label="New">NEW</span></span></p>
+              <p class="caption"><span class="caption-text">Firmware v1.2.6 <span class="nav-new-badge" aria-label="New">NEW</span></span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="1.2.6/manual/">User Manual</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="1.2.6/api/">API Reference</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Firmware v1.2.5</span></p>
               <ul>
                   <li class="toctree-l1"><a class="reference internal" href="1.2.5/manual/">User Manual</a>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="1.2.5/api/">API Reference</a>
                   </li>
               </ul>
-              <p class="caption"><span class="caption-text">Firmware v1.2.4</span></p>
+              <p class="caption"><span class="caption-text">Guides</span></p>
               <ul>
-                  <li class="toctree-l1"><a class="reference internal" href="1.2.4/manual/">User Manual</a>
+                  <li class="toctree-l1"><a class="reference internal" href="guides/remote-access-otc/">Remote Access with OTC</a>
                   </li>
-                  <li class="toctree-l1"><a class="reference internal" href="1.2.4/api/">API Reference</a>
+                  <li class="toctree-l1"><a class="reference internal" href="guides/email-notifications/">Setting Up Email Notifications</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="guides/diy-security-adapter/">DIY Security+ 3.0 Adapter</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="guides/using-opengarage-with-ifttt/">Using OpenGarage with IFTTT</a>
                   </li>
               </ul>
               <p class="caption"><span class="caption-text">Archived</span></p>
@@ -126,21 +139,28 @@
 <p>For official firmware release notes, visit the <a href="https://github.com/OpenGarage/OpenGarage-Firmware/releases">OpenGarage Firmware Releases</a> page on GitHub.</p>
 <h2 id="documentation">Documentation</h2>
 <ul>
-<li><a href="faq/">FAQ</a></li>
-<li><a href="https://opengarage.github.io/OpenGarage-Firmware/manual/">User Manual (latest)</a></li>
-<li><a href="https://opengarage.github.io/OpenGarage-Firmware/api/">API Reference (latest)</a></li>
+<li><a href="faq/"><strong>FAQ</strong></a></li>
+<li><a href="manual/"><strong>User Manual</strong> (latest)</a></li>
+<li><a href="api/"><strong>API Reference</strong> (latest)</a></li>
+<li><strong>Guides</strong><ul>
+<li><a href="guides/remote-access-otc/">Remote Access with OTC</a></li>
+<li><a href="guides/email-notifications/">Setting Up Email Notifications</a></li>
+<li><a href="guides/diy-security-adapter/">DIY Security+ 3.0 Adapter</a></li>
+<li><a href="guides/using-opengarage-with-ifttt/">Using OpenGarage with IFTTT</a></li>
+</ul>
+</li>
 </ul>
 <h2 id="latest-firmware">Latest Firmware</h2>
-<p>Download <a href="assets/bins/og_1.2.5.bin">OpenGarage stock firmware 1.2.5</a> for boards with 4 MB flash. See the <a href="#firmware-update-instructions">firmware update instructions</a> before uploading it.</p>
+<p><strong>OpenGarage stock firmware 1.2.6.</strong> See the <a href="#firmware-update-instructions">firmware update instructions</a>.</p>
 <h2 id="using-home-assistant">Using Home Assistant?</h2>
 <p>The alternative <a href="https://github.com/OpenGarage/OpenGarage-ESPHome">ESPHome-based OpenGarage firmware</a> provides native Home Assistant integration, including door controls, distance and vehicle sensing, editable thresholds, and—on compatible Security+ hardware/openers—opener light, remote lock and reported obstruction status.</p>
 <h2 id="opengarages-built-in-web-ui">OpenGarage's Built-in Web UI</h2>
-<p>The screenshots below show stock firmware 1.2.4; newer versions may differ slightly.</p>
-<p><img alt="AP homepage" src="1.2.4/screenshots/1_ap.jpg" width="220" /> <img alt="Homepage" src="1.2.4/screenshots/2_home.jpg" width="220" /> <img alt="Log" src="1.2.4/screenshots/3_log.jpg" width="220" />
-<img alt="Basic Options" src="1.2.4/screenshots/4_options_basic.jpg" width="220" /> <img alt="Integration" src="1.2.4/screenshots/5_options_integration.jpg" width="220" /> <img alt="Advanced Options" src="1.2.4/screenshots/6_options_advanced.jpg" width="220" />
-<img alt="Firmware Update" src="1.2.4/screenshots/7_update.jpg" width="220" /> <img alt="Webapp" src="1.2.4/screenshots/9_webapp.jpg" width="220" /> <img alt="Blynk" src="1.2.4/screenshots/8_blynk_app.jpg" width="220" /></p>
+<p><img alt="AP homepage" src="1.2.6/screenshots/1_wifi.png" width="220" /> <img alt="Homepage" src="1.2.6/screenshots/2_home.png" width="220" /> <img alt="Log" src="1.2.4/screenshots/3_log.jpg" width="220" />
+<img alt="Basic Options" src="1.2.6/screenshots/4_options_basic.png" width="220" /> <img alt="Integration" src="1.2.6/screenshots/5_options_integration.png" width="220" /> <img alt="Advanced Options" src="1.2.6/screenshots/6_options_advanced.png" width="220" />
+<img alt="Firmware Update" src="1.2.4/screenshots/7_update.jpg" width="220" /> <img alt="Webapp" src="1.2.4/screenshots/9_webapp.jpg" width="220" /></p>
 <hr />
 <h2 id="firmware-compilation-instructions">Firmware Compilation Instructions</h2>
+<p><strong><u>NOTE</u>:</strong> Modern AI coding agents such as <strong>Codex</strong> or <strong>Claude Code</strong> can manage firmware build tools, compile and upload firmware, and make code changes on your behalf given high-level instructions. If you prefer to compile or modify the code manually, follow the VS Code workflow below.</p>
 <h3 id="environment-setup">Environment Setup</h3>
 <ol>
 <li>Download and unzip (or git clone) this (<code>OpenGarage-Firmware</code>) repository.</li>
@@ -163,17 +183,26 @@
 </ul>
 <hr />
 <h2 id="firmware-update-instructions">Firmware Update Instructions</h2>
-<p>OpenGarage firmware supports OTA (over-the-air) updates, allowing you to upload the firmware directly through the web UI.</p>
-<h3 id="update-steps">Update Steps</h3>
+<p>OpenGarage supports OTA (over-the-air) firmware updates through its web interface. Firmware updates must be performed on your local network; they are not available remotely via OTC.</p>
+<p>Open your OpenGarage's homepage and click <strong>Firmware Update</strong> at the bottom.</p>
+<h3 id="one-click-firmware-update">One-Click Firmware Update</h3>
+<p>One-click update is available from <strong>firmware 1.2.6</strong>. Your browser needs Internet access to download the release. If you are running an older firmware, use the Manual Firmware Update method below for the first upgrade.</p>
 <ol>
-<li><a href="#list-of-opengarage-firmwares">Download a firmware file</a> (e.g. <code>og_x.x.x.bin</code> where <code>x.x.x</code> is the firmware version).</li>
-<li>Before starting, close the Blynk and OpenGarage mobile apps to prevent them from interfering with the update process.</li>
-<li>Open your OpenGarage's homepage, click <code>Firmware Update</code> at the bottom of the page.<ul>
-<li><em>If your OpenGarage is in WiFi AP (Access Point) mode, the update page is available at <code>http://192.168.4.1/update</code>.</em></li>
+<li>Enter your <strong>Device Key</strong> on the update page.</li>
+<li>Under <strong>One-Click Firmware Update</strong>, select a firmware release. Click <strong>Release Notes</strong> to read about its changes.</li>
+<li>Click <strong>Install Update</strong> and confirm. The browser downloads and checks the firmware, then uploads it to OpenGarage.</li>
+<li>Wait for the success message and automatic restart, then use <strong>Back to OpenGarage</strong>.</li>
+</ol>
+<h3 id="manual-firmware-upload">Manual Firmware Upload</h3>
+<p>If one-click update is unavailable or does not work, use Manual Firmware Upload.</p>
+<ol>
+<li><a href="#list-of-opengarage-firmwares">Download a firmware file</a> (e.g. <code>og_x.x.x.bin</code>, where <code>x.x.x</code> is the firmware version).</li>
+<li>On the Firmware Update page, enter your <strong>Device Key</strong> and select the downloaded <code>.bin</code> file.<ul>
+<li><em>If your OpenGarage is in WiFi AP (Access Point) mode, the firmware update page is available at <code>http://192.168.4.1/update</code>.</em></li>
 </ul>
 </li>
-<li>Select the firmware file you downloaded, enter your device key, and click <code>Submit</code>.</li>
-<li>Wait for the process to finish. If the upload fails, you can try again. If the device hangs, unplug and replug the power, then try again.</li>
+<li>Click <strong>Upload Firmware</strong> (or <strong>Submit</strong> on older firmware).</li>
+<li>Wait for completion and the device to restart. After upgrading from older firmware, reload the page to avoid using cached older pages.</li>
 </ol>
 <h3 id="troubleshooting">Troubleshooting</h3>
 <ul>
@@ -182,6 +211,7 @@
 <li><strong>Checking Flash Size</strong>: If you are unsure how much flash memory is available on your OpenGarage, you can first update to firmware 1.1.3. After the update, open a browser and go to <code>http://&lt;your_og_ip&gt;/db</code>. This will display a JSON string. Look for the <code>flash_size</code> value: if it's <code>4194304</code>, you have 4MB of flash and can upgrade. If it is <code>2097152</code>, your device is not upgradeable to firmware 1.2.0 and beyond.</li>
 <li><strong>Factory Reset Warning</strong>: Upgrading from an early firmware to version 1.2.0 will <strong>erase all settings</strong> due to changes in the flash memory layout. Be sure to write down your configuration before proceeding.</li>
 </ul>
+<hr />
 <h3 id="list-of-opengarage-firmwares">List of OpenGarage Firmwares</h3>
 <p>The release notes of each firmware can be found on <a href="https://github.com/OpenGarage/OpenGarage-Firmware/releases">GitHub</a>.</p>
 <table>
@@ -194,7 +224,12 @@
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;"><a href="assets/bins/og_1.2.5.bin"><strong><code>1.2.5.bin</code></strong></a></td>
+<td style="text-align: left;"><a href="assets/bins/og_1.2.6.bin"><strong><code>1.2.6.bin</code></strong></a></td>
+<td style="text-align: left;"><a href="assets/bins/og_1.2.6.bin.sha256">Checksum</a></td>
+<td style="text-align: left;">[<a href="1.2.6/manual/">Manual</a>], [<a href="1.2.6/api/">API</a>]</td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="assets/bins/og_1.2.5.bin"><code>1.2.5.bin</code></a></td>
 <td style="text-align: left;"><a href="assets/bins/og_1.2.5.bin.sha256">Checksum</a></td>
 <td style="text-align: left;">[<a href="1.2.5/manual/">Manual</a>], [<a href="1.2.5/api/">API</a>]</td>
 </tr>
@@ -206,7 +241,7 @@
 <tr>
 <td style="text-align: left;"><a href="assets/bins/og_1.2.3.bin"><code>1.2.3.bin</code></a></td>
 <td style="text-align: left;"></td>
-<td style="text-align: left;"><a href="archive/">Docs</a></td>
+<td style="text-align: left;"><a href="archive/">Archive</a></td>
 </tr>
 <tr>
 <td style="text-align: left;"><a href="assets/bins/og_1.2.1.bin"><code>1.2.1.bin</code></a></td>
@@ -275,7 +310,7 @@
 </tr>
 </tbody>
 </table>
-<p><br>To verify a downloaded firmware, save its <code>.bin</code> and checksum files in the same folder, then run <code>sha256sum -c og_1.2.5.bin.sha256</code> (or substitute the version you downloaded).</p>
+<p><br>To verify a downloaded firmware, save its <code>.bin</code> and checksum files in the same folder, then run <code>sha256sum -c og_1.2.6.bin.sha256</code> (or substitute the version you downloaded).</p>
 <hr />
               
             </div>
@@ -328,6 +363,6 @@
 </html>
 
 <!--
-MkDocs version : 1.6.1
-Build Date UTC : 2026-09-16 16:55:41.096487+00:00
+MkDocs version : 1.5.3
+Build Date UTC : 2026-11-07 02:46:47.775474+00:00
 -->

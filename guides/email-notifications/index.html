@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://OpenGarage.github.io/OpenGarage-Firmware/guides/email-notifications/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Setting Up Email Notifications - OpenGarage Documentation</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../custom.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Setting Up Email Notifications";
+        var mkdocs_page_input_path = "guides/email-notifications.md";
+        var mkdocs_page_url = "/OpenGarage-Firmware/guides/email-notifications/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> OpenGarage Documentation
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../faq/">FAQ</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Firmware v1.2.6 <span class="nav-new-badge" aria-label="New">NEW</span></span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.6/manual/">User Manual</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.6/api/">API Reference</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Firmware v1.2.5</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.5/manual/">User Manual</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.5/api/">API Reference</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guides</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../remote-access-otc/">Remote Access with OTC</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">Setting Up Email Notifications</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#how-email-notifications-work-and-best-practices">How Email Notifications Work and Best Practices</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#step-1-create-a-sender-email-account-and-app-password">Step 1: Create a Sender Email Account and App Password</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#option-1-gmail-smtp">Option 1: Gmail SMTP</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#option-2-zoho-smtp">Option 2: Zoho SMTP</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#step-2-configure-email-settings">Step 2: Configure Email Settings</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#step-3-choose-events-and-save">Step 3: Choose Events and Save</a>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../diy-security-adapter/">DIY Security+ 3.0 Adapter</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../using-opengarage-with-ifttt/">Using OpenGarage with IFTTT</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Archived</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../archive/">Previous Manuals and API docs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">OpenGarage Documentation</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Guides</li>
+      <li class="breadcrumb-item active">Setting Up Email Notifications</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/OpenGarage/OpenGarage-Firmware/edit/master/docs/guides/email-notifications.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="setting-up-email-notifications">Setting Up Email Notifications</h1>
+<p>OpenGarage <strong>stock firmware 1.2.3 and later</strong> supports email notifications through an SMTP server. Email does not require an OTC token.</p>
+<h2 id="how-email-notifications-work-and-best-practices">How Email Notifications Work and Best Practices</h2>
+<p>OpenGarage sends email notifications using a user-selected <strong>SMTP</strong> (Simple Mail Transfer Protocol) server, such as <a href="https://www.gmail.com">Gmail</a> or <a href="https://www.zoho.com/mail">Zoho Mail</a>.</p>
+<ul>
+<li>When a notification event occurs, the firmware connects to the configured SMTP server and sends the message.</li>
+<li>OpenGarage uses implicit TLS, normally on port <strong>465</strong>. Providers that require STARTTLS on port 587 are not supported.</li>
+<li>Gmail and Zoho Mail have been used successfully with OpenGarage. Other providers must support compatible SMTP authentication and implicit TLS.</li>
+</ul>
+<p>The <strong>Sender Email + App Password</strong> act as login credentials for the SMTP server. The <strong>Recipient Email</strong> can be any email address and does not have to use the same provider as the sender.</p>
+<p>Note that Email providers limit sending rates. See the current <a href="https://support.google.com/mail/answer/22839">Gmail sending limits</a> or <a href="https://www.zoho.com/mail/help/adminconsole/rates-and-limits.html">Zoho Mail rates and limits</a>. We recommend a dedicated sender account for notifications, with your usual email address as the recipient.</p>
+<hr />
+<h2 id="step-1-create-a-sender-email-account-and-app-password">Step 1: Create a Sender Email Account and App Password</h2>
+<h3 id="option-1-gmail-smtp">Option 1: Gmail SMTP</h3>
+<ul>
+<li>Navigate to <a href="https://www.google.com/intl/en-US/gmail/about/">this page</a> to create a new personal Gmail account. Even if you already have a Gmail account, consider creating a separate one dedicated to notifications.</li>
+<li>After creating this account, navigate to <a href="https://myaccount.google.com">myaccount.google.com</a>. Once there, select the <strong>Security</strong> tab and scroll down to <strong>2-Step Verification</strong>. Google will not let you create an app password without this enabled. See the screenshot below.</li>
+</ul>
+<p><img alt="2-Factor Authentication screen" class="img-border img-center guide-screenshot" src="../images/2FactorAuth.png" /></p>
+<ul>
+<li>Follow the steps to activate 2-Step verification, then go back to <a href="https://myaccount.google.com">myaccount.google.com</a> and enter <strong>app passwords</strong> into the search bar at the top. Select <strong>App Passwords</strong> in the search results.</li>
+</ul>
+<p><img alt="App Passwords search" class="img-border img-center guide-screenshot" src="../images/appPassSearch.png" /></p>
+<ul>
+<li>On the app passwords screen, enter an App name (e.g. <strong>opengarage</strong>) and press <strong>Create</strong>.</li>
+</ul>
+<p><img alt="App Password entry" class="img-border img-center guide-screenshot" src="../images/appPassEntry.png" width="450" /></p>
+<ul>
+<li>A popup window will show a 16-character password in the format <code>"xxxx xxxx xxxx xxxx"</code>. Save it securely because this is the <strong>only time it is shown</strong>. When entering it in OpenGarage, omit the spaces. If you lose it, create a new app password.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Google App Passwords require 2-Step Verification and may not be available for some managed, security-key-only, or Advanced Protection accounts. See <a href="https://support.google.com/accounts/answer/185833">Google's App Password documentation</a> for current requirements.</p>
+</div>
+<hr />
+<h3 id="option-2-zoho-smtp">Option 2: Zoho SMTP</h3>
+<p>If you prefer an alternative to Gmail, Zoho Mail is a recommended option that has been tested.</p>
+<ul>
+<li>Navigate to the <a href="https://www.zoho.com/mail/">Zoho Mail website</a> to create a <strong>personal account</strong>. Make sure to select <strong>Personal Email</strong>, not the default <strong>Business Email</strong>.</li>
+</ul>
+<p><img alt="Zoho Create Account screen" class="img-border img-center guide-screenshot" src="../images/zohoCreateAccount.png" width="300" /></p>
+<ul>
+<li>Once you have created your account and logged in, navigate to <a href="https://accounts.zoho.com">accounts.zoho.com</a>. Select the <strong>Security</strong> tab, find <strong>Application-Specific Passwords</strong>, and click <strong>Generate New Password</strong>.</li>
+</ul>
+<p><img alt="Zoho Settings menu" class="img-border img-center guide-screenshot" src="../images/zohoSettingsMenu.png" /></p>
+<ul>
+<li>A window will open to create a new app password. Enter an <strong>app name</strong> (for example, <strong>OpenGarage</strong>) and click <strong>Generate</strong>. Save the password securely because this is the <strong>only time it is shown</strong>. If you lose it, create a new app password.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In some cases, Zoho may ask you to verify your account password. Complete the prompt, return to the app-password page, and click <strong>Generate</strong> again.</p>
+</div>
+<p><img alt="Zoho App Password entry" class="img-border img-center guide-screenshot" src="../images/zohoAppPassEntry.png" width="450" /></p>
+<hr />
+<h2 id="step-2-configure-email-settings">Step 2: Configure Email Settings</h2>
+<p>Open your OpenGarage's local homepage, go to <strong>Options</strong> → <strong>Integration</strong>, and check <strong>Enable Email Notifications</strong>. Enter:</p>
+<table>
+<thead>
+<tr>
+<th><strong>Parameter</strong></th>
+<th><strong>Value</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SMTP Server</strong></td>
+<td><code>smtp.gmail.com</code> (Gmail) or <code>smtp.zoho.com</code> (Zoho Mail)</td>
+</tr>
+<tr>
+<td><strong>SMTP Port</strong></td>
+<td><code>465</code></td>
+</tr>
+<tr>
+<td><strong>Sender Email</strong></td>
+<td>The account used to create the app password in Step 1</td>
+</tr>
+<tr>
+<td><strong>App Password</strong></td>
+<td>The application-specific password from Step 1; omit spaces from a Gmail app password</td>
+</tr>
+<tr>
+<td><strong>Recipient Email</strong></td>
+<td>The address where you want to receive notifications</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="OpenGarage email settings" class="img-border img-center guide-screenshot" src="../../1.2.6/screenshots/email-settings.png" width="300" /></p>
+<p>The screenshot shows firmware 1.2.6; labels may differ on older versions.</p>
+<p>On firmware 1.2.6 and later, the saved app password is not displayed. Leave the field blank to keep it, enter a new value to replace it, or use <strong>Clear saved password</strong> to remove it. Do not enter a replacement and select Clear together.</p>
+<hr />
+<h2 id="step-3-choose-events-and-save">Step 3: Choose Events and Save</h2>
+<p>In <strong>Options</strong> → <strong>Integration</strong>, use <strong>Choose Notification Events</strong> to select <strong>Door Opened</strong>, <strong>Door Closed</strong>, and, on firmware supporting it, <strong>Door Stopped</strong>.</p>
+<p>You can also enable <strong>Notify me</strong> under <strong>Automation</strong> to receive a notification if the door is left open beyond the configured duration or UTC hour. Auto-close is a separate option; enabling notifications does not require enabling auto-close.</p>
+<p>Set a recognizable <strong>Device Name</strong> in <strong>Options</strong> → <strong>Basic</strong>. This name appears in notification messages and helps identify the sender when you have multiple OpenGarage devices.</p>
+<p>Enter your <strong>Device Key</strong> and submit the changes. To test, observe a normal door opening or closing and check the recipient's inbox and spam folder.</p>
+<p><strong><u>Notes</u>.</strong> The notification-event and Device Name settings also apply to MQTT and IFTTT notifications when those services are enabled. Multiple OpenGarage devices can share the same email settings as long as their combined sending rate stays within the provider's limits. You can also use a separate sender account for each device while keeping the same recipient address.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../remote-access-otc/" class="btn btn-neutral float-left" title="Remote Access with OTC"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../diy-security-adapter/" class="btn btn-neutral float-right" title="DIY Security+ 3.0 Adapter">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/OpenGarage/OpenGarage-Firmware" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../remote-access-otc/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../diy-security-adapter/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

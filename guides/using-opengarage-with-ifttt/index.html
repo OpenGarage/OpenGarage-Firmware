@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://OpenGarage.github.io/OpenGarage-Firmware/guides/using-opengarage-with-ifttt/" />
+      <link rel="shortcut icon" href="../../img/favicon.ico" />
+    <title>Using OpenGarage with IFTTT - OpenGarage Documentation</title>
+    <link rel="stylesheet" href="../../css/theme.css" />
+    <link rel="stylesheet" href="../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../custom.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Using OpenGarage with IFTTT";
+        var mkdocs_page_input_path = "guides/using-opengarage-with-ifttt.md";
+        var mkdocs_page_url = "/OpenGarage-Firmware/guides/using-opengarage-with-ifttt/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../.." class="icon icon-home"> OpenGarage Documentation
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../faq/">FAQ</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Firmware v1.2.6 <span class="nav-new-badge" aria-label="New">NEW</span></span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.6/manual/">User Manual</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.6/api/">API Reference</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Firmware v1.2.5</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.5/manual/">User Manual</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../1.2.5/api/">API Reference</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Guides</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../remote-access-otc/">Remote Access with OTC</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../email-notifications/">Setting Up Email Notifications</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../diy-security-adapter/">DIY Security+ 3.0 Adapter</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">Using OpenGarage with IFTTT</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#step-1-get-your-ifttt-key">Step 1: Get Your IFTTT Key</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#step-2-create-an-applet">Step 2: Create an Applet</a>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Archived</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../archive/">Previous Manuals and API docs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../..">OpenGarage Documentation</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Guides</li>
+      <li class="breadcrumb-item active">Using OpenGarage with IFTTT</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/OpenGarage/OpenGarage-Firmware/edit/master/docs/guides/using-opengarage-with-ifttt.md" class="icon icon-github"> Edit on GitHub</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="using-opengarage-with-ifttt">Using OpenGarage with IFTTT</h1>
+<p>OpenGarage has built-in support for email notifications and MQTT, and these are the recommended ways to receive notifications for most users. See <a href="../email-notifications/">Setting Up Email Notifications</a>, and the <a href="../../api/#9-mqtt">MQTT section</a> of the API reference for use with home automation systems. If you prefer IFTTT, OpenGarage can also send notifications through it.</p>
+<p>An IFTTT applet connects a trigger (the “if this” part) to an action (the “then that” part). Here, an OpenGarage notification triggers a Webhooks event, and the action delivers a text, email, or push notification.</p>
+<h2 id="step-1-get-your-ifttt-key">Step 1: Get Your IFTTT Key</h2>
+<ol>
+<li>Open the IFTTT mobile app or visit <a href="https://ifttt.com/">ifttt.com</a>, then sign in or create an account.</li>
+<li>Select <strong>Explore</strong>, search for <strong>Webhooks</strong>, and open that service.</li>
+<li>
+<p>Select <strong>Documentation</strong> to find your Webhooks key. Copy the entire key.</p>
+<p><img alt="Finding the Webhooks service and its key" class="img-border img-center guide-screenshot" src="../images/ifttt-webhooks.png" width="650" /></p>
+</li>
+<li>
+<p>Open your OpenGarage settings, go to <strong>Integration</strong>, and paste the key into <strong>IFTTT Key</strong>. Choose the notification events you want, then enter your Device Key and save.</p>
+<p><img alt="IFTTT key and notification settings in OpenGarage" class="img-border img-center guide-screenshot" src="../images/ifttt-key-settings.png" width="450" /></p>
+</li>
+</ol>
+<p>The screenshots show the original IFTTT and OpenGarage interfaces; their appearance may differ from current versions. On firmware 1.2.6 and later, a saved IFTTT key is not displayed. Leave the field blank to keep it, or enter a new key to replace it.</p>
+<h2 id="step-2-create-an-applet">Step 2: Create an Applet</h2>
+<p>You can create the applet in a browser or in the IFTTT mobile app. The screenshots below use the app.</p>
+<ol>
+<li>Select <strong>Create</strong>, then add a trigger under <strong>If This</strong>.</li>
+<li>
+<p>Search for and select <strong>Webhooks</strong>.</p>
+<p><img alt="Creating an applet and selecting Webhooks" class="img-border img-center guide-screenshot" src="../images/ifttt-create-trigger.png" /></p>
+</li>
+<li>
+<p>Select <strong>Receive a web request</strong>.</p>
+</li>
+<li>Enter <strong><code>opengarage</code></strong> as the event name, exactly as shown. This is the event name used by the firmware. Continue to create the trigger.</li>
+<li>
+<p>Under <strong>Then That</strong>, choose the notification service you want, such as SMS, email, or push notifications.</p>
+<p><img alt="Setting the opengarage event name and selecting an action" class="img-border img-center guide-screenshot" src="../images/ifttt-event-name.png" /></p>
+</li>
+<li>
+<p>Configure the action. Keep <strong><code>Value1</code></strong> in the message: OpenGarage sends its notification text in this parameter. If it is missing, use <strong>Insert ingredients</strong> to add it.</p>
+</li>
+<li>
+<p>Continue, review the applet, and select <strong>Finish</strong>. You can edit the action or message later.</p>
+<p><img alt="Including Value1 in the notification message and finishing the applet" class="img-border img-center guide-screenshot" src="../images/ifttt-notification-action.png" /></p>
+</li>
+</ol>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../diy-security-adapter/" class="btn btn-neutral float-left" title="DIY Security+ 3.0 Adapter"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../archive/" class="btn btn-neutral float-right" title="Previous Manuals and API docs">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/OpenGarage/OpenGarage-Firmware" class="fa fa-github" style="color: #fcfcfc"> GitHub</a>
+        </span>
+    
+    
+      <span><a href="../diy-security-adapter/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../archive/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../..";</script>
+    <script src="../../js/theme_extra.js"></script>
+    <script src="../../js/theme.js"></script>
+      <script src="../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
