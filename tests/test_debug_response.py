@@ -18,6 +18,16 @@ stub = r'''
 #include <iostream>
 #include <cstring>
 #include <cstdint>
+#include "OpenGarage/json_escape.h"
+#include "OpenGarage/local_time.h"
+#include "OpenGarage/wifi_manager.h"
+#include "OpenGarage/wifi_selection.h"
+og_wifi::Selection station_selection;
+const char *station_selection_status(){return "Idle";}
+og_wifi::Recovery station_recovery;
+uint8_t station_disconnect_reason=0;
+uint32_t millis(){return 100;}
+og_local::Clock local_clock;
 #define F(x) x
 #define HEX 16
 #define STRING_RESERVE_SIZE 256
@@ -29,6 +39,7 @@ struct String : std::string {
   template<class T> String& operator+=(T n) { append(std::to_string(n)); return *this; }
   String& operator+=(const char *s) { append(s); return *this; }
   String& operator+=(const String &s) { append(s); return *this; }
+  String& operator+=(char c) { push_back(c); return *this; }
 };
 namespace OTF {
 struct Request { const char *value; const char *getQueryParameter(const char*) const { return value; } };
@@ -38,9 +49,11 @@ struct Option { int ival=125; String sval="test"; };
 enum { OPTION_FWV, OPTION_NAME, OPTION_SECV };
 struct { Option options[3]; int has_swrx=1; int read_distance(){return 100;} } og;
 struct IP { String toString(){return "192.0.2.1";} };
-struct { IP localIP(){return {};} int RSSI(){return -50;} String BSSIDstr(){return "00:00:00:00:00:00";} } WiFi;
+struct { IP localIP(){return {};} int RSSI(){return -50;} int channel(){return 1;} String BSSIDstr(){return "00:00:00:00:00:00";} } WiFi;
 struct ResetInfo { unsigned reason=0; };
 struct {
+  unsigned getMaxFreeBlockSize(){return 28000;}
+  unsigned getFreeContStack(){return 1536;}
   unsigned getChipId(){return 123;} unsigned getFreeHeap(){return 30000;}
   unsigned getFlashChipRealSize(){return 4194304;}
   const char *getResetReason(){return "Power on";}
@@ -57,6 +70,8 @@ struct Garage {
 } secplus1_garage,secplus2_garage;
 unsigned read_cnt=10,secplus2_client_id=0x12342908;
 bool secplus2_identity_ready=true;
+unsigned mqtt_json_failures=0,mqtt_json_bytes=0,mqtt_retained_dropped=0,notification_dropped=0;
+bool mqtt_buffer_ready=true;
 String mqtt_topic="test";
 String get_mac(){return "00:00:00:00:00:01";}
 void otf_send_json(OTF::Response&,const String &json){std::cout<<json<<'\n';}
@@ -76,13 +91,13 @@ int main() {
 '''
 with tempfile.TemporaryDirectory(prefix='og-db-test-') as scratch:
     binary = str(Path(scratch) / 'test')
-    subprocess.run(['g++', '-std=c++11', '-x', 'c++', '-', '-o', binary],
+    subprocess.run(['g++', '-std=c++11', '-I', str(Path(__file__).resolve().parents[1]), '-x', 'c++', '-', '-o', binary],
                    input=stub + '\n'.join(functions) + runner, text=True, check=True)
     results = [json.loads(line) for line in subprocess.check_output([binary], text=True).splitlines()]
 
 station = set('rcnt fwv name mac mqtt_topic devip cid rssi bssid build Freeheap flash_size has_swrx'.split())
 ap = set('dist fwv has_swrx'.split())
-common = set('active_security_protocol free_heap reset_reason reset_reason_code uptime_s min_free_heap max_loop_us'.split())
+common = set('active_security_protocol free_heap largest_free_heap_block build_time otf_revision reset_reason reset_reason_code uptime_s min_free_heap max_loop_us min_free_cont_stack time_valid'.split())
 one = {'secplus1_' + k for k in 'parity_errors invalid_frames rx_overflows tx_deferrals expired_commands door_age_ms light_lock_age_ms'.split()}
 two = {'secplus2_' + k for k in 'client_id identity_ready status_age_ms query_failures action_write_failures tx_deferrals expired_commands control_fault recovery'.split()}
 assert len(results) == 84
@@ -93,10 +108,24 @@ for hardware in (0, 1):
         for baseline in (station, ap):
             for offset in range(7):
                 data = next(iterator)
-                assert set(data) == baseline | (extra if offset == 6 else set()), data
+                mqtt_extra = {'mqtt_json_failures', 'mqtt_json_bytes', 'mqtt_buffer_ready', 'mqtt_retained_dropped', 'notification_dropped', 'wifi_recovery', 'wifi_attempts', 'wifi_timeouts', 'wifi_disconnects', 'wifi_retry_in_ms', 'wifi_disconnect_reason', 'wifi_selection', 'wifi_scans', 'wifi_roams', 'wifi_smoothed_rssi', 'wifi_channel'}
+                assert set(data) == baseline | ((extra | mqtt_extra) if offset == 6 else set()), data
                 if offset == 6:
                     assert data['active_security_protocol'] == protocol
                     if hardware and protocol == 2:
                         assert data['secplus2_client_id'] == '0x12342908'
                         assert data['secplus2_identity_ready'] is True
 print('/db: 84 AP/station, compact/verbose, hardware and protocol response cases passed')
+
+for item in results:
+    if "min_free_cont_stack" in item:
+        assert item["min_free_cont_stack"] == 1536
+
+# Keep the diagnostic identity tied to the exact dependency pin used by the build.
+otf_pin = re.search(r'OpenThings-Framework-Firmware-Library\.git#([0-9a-f]{40})',
+                    Path('OpenGarage/platformio.ini').read_text()).group(1)
+for item in results:
+    if 'otf_revision' in item:
+        assert item['otf_revision'] == otf_pin
+        assert item['largest_free_heap_block'] == 28000
+        assert len(item['build_time']) == 8

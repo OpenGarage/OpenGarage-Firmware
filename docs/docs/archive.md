@@ -1,67 +1,36 @@
 # Archived Manuals and API References
 
-These documents cover earlier OpenGarage firmware versions. Version 1.2.4 has online documentation; older versions are provided as PDFs. For newer documentation, use the site navigation.
+Documentation for earlier OpenGarage firmware versions. Versions 1.2.5 and 1.2.4 have online documentation; older documents are PDFs.
 
----
-
-### Firmware 1.2.4
-
-* [User Manual](1.2.4/manual.md)
-* [API Reference](1.2.4/api.md)
-
----
-
-### Firmware 1.2.3
-* [User Manual (PDF)](assets/pdfs/OGManual1.2.3.pdf)
-* [API Reference (PDF)](assets/pdfs/OGAPI1.2.3.pdf)
-
----
-
-### Firmware 1.2.0
-* [User Manual (PDF)](assets/pdfs/OGManual1.2.0.pdf)
-* [API Reference (PDF)](assets/pdfs/OGAPI1.2.0.pdf)
-
----
-
-### Firmware 1.1.2
-* [User Manual (PDF)](assets/pdfs/OGManual1.1.2.pdf)
-* [API Reference (PDF)](assets/pdfs/OGAPI1.1.2.pdf)
-
----
-
-### Firmware 1.1.0
-* [User Manual (PDF)](assets/pdfs/OGManual1.1.0.pdf)
-* [API Reference (PDF)](assets/pdfs/OGAPI1.1.0.pdf)
-
----
-
-### Firmware 1.0.7
-* [User Manual (PDF)](assets/pdfs/OGManual1.0.7.pdf)
-* [API Reference (PDF)](assets/pdfs/OGAPI1.0.7.pdf)
-
----
-
-### Other Docs
-* [Firmware 1.0.9 API](assets/pdfs/OGAPI1.0.9.pdf)
-* [Firmware 1.0.6 API](assets/pdfs/OGAPI1.0.6.pdf)
-* [Firmware 1.0.5 API](assets/pdfs/OGAPI1.0.5.pdf)
-* [Firmware 1.0.4 API](assets/pdfs/OGAPI1.0.4.pdf)
+| Firmware | User Manual | API Reference |
+|:---------|:------------|:--------------|
+| 1.2.5 | [User Manual](1.2.5/manual.md) | [API Reference](1.2.5/api.md) |
+| 1.2.4 | [User Manual](1.2.4/manual.md) | [API Reference](1.2.4/api.md) |
+| 1.2.3 | [Manual (PDF)](assets/pdfs/OGManual1.2.3.pdf) | [API (PDF)](assets/pdfs/OGAPI1.2.3.pdf) |
+| 1.2.0 | [Manual (PDF)](assets/pdfs/OGManual1.2.0.pdf) | [API (PDF)](assets/pdfs/OGAPI1.2.0.pdf) |
+| 1.1.2 | [Manual (PDF)](assets/pdfs/OGManual1.1.2.pdf) | [API (PDF)](assets/pdfs/OGAPI1.1.2.pdf) |
+| 1.1.0 | [Manual (PDF)](assets/pdfs/OGManual1.1.0.pdf) | [API (PDF)](assets/pdfs/OGAPI1.1.0.pdf) |
+| 1.0.9 | — | [API (PDF)](assets/pdfs/OGAPI1.0.9.pdf) |
+| 1.0.7 | [Manual (PDF)](assets/pdfs/OGManual1.0.7.pdf) | [API (PDF)](assets/pdfs/OGAPI1.0.7.pdf) |
+| 1.0.6 | — | [API (PDF)](assets/pdfs/OGAPI1.0.6.pdf) |
+| 1.0.5 | — | [API (PDF)](assets/pdfs/OGAPI1.0.5.pdf) |
+| 1.0.4 | — | [API (PDF)](assets/pdfs/OGAPI1.0.4.pdf) |
 
 ---
 
 ### Blynk Legacy App
 
-!!! info
-    The instructions below apply only to the Blynk **legacy app** and will **NOT** work with the new Blynk IoT app.
+!!! warning "Archived — Blynk is no longer supported"
+    These instructions are retained for historical reference because older manuals link here. They are no longer supported setup instructions. Blynk support was removed from firmware 1.2.6, and the OpenThings Blynk server will be retired soon; use [OpenThings Cloud (OTC)](guides/remote-access-otc.md) for remote access instead. The legacy instructions do not apply to the new Blynk IoT app.
 
-The Blynk **legacy app** is discontinued and no longer available in the official app stores. On Android phones, you may still find the legacy `.apk` from third-party websites and install it manually. To use it:
+The Blynk **legacy app** is discontinued and no longer available in the official app stores. The former setup procedure is preserved below:
 
-* Follow the [Blynk (Legacy) App Support Article](https://openthings.freshdesk.com/a/solutions/articles/5000872170) to request a Blynk account on the `openthings.io` cloud server.
+* Archived reference: [Blynk (Legacy) App Support Article](https://openthings.freshdesk.com/a/solutions/articles/5000872170).
 
 * Launch the app, sign in with your account credentials, tap the **QR code** icon, and scan the appropriate QR code below. This creates a project in the app, and the Blynk token will be emailed to you (you can copy the token manually from the Project Settings in the app).
 
 ##### **v1.3**
-* Requires firmware `1.2.4` or newer
+* Requires firmware `1.2.4`–`1.2.5`
 * Door status LED uses distinct colors for each state
 * Added light and lock toggles
 ![Blynk App v1.3](assets/blynk_qrs/og_blynk_1.3.png){: .center_wider}
@@ -80,13 +49,13 @@ The Blynk **legacy app** is discontinued and no longer available in the official
 <p></p>
 
 ##### **v1.2**
-* Requires firmware `1.1.2` or newer
+* Requires firmware `1.1.2`–`1.2.5`
 * Added temperature and humidity history (if the sensors are enabled)
 ![Blynk App v1.2](assets/blynk_qrs/og_blynk_1.2.png){: .center}
 <p></p>
 
 ##### **v1.1**
-* Requires firmware `1.0.9` or newer
+* Requires firmware `1.0.9`–`1.2.5`
 * Added Car Status LED
 ![Blynk App v1.1](assets/blynk_qrs/og_blynk_1.1.png){: .center}
 

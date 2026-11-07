@@ -73,8 +73,8 @@ OptionStruct OpenGarage::options[] = {
 	{"pass", 0, 0, ""},
 	{"cld",  0, 2, ""},
 	{"auth", 0, 0, ""},
-	{"bdmn", 0, 0, DEFAULT_BLYNK_DMN},
-	{"bprt", DEFAULT_BLYNK_PRT,65535, ""},
+	{"bdmn", 0, 0, DEFAULT_OTC_DMN},
+	{"bprt", DEFAULT_OTC_PRT,65535, ""},
 	{"dkey", 0, 0, DEFAULT_DKEY},
 	{"name", 0, 0, DEFAULT_NAME},
 	{"iftt", 0, 0, ""},
@@ -97,6 +97,7 @@ OptionStruct OpenGarage::options[] = {
 	{"ntp1", 0, 0, ""},
 	{"host", 0, 0, ""},
 	{"pem", 0, 1, ""},
+	{"wfr", 1, 1, ""},
 };
 
 /* Variables and functions for handling Ultrasonic Distance sensor */
@@ -270,8 +271,7 @@ void OpenGarage::options_load() {
 		String sval = file.readStringUntil('\n');
 		sval.trim();
 		DEBUG_PRINT(name);
-		DEBUG_PRINT(":");
-		DEBUG_PRINTLN(sval);
+		DEBUG_PRINTLN(F(": loaded")); // Never dump configuration credentials.
 		nopts++;
 		if(nopts>NUM_OPTIONS+1) break;
 		int idx = find_option(name);

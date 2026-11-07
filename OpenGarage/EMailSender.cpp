@@ -203,7 +203,8 @@ EMailSender::Response EMailSender::awaitSMTPResponse(SSLClient &client,
 	EMailSender::Response response;
 	uint32_t ts = millis();
 	while (!client.available()) {
-		if (millis() > (ts + timeOut)) {
+		yield();
+		if (uint32_t(millis() - ts) >= timeOut) {
 			response.code = F("1");
 			response.desc = String(respDesc) + "! " + F("SMTP Response TIMEOUT!");
 			response.status = false;
@@ -231,7 +232,8 @@ EMailSender::Response EMailSender::awaitSMTPResponse(EMAIL_NETWORK_CLASS &client
 	EMailSender::Response response;
 	uint32_t ts = millis();
 	while (!client.available()) {
-		if (millis() > (ts + timeOut)) {
+		yield();
+		if (uint32_t(millis() - ts) >= timeOut) {
 			response.code = F("1");
 			response.desc = String(respDesc) + "! " + F("SMTP Response TIMEOUT!");
 			response.status = false;
@@ -469,6 +471,8 @@ EMailSender::Response EMailSender::send(const char* to[], byte sizeOfTo,  byte s
 	  EMAIL_NETWORK_CLASS client;
 	#endif
 
+  // Preserve the ESP8266 TLS handshake budget; a 1s limit breaks slow servers.
+  client.setTimeout(15000);
   EMAIL_DEBUG_PRINT(F("Insecure client:"));
   EMAIL_DEBUG_PRINTLN(this->isSecure);
 	#ifndef FORCE_DISABLE_SSL

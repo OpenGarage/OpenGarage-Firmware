@@ -141,7 +141,7 @@ In dry-contact and Security+ 1.0 modes, `open` and `close` issue a toggle when t
 | `mqur` | MQTT server user name (if authentication is required) |
 | `mqpw` | MQTT password (this variable is NOT shown in the result of `/jo`, but you can change it using the `/co` command in the [section below](#5-change-options-co).) |
 | `mqtp` | MQTT topic (optional, if left empty it will use the Device name as the topic) |
-| `emen` | Email enable (<code><u>0:disabled</u>; 1:enabled</code>) |
+| `emen` | [Email enable](../guides/email-notifications.md) (<code><u>0:disabled</u>; 1:enabled</code>) |
 | `smtp` | SMTP server name (default is `smtp.gmail.com`) |
 | `sprt` | SMTP server port (default is `465`) |
 | `send` | Email sender (for authentication with the SMTP server) |
@@ -264,7 +264,7 @@ For example:
 
 ####OTC (OpenThings Token)
 
-OTC is based on our own [OpenThingsFramework (OTF) proxy](https://github.com/openthingsio).
+OTC is based on our own [OpenThingsFramework (OTF) proxy](https://github.com/openthingsio). For token creation and device setup, see [Remote Access with OTC](../guides/remote-access-otc.md).
 
 * Default server domain name (`bdmn`) is `ws.cloud.openthings.io`
 * Default server port (`bprt`) is: `80`. Change these accordingly if using your own OTC server.

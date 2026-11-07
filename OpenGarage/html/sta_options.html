@@ -89,14 +89,9 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 </div>
 <div id='div_cloud' style='display:none;'>
 <table cellpadding=1>
-<tr><td colspan=2><input type='checkbox' id='cld' data-mini='true' onclick='update_cld()'><label for='cld'>Enable Cloud Connection</label></td></tr>
-<tr class='cld'><td><b>Cloud Type:</b></td><td>
-<fieldset data-role='controlgroup' data-mini='true' data-type='horizontal'>
-<input type='radio' name='rd_ct' id='blynk' onclick='update_ct()' checked><label for='blynk'>Blynk</label>
-<input type='radio' name='rd_ct' id='otc' onclick='update_ct()'><label for='otc'>OTC</label>
-</fieldset>
-</td></tr>
-<tr class='cld'><td><b>Cloud Token:</b></td><td><input type='text' size=22 maxlength=64 id='auth' data-mini='true'></td></tr>
+<tr><td colspan=2><input type='checkbox' id='cld' data-mini='true' onclick='update_cld()'><label for='cld'>Enable OTC Cloud Connection</label></td></tr>
+<tr id='cloud_retired' hidden><td colspan=2>Blynk support has been retired. Configure an OTC token to enable cloud access.</td></tr>
+<tr class='cld'><td><b>Cloud Token:</b></td><td><input type='password' size=22 maxlength=64 id='auth' data-mini='true' placeholder='(unchanged if left blank)'><label><input type='checkbox' id='clear_auth' data-mini='true'>Clear saved token</label></td></tr>
 <tr class='cld'><td><b>Cloud Server:</b></td><td><input type='text' size=22 maxlength=64 id='bdmn' data-mini='true'></td></tr>
 <tr class='cld'><td><b>Cloud Port:</b></td><td><input type='text' size=5 maxlength=5 id='bprt' data-mini='true'></td></tr>
 <tr class='cld'><td colspan=2><hr></td></tr>
@@ -104,19 +99,19 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <tr class='mqt'><td><b>MQTT Server:</b></td><td><input type='text' size=16 maxlength=64 id='mqtt' data-mini='true'></td></tr>
 <tr class='mqt'><td><b>MQTT Port:</b></td><td><input type='text' size=5 maxlength=5 id='mqpt' data-mini='true'></td></tr>
 <tr class='mqt'><td><b>MQTT Username:</b></td><td><input type='text' size=16 maxlength=64 id='mqur' data-mini='true' placeholder='(optional)'></td></tr>
-<tr class='mqt'><td><b>MQTT Password:</b></td><td><input type='password' size=16 maxlength=64 id='mqpw' data-mini='true' placeholder='(unchanged if left blank)'></td></tr>
+<tr class='mqt'><td><b>MQTT Password:</b></td><td><input type='password' size=16 maxlength=64 id='mqpw' data-mini='true' placeholder='(unchanged if left blank)'><label><input type='checkbox' id='clear_mqpw' data-mini='true'>Clear saved password</label></td></tr>
 <tr class='mqt'><td><b>MQTT Topic:</b></td><td><input type='text' size=16 maxlength=64 id='mqtp' data-mini='true' placeholder='(optional)'></td></tr>
 <tr class='mqt'><td colspan=2><hr></td></tr>
 <tr><td colspan=2><input type='checkbox' id='emen' data-mini='true' onclick='update_email()'><label for='emen'>Enable Email Notifications</label></td></tr>
 <tr class='email'><td><b>SMTP Server:</b></td><td><input type='text' size=16 maxlength=64 id='smtp' data-mini='true'></td></tr>
 <tr class='email'><td><b>SMTP Port:</b></td><td><input type='text' size=5 maxlength=5 id='sprt' data-mini='true'></td></tr>
 <tr class='email'><td><b>Sender Email:</b></td><td><input type='text' size=16 maxlength=64 id='send' data-mini='true'></td></tr>
-<tr class='email'><td><b>App Password:</b></td><td><input type='text' size=16 maxlength=64 id='apwd' data-mini='true'></td></tr>
+<tr class='email'><td><b>App Password:</b></td><td><input type='password' size=16 maxlength=64 id='apwd' data-mini='true' placeholder='(unchanged if left blank)'><label><input type='checkbox' id='clear_apwd' data-mini='true'>Clear saved password</label></td></tr>
 <tr class='email'><td><b>Recipient Email:</b></td><td><input type='text' size=16 maxlength=64 id='recp' data-mini='true'></td></tr>
 <tr height=30px><td colspan=2><b>Choose Notification Events:</b></td></tr>
 <tr><td colspan=2><fieldset data-role='controlgroup' data-type='horizontal'><input type='checkbox' id='noto0' data-mini='true'><label for='noto0'>Door Opened</label>
 <input type='checkbox' id='noto1' data-mini='true' ><label for='noto1'>Door Closed</label><input type='checkbox' id='noto2' data-mini='true' ><label for='noto2'>Door Stopped</label></fieldset></td></tr>
-<tr><td><b>IFTTT Key:</b></td><td><input type='text' size=20 maxlength=64 id='iftt' data-mini='true' placeholder='(if using IFTTT notification)'></td></tr>
+<tr><td><b>IFTTT Key:</b></td><td><input type='password' size=20 maxlength=64 id='iftt' data-mini='true' placeholder='(unchanged if left blank)'><label><input type='checkbox' id='clear_iftt' data-mini='true'>Clear saved key</label></td></tr>
 </table>
 <table>
 <tr><td colspan=4><hr></td></tr>
@@ -149,6 +144,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <tr><td><b>HTTP Port:</b></td><td><input type='text' size=5 maxlength=5 id='htp' value=0 data-mini='true'></td></tr>
 <tr><td><b>Host Name:</b></td><td><input type='text' size=15 maxlength=32 id='host' data-mini='true' placeholder='(optional)'></td></tr>
 <tr><td><b>NTP Server:</b></td><td><input type='text' size=15 maxlength=64 id='ntp1' data-mini='true' placeholder='(optional)'></td></tr>
+<tr><td><b>WiFi AP Selection:</b></td><td><select id='wfr' data-mini='true'><option value=1>Automatic</option><option value=0>Off</option></select></td></tr>
 <tr><td colspan=2><input type='checkbox' id='usi' data-mini='true' onclick='update_usi()'><label for='usi'>Use Static IP</label></td></tr>
 <tr class='si'><td><b>Device IP:</b></td><td><input type='text' size=15 maxlength=15 id='dvip' data-mini='true'></td></tr>
 <tr class='si'><td><b>Gateway IP:</b></td><td><input type='text' size=15 maxlength=15 id='gwip' data-mini='true'></td></tr>
@@ -170,11 +166,11 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 </div>
 </div>
 <div data-role='footer' data-theme='c'>
-<p>&nbsp; OpenGarage Firmware v<label id='fwv'>-</label><div data-role='controlgroup' data-type='horizontal'><a href='update' target='_top' data-role='button' data-inline=true data-mini=true>Firmware Update</a><a href='https://opengarage.github.io/OpenGarage-Firmware/1.2.4/manual/' target='_blank' data-role='button' data-inline=true data-mini=true>User Manual</a></p></div>
+<p>&nbsp; OpenGarage Firmware v<label id='fwv'>-</label><div data-role='controlgroup' data-type='horizontal'><a href='update' target='_top' data-role='button' data-inline=true data-mini=true>Firmware Update</a><a href='https://opengarage.github.io/OpenGarage-Firmware/manual/' target='_blank' data-role='button' data-inline=true data-mini=true>User Manual</a></p></div>
 </div>
 </div>
 <script>
-let prev_ct=1;
+var saved_otc_token=false;
 let saved_secplus2=false;
 let security_capable=false;
 function update_security_details(){
@@ -207,10 +203,7 @@ function update_cld(){
 if(eval_cb('#cld')) $('.cld').show();
 else $('.cld').hide();
 }
-function update_ct(){
-if(eval_cb('#blynk')&&prev_ct!=1){$('#bdmn').val('blynk.openthings.io');$('#bprt').val(8080);prev_ct=1;}
-else if(eval_cb('#otc')&&prev_ct!=2){$('#bdmn').val('ws.cloud.openthings.io');$('#bprt').val(80);prev_ct=2;}
-}
+
 function update_mqtt(){
 if(eval_cb('#mqen')) $('.mqt').show();
 else $('.mqt').hide();
@@ -266,12 +259,29 @@ if(e) comm+=encodeURIComponent($('#'+n).val());
 else comm+=$('#'+n).val();
 }
 function cbt(n,v=true) {$('#'+n).attr('checked',v).checkboxradio('refresh');}
+function cloud_endpoint(jd) {
+const legacy = jd.cld===1 || (jd.cld!==2 && (!jd.bdmn || jd.bdmn==='blynk.openthings.io'));
+return {host:legacy ? 'ws.cloud.openthings.io' : jd.bdmn, port:legacy ? 80 : jd.bprt};
+}
+function secret_edit_error(values, clear, otc_enabled) {
+for(const field of ['auth','iftt','apwd','mqpw']) {
+if(clear[field] && values[field]) return 'Choose either a replacement or Clear for each secret, not both.';
+}
+if(otc_enabled && clear.auth) return 'Turn off OTC before clearing its saved token.';
+return '';
+}
 $('#btn_submit').click(function(e){
 e.preventDefault();
+const values={}, clear={};
+for(const field of ['auth','iftt','apwd','mqpw']) {
+values[field]=$('#'+field).val(); clear[field]=$('#clear_'+field).is(':checked');
+}
+const secret_error=secret_edit_error(values,clear,!!eval_cb('#cld'));
+if(secret_error) {show_msg(secret_error);return;}
 if(confirm('Submit changes?')) {
 comm='co?dkey='+encodeURIComponent(get_and_save_dkey());
 bc('sn1');bc('sn2');bc('sno');bc('dth');bc('vth');bc('riv');bc('bas');bc('alm');
-bc('lsz');bc('tsn');bc('htp');bc('cdt');bc('dri');bc('ati');bc('atib');
+bc('wfr');bc('lsz');bc('tsn');bc('htp');bc('cdt');bc('dri');bc('ati');bc('atib');
 comm+='&aoo='+($('#aoo').is(':checked')?1:0);
 if(security_capable){
 comm+='&secv='+$('input[name="secv"]:checked').val();
@@ -289,14 +299,17 @@ comm+='&atob='+atob;
 var noto=0;
 for(var i=2;i>=0;i--) { noto=(noto<<1)+eval_cb('#noto'+i); }
 comm+='&noto='+noto;
-if(eval_cb('#cld')) {comm+='&cld='+(eval_cb('#blynk')?1:2);
-if($('#auth').val().length<32) {show_msg('Cloud token is too short!');return;}}
+if(eval_cb('#cld')) {comm+='&cld=2';
+if(($('#auth').val().length && $('#auth').val().length<32) || (!$('#auth').val().length && !saved_otc_token)) {show_msg('Cloud token is too short!');return;}}
 else comm+='&cld=0';
-bc('name',1);bc('auth',1);bc('bdmn',1);bc('iftt',1);
+bc('name',1);bc('bdmn',1);
+for(const field of ['auth','iftt','apwd','mqpw']) {
+if($('#clear_'+field).is(':checked')) comm+='&clear_'+field+'=1';
+else if($('#'+field).val().length) bc(field,1);
+}
 bc('mqtt',1);bc('mqur',1);bc('mqtp',1);bc('mqpt');
-if($('#mqpw').val().length>0) bc('mqpw',1);
 comm+='&mqen='+(eval_cb('#mqen')?1:0);
-bc('smtp',1);bc('send',1);bc('apwd',1);bc('recp',1);bc('sprt');
+bc('smtp',1);bc('send',1);bc('recp',1);bc('sprt');
 comm+='&emen='+(eval_cb('#emen')?1:0);
 bc('bprt');bc('ntp1',1);bc('host',1);
 if($('#cb_key').is(':checked')) {
@@ -394,6 +407,7 @@ update_sno();
 $('#dth').val(jd.dth);
 $('#vth').val(jd.vth);
 $('#riv').val(jd.riv);
+$('#wfr').val(jd.wfr===0 ? 0 : 1).selectmenu('refresh');
 $('#bas').val(jd.bas);
 $('#htp').val(jd.htp);
 $('#cdt').val(jd.cdt);
@@ -421,14 +435,15 @@ for(var i=0;i<=1;i++) {if(jd.ato&(1<<i)) cbt('ato'+i);}
 for(var i=0;i<=1;i++) {if(jd.atob&(1<<i)) cbt('atob'+i);}
 for(var i=0;i<=2;i++) {if(jd.noto&(1<<i)) cbt('noto'+i);}
 $('#name').val(jd.name);
-if(jd.cld>0) cbt('cld');
-if(jd.cld==1) {cbt('blynk');cbt('otc',false);prev_ct=1;}
-else if(jd.cld==2) {cbt('otc');cbt('blynk',false);prev_ct=2;}
+saved_otc_token = jd.cld===2 && !!jd.auth_set;
+if(jd.cld===2) cbt('cld');
+$('#cloud_retired').prop('hidden',jd.cld!==1);
 update_cld();
-$('#auth').val(jd.auth);
-$('#bdmn').val(jd.bdmn);
-$('#bprt').val(jd.bprt);
-if(jd.iftt) $('#iftt').val(jd.iftt);
+$('#auth').val('');
+const endpoint=cloud_endpoint(jd);
+$('#bdmn').val(endpoint.host);
+$('#bprt').val(endpoint.port);
+$('#iftt').val('');
 if(jd.mqen>0) cbt('mqen');
 $('#mqtt').val(jd.mqtt);
 if(jd.mqur) $('#mqur').val(jd.mqur);
@@ -439,7 +454,7 @@ if(jd.emen>0) cbt('emen');
 $('#smtp').val(jd.smtp);
 $('#sprt').val(jd.sprt);
 $('#send').val(jd.send);
-$('#apwd').val(jd.apwd);
+$('#apwd').val('');
 $('#recp').val(jd.recp);
 update_email();
 $('#dvip').val(jd.dvip);

@@ -152,7 +152,7 @@ To control and monitor your OpenGarage remotely from anywhere, you'll need to se
 * **Blynk**: Allows remote status checks and door control, but does **not** allow settings, logs, or firmware upgrade.
 
 !!! info
-    For detailed instructions on setting up and using cloud services, refer to the **[Cloud Connection Support Article](https://openthings.freshdesk.com/a/solutions/articles/5000878722)**.
+    For detailed instructions on setting up and using cloud services, refer to the **[Remote Access with OTC guide](../guides/remote-access-otc.md)**.
 
 #### Step 6: Browser, Mobile App, and Home Assistant Integration
 
@@ -274,7 +274,7 @@ Editing any option requires the Device Key (except when accessed remotely via OT
     * If topic is left blank, the device name is used.
 
 * **Enable Email Notifications**: Set up email notifications by providing an SMTP server, credentials, and recipient address.
-    * For detailed instructions, refer to the [Setting Up Email Notifications Support Article](https://openthings.freshdesk.com/support/solutions/articles/5000889759).
+    * For detailed instructions, refer to the [Setting Up Email Notifications guide](../guides/email-notifications.md).
 
     !!! warning "Info"
         When using MQTT or Email Notifications, please ensure all fields are correct. Empty or incorrect values may cause the device to become unresponsive.

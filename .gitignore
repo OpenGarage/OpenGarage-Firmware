@@ -2,6 +2,10 @@
 .local/
 planning/
 docs/site/
-OpenGarage/node_modules/
+OpenGarage/node_modules
 OpenGarage/package-lock.json
 docs/docs/assets/bins/flash.sh
+
+# Python build/test caches
+__pycache__
+*.py[cod]

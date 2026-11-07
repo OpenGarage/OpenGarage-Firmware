@@ -20,18 +20,17 @@
  * <http://www.gnu.org/licenses/>.
  */
 
- #if defined(SERIAL_DEBUG)
-	#define BLYNK_DEBUG
-	#define BLYNK_PRINT Serial
-#endif
-
-#include <BlynkSimpleEsp8266.h>
 #include <DNSServer.h>
 #include <PubSubClient.h>
 #include <OpenThingsFramework.h>
 #include <Request.h>
 #include <Response.h>
 
+#include "json_escape.h"
+#include "update_auth.h"
+#include "firmware_update.h"
+#include "local_time.h"
+#include "network_policy.h"
 #include "pitches.h"
 #include "OpenGarage.h"
 #include "espconnect.h"
@@ -40,10 +39,6 @@ OpenGarage og;
 OTF::OpenThingsFramework *otf = NULL;
 ESP8266WebServer *updateServer = NULL;
 DNSServer *dns = NULL;
-
-WidgetLED blynk_door(BLYNK_PIN_DOOR);
-WidgetLED blynk_car(BLYNK_PIN_CAR);
-WidgetLED blynk_dval(BLYNK_PIN_DVAL);
 
 static Ticker aux_ticker;
 static Ticker ip_ticker;
@@ -54,6 +49,20 @@ static WiFiClient httpclient;
 PubSubClient mqttclient(wificlient);
 String mqtt_topic;
 String mqtt_id;
+static uint32_t mqtt_json_failures = 0;
+static uint32_t mqtt_json_bytes = 0;
+static bool mqtt_buffer_ready = false;
+static uint32_t mqtt_retained_dropped = 0;
+static og_network::MqttRecovery mqtt_retry;
+static og_network::Backoff email_retry(60000, 600000), ifttt_retry(60000, 600000);
+static String pending_notification;
+static uint32_t notification_ms = 0, notification_dropped = 0;
+static uint32_t local_action_ms = 0;
+static bool local_action_seen = false;
+static uint32_t wifi_door_event_ms = 0;
+static bool wifi_door_event_seen = false;
+static bool update_authorized = false, update_failed = false, update_started = false;
+static bool update_file_seen = false;
 
 static String scanned_ssids;
 static byte read_cnt = 0;
@@ -71,7 +80,9 @@ static bool obstruction_status = 0;
 static uint16_t opening_count = 0;
 static int vehicle_status = OG_VEH_ABSENT;
 static uint led_blink_ms = LED_FAST_BLINK;
-static ulong justopen_timestamp = 0;
+static og_local::OpenDuration open_duration;
+static og_local::DailyRule daily_rule;
+static og_local::Clock local_clock;
 static byte curr_mode;
 extern bool fullbuffer;
 // this is one byte storing the door status histogram
@@ -137,7 +148,7 @@ void otf_send_compressed_P(OTF::Response& res, const __FlashStringHelper* conten
 	res.writeHeader(F("Content-Length"), len);
 	res.writeHeader(F("Vary"), F("Accept-Encoding"));
 	res.writeHeader(F("Content-Encoding"), F("gzip"));
-	res.writeHeader(F("Cache-Control"), F("public, max-age=86400"));
+	res.writeHeader(F("Cache-Control"), F("no-cache"));
 	res.writeHeader(F("Connection"), F("close"));
 	res.writeBodyData(content, len);
 	DEBUG_PRINT(len);
@@ -191,6 +202,9 @@ static void append_age(String &json, uint32_t age) {
 static void append_health_json(String &json) {
 	json += F(",\"active_security_protocol\":"); json += og.options[OPTION_SECV].ival;
 	json += F(",\"free_heap\":"); json += ESP.getFreeHeap();
+	json += F(",\"largest_free_heap_block\":"); json += ESP.getMaxFreeBlockSize();
+	json += F(",\"build_time\":\""); json += F(__TIME__); json += F("\"");
+	json += F(",\"otf_revision\":\"8651d0929a9de41c114b8a182f343cb54eb7d52f\"");
 	json += F(",\"reset_reason\":\""); json += ESP.getResetReason(); json += F("\"");
 	json += F(",\"reset_reason_code\":"); json += ESP.getResetInfoPtr()->reason;
 	json += F(",\"uptime_s\":"); json += health_stats.uptime_s();
@@ -198,6 +212,9 @@ static void append_health_json(String &json) {
 	if (health_stats.min_heap()==UINT32_MAX) json += ESP.getFreeHeap();
 	else json += health_stats.min_heap();
 	json += F(",\"max_loop_us\":"); json += health_stats.max_loop_us();
+	// Untouched continuation-stack watermark since boot (bytes), not current
+	// free stack or the separate SDK/interrupt stack. Never repaint during soak.
+	json += F(",\"min_free_cont_stack\":"); json += ESP.getFreeContStack();
 	if (!og.has_swrx) return;
 	if (og.options[OPTION_SECV].ival == 1) {
 		json += F(",\"secplus1_parity_errors\":"); json += secplus1_garage.get_parity_errors();
@@ -418,7 +435,7 @@ json += F(",\"fwv\":");
 		}
 	}
 	json += F(",\"name\":\"");
-	json += og.options[OPTION_NAME].sval;
+	append_json_escaped(json, og.options[OPTION_NAME].sval);
 	json += F("\",\"mac\":\"");
 	json += get_mac();
 	json += F("\",\"cid\":");
@@ -430,8 +447,7 @@ json += F(",\"fwv\":");
 	json += cld;
 	if(cld>CLOUD_NONE) {
 		json += F(",\"clds\":");
-		if(cld==CLOUD_BLYNK) json += (Blynk.connected()?1:0);
-		else if(cld==CLOUD_OTC) json += (otf->getCloudStatus());
+		if(cld==CLOUD_OTC) json += (otf->getCloudStatus());
 		else json += "0";
 	}
 	if(og.options[OPTION_TSN].ival) {
@@ -461,6 +477,23 @@ static void append_debug_details(const OTF::Request &req, String &json) {
 		json += secplus2_identity_ready ? F("true") : F("false");
 	}
 	append_health_json(json);
+	json += F(",\"time_valid\":"); json += local_clock.valid ? 1 : 0;
+	json += F(",\"mqtt_json_failures\":"); json += mqtt_json_failures;
+	json += F(",\"mqtt_json_bytes\":"); json += mqtt_json_bytes;
+	json += F(",\"mqtt_buffer_ready\":"); json += mqtt_buffer_ready ? 1 : 0;
+	json += F(",\"mqtt_retained_dropped\":"); json += mqtt_retained_dropped;
+	json += F(",\"notification_dropped\":"); json += notification_dropped;
+	json += F(",\"wifi_recovery\":\""); json += station_recovery.status(); json += F("\"");
+	json += F(",\"wifi_attempts\":"); json += station_recovery.attempts();
+	json += F(",\"wifi_timeouts\":"); json += station_recovery.timeouts();
+	json += F(",\"wifi_disconnects\":"); json += station_recovery.disconnects();
+	json += F(",\"wifi_retry_in_ms\":"); json += station_recovery.retry_in_ms(millis());
+	json += F(",\"wifi_disconnect_reason\":"); json += station_disconnect_reason;
+	json += F(",\"wifi_selection\":\""); json += station_selection_status(); json += F("\"");
+	json += F(",\"wifi_scans\":"); json += station_selection.scans();
+	json += F(",\"wifi_roams\":"); json += station_selection.roams();
+	json += F(",\"wifi_smoothed_rssi\":"); json += station_selection.smoothed();
+	json += F(",\"wifi_channel\":"); json += WiFi.channel();
 }
 
 void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
@@ -472,11 +505,11 @@ void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
 	json += F(",\"fwv\":");
 	json += og.options[OPTION_FWV].ival;
 	json += F(",\"name\":\"");
-	json += og.options[OPTION_NAME].sval;
+	append_json_escaped(json, og.options[OPTION_NAME].sval);
 	json += F("\",\"mac\":\"");
 	json += get_mac();
 	json += F("\",\"mqtt_topic\":\"");
-	json += mqtt_topic;
+	append_json_escaped(json, mqtt_topic);
 	json += F("\",\"devip\":\"");
 	json += WiFi.localIP().toString();
 	json += F("\",\"cid\":");
@@ -502,11 +535,12 @@ void sta_logs_fill_json(String& json, OTF::Response &res) {
 	json = "";
 	json.reserve(2048); // reserve capacity to reduce the overhead of String's +=
 	json += F("{\"name\":\"");
-	json += og.options[OPTION_NAME].sval;
+	append_json_escaped(json, og.options[OPTION_NAME].sval);
 	json += F("\",\"starttime\":");
 	json += start_utc_time;
 	json += F(",\"time\":");
 	json += curr_utc_time;
+	json += F(",\"uptime\":"); json += uint32_t(local_clock.uptime_ms / 1000);
 	json += F(",\"ncols\":");
 	json += og.options[OPTION_SN2].ival>OG_SN2_NONE ? 4 : 3;
 	json += F(",\"logs\":[");
@@ -660,7 +694,17 @@ void on_auto_detect(const OTF::Request &req, OTF::Response &res) {
 	otf_send_json(res, json);
 }
 
+static void hold_network_delivery() {
+	local_action_seen = true; local_action_ms = millis();
+}
+static bool network_delivery_busy() {
+	return og.alarm || update_started || identity_restart_pending || setup_reboot_pending ||
+		secplus2_garage.command_pending() ||
+		(local_action_seen && uint32_t(millis()-local_action_ms)<5000);
+}
+
 void performDoorAction(uint8_t action, bool force_alarm_off = false) {
+	if (firmware_update.busy() || firmware_update.phase()==FirmwareUpdatePhase::Success) return;
 	if (identity_restart_pending) return;
 	// Check if the requested action is valid based on the current door state
 	bool isValidAction = false;
@@ -676,6 +720,7 @@ void performDoorAction(uint8_t action, bool force_alarm_off = false) {
 		return;
 	}
 	cancel_diagnostic_audio();
+	hold_network_delivery();
 
 	// This is the core logic for deciding whether to trigger the alarm or the door directly.
 	bool shouldTriggerAlarm = true;
@@ -710,6 +755,8 @@ void performDoorAction(uint8_t action, bool force_alarm_off = false) {
 }
 
 void performLightAction(uint8_t action) {
+	if (firmware_update.busy() || firmware_update.phase()==FirmwareUpdatePhase::Success) return;
+	hold_network_delivery();
 	switch(action) {
 		case ACTION_TOGGLE:
 			switch (og.options[OPTION_SECV].ival) {
@@ -730,6 +777,8 @@ void performLightAction(uint8_t action) {
 }
 
 void performLockAction(uint8_t action) {
+	if (firmware_update.busy() || firmware_update.phase()==FirmwareUpdatePhase::Success) return;
+	hold_network_delivery();
 	switch(action) {
 		case ACTION_TOGGLE:
 			switch (og.options[OPTION_SECV].ival) {
@@ -813,6 +862,34 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 	OptionStruct *o = og.options;
 
 	byte usi = 0;
+	const char *cloud = req.getQueryParameter("cld");
+	if (cloud && strcmp(cloud, "0") != 0 && strcmp(cloud, "2") != 0) {
+		otf_send_result(res, HTML_DATA_OUTOFBOUND, "cld: Blynk support retired"); return;
+	}
+	for (const char *field : {"auth", "apwd", "iftt", "mqpw"}) {
+		const String clear_name = String("clear_") + field;
+		const char *clear = req.getQueryParameter(clear_name.c_str());
+		const char *value = req.getQueryParameter(field);
+		if (clear && (strcmp(clear, "1") != 0 || (value && *value))) {
+			otf_send_result(res, HTML_DATA_FORMATERROR, field); return;
+		}
+	}
+	const char *new_auth = req.getQueryParameter("auth");
+	const bool otc_selected = cloud ? strcmp(cloud, "2") == 0 : og.options[OPTION_CLD].ival == CLOUD_OTC;
+	if (otc_selected && (req.getQueryParameter("clear_auth") ||
+		(new_auth && *new_auth ? strlen(new_auth) < 32 :
+		 og.options[OPTION_CLD].ival != CLOUD_OTC || og.options[OPTION_AUTH].sval.length() < 32))) {
+		otf_send_result(res, HTML_DATA_OUTOFBOUND, "auth: OTC requires a token"); return;
+	}
+	// Bound MQTT-controlled user strings; escaping can expand each byte sixfold.
+	for (const char *field : {"name", "mqtp"}) {
+		const char *value = req.getQueryParameter(field);
+		if (value && strlen(value) > 64) { otf_send_result(res, HTML_DATA_OUTOFBOUND, field); return; }
+	}
+	const char *http_port = req.getQueryParameter("htp");
+	if (http_port && String(http_port).toInt() == 8080) {
+		otf_send_result(res, HTML_DATA_OUTOFBOUND, "htp: port 8080 is reserved for firmware updates"); return;
+	}
 	char *pem_value = req.getQueryParameter("pem");
 	if (pem_value != NULL) {
 		const char *requested_secv = req.getQueryParameter("secv");
@@ -942,11 +1019,18 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 				uint ival = String(sval).toInt();
 				o->ival = ival;
 			} else {
-				o->sval = String(sval);
+				// Secret fields are write-only. Blank means preserve; explicit clear
+				// flags below remove them without round-tripping stored credentials.
+				if (*sval || (i!=OPTION_APWD && i!=OPTION_AUTH && i!=OPTION_IFTT && i!=OPTION_MQPW))
+					o->sval = String(sval);
 			}
 		}
 	}
 
+	for (byte field : {byte(OPTION_AUTH), byte(OPTION_APWD), byte(OPTION_IFTT), byte(OPTION_MQPW)}) {
+		const String clear_name = String("clear_") + og.options[field].name;
+		if (req.getQueryParameter(clear_name.c_str())) og.options[field].sval = "";
+	}
 	if(usi) {
 		og.options[OPTION_DVIP].sval = dvip;
 		og.options[OPTION_GWIP].sval = gwip;
@@ -1001,7 +1085,8 @@ void sta_options_fill_json(String& json) {
 	OptionStruct *o = og.options;
 	for(byte i=0;i<NUM_OPTIONS;i++,o++) {
 		if(!o->max) {
-			if(i==OPTION_PASS || i==OPTION_DKEY || i==OPTION_MQPW) { // do not output password or device key or MQTT password
+			if(i==OPTION_PASS || i==OPTION_DKEY || i==OPTION_MQPW ||
+			   i==OPTION_APWD || i==OPTION_AUTH || i==OPTION_IFTT) { // Stored secrets are write-only
 				continue;
 			} else {
 				json += F("\"");
@@ -1012,17 +1097,17 @@ void sta_options_fill_json(String& json) {
 				if(o->sval.length()==0) {
 					switch(i) {
 					case OPTION_MQTP:
-						json += og.options[OPTION_NAME].sval;
+						append_json_escaped(json, og.options[OPTION_NAME].sval);
 						break;
 					case OPTION_HOST:
-						json += get_ap_ssid();
+						append_json_escaped(json, get_ap_ssid());
 						break;
 					//case OPTION_NTP1: // leave NPT1 empty if using default
 					//json += DEFAULT_NTP1;
 					//break;
 					}
 				} else {
-					json += o->sval;
+					append_json_escaped(json, o->sval);
 				}
 				json += F("\"");
 				json += ",";
@@ -1035,6 +1120,10 @@ void sta_options_fill_json(String& json) {
 			json += ",";
 		}
 	}
+	json += F("\"auth_set\":"); json += og.options[OPTION_AUTH].sval.length() ? 1 : 0;
+	json += F(",\"apwd_set\":"); json += og.options[OPTION_APWD].sval.length() ? 1 : 0;
+	json += F(",\"iftt_set\":"); json += og.options[OPTION_IFTT].sval.length() ? 1 : 0;
+	json += F(",");
 	// append has_swrx variable
 	json += F("\"has_swrx\":");
 	json += og.has_swrx;
@@ -1063,6 +1152,10 @@ void on_ap_scan(const OTF::Request &req, OTF::Response &res) {
 
 void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_STA) return;
+	const char *cloud = req.getQueryParameter("cld");
+	if (cloud && strcmp(cloud, "otc") != 0 && strcmp(cloud, "none") != 0) {
+		otf_send_result(res, HTML_DATA_OUTOFBOUND, "cld: Blynk support retired"); return;
+	}
 	char *ssid = req.getQueryParameter("ssid");
 	if(ssid!=NULL&&strlen(ssid)!=0) {
 		og.options[OPTION_SSID].sval = ssid;
@@ -1072,22 +1165,16 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 		char *cld = req.getQueryParameter("cld");
 		char *auth = req.getQueryParameter("auth");
 		if(cld!=NULL&&strlen(cld)!=0&&auth!=NULL&&strlen(auth)!=0) {
-			if(strcmp(cld, "blynk")==0 || strcmp(cld, "otc")==0) {
+			if(strcmp(cld, "otc")==0) {
 				char *bdmn = req.getQueryParameter("bdmn");
 				char *bprt = req.getQueryParameter("bprt");
-				if(strcmp(cld, "blynk")==0) {
-					og.options[OPTION_BDMN].sval=(bdmn==NULL||strlen(bdmn)==0)?DEFAULT_BLYNK_DMN:bdmn;
-					og.options[OPTION_BPRT].ival=(bprt==NULL||strlen(bprt)==0)?DEFAULT_BLYNK_PRT:String(bprt).toInt();
-					og.options[OPTION_CLD].ival = CLOUD_BLYNK;
-				} else {
 					og.options[OPTION_BDMN].sval=(bdmn==NULL||strlen(bdmn)==0)?DEFAULT_OTC_DMN:bdmn;
 					og.options[OPTION_BPRT].ival=(bprt==NULL||strlen(bprt)==0)?DEFAULT_OTC_PRT:String(bprt).toInt();
 					og.options[OPTION_CLD].ival = CLOUD_OTC;
-				}
 				og.options[OPTION_AUTH].sval = auth;
 				og.options_save();
 				DEBUG_PRINTLN(og.options[OPTION_CLD].ival);
-				DEBUG_PRINTLN(og.options[OPTION_AUTH].sval);
+
 				DEBUG_PRINTLN(og.options[OPTION_BDMN].sval);
 				DEBUG_PRINTLN(og.options[OPTION_BPRT].ival);
 			} else {
@@ -1137,31 +1224,44 @@ void on_ap_debug(const OTF::Request &req, OTF::Response &res) {
 }
 
 // MQTT callback to read "Button" requests
-void mqtt_callback(char* topic, byte* payload, unsigned int length) {
-	payload[length]=0;
-	String Payload((char*)payload);
-	String Topic(topic);
-
-	//Accept button on any topic for backwards compat with existing code - use IN messages below if possible
-	if (Payload=="Button") {
-		DEBUG_PRINTLN(F("MQTT Button request received, change door state"));
-		performDoorAction(ACTION_TOGGLE);
-		return;
-	}
-
-	//Accept click for consistency with api, open and close should be used instead, use IN topic if possible
-	if (Topic==(mqtt_topic+"/IN/STATE")){
-		DEBUG_PRINT(F("MQTT IN Message detected, check data for action, Data:"));
-		DEBUG_PRINTLN(Payload);
-		if(Payload == "click")      { performDoorAction(ACTION_TOGGLE); }
-		else if(Payload == "close") { performDoorAction(ACTION_CLOSE); }
-		else if(Payload == "open")  { performDoorAction(ACTION_OPEN); }
-		else if(Payload == "togglelight") performLightAction(ACTION_TOGGLE);
-		else if(Payload == "togglelock") performLockAction(ACTION_TOGGLE);
-		else {
-			DEBUG_PRINT(F("Payload command not recognized"));
+// PubSubClient's parser waits for missing bytes. Only enter it with a whole
+// packet buffered; a stalled partial packet is discarded without waiting here.
+static bool mqtt_frame_ready() {
+	static bool partial = false;
+	static uint32_t partial_since = 0;
+	const size_t available = wificlient.available();
+	if (!available) { partial = false; return true; }
+	uint8_t header[5];
+	const size_t count = wificlient.peekBytes(header, available < 5 ? available : 5);
+	uint32_t remaining = 0, multiplier = 1;
+	for (size_t i=1; i<count; ++i) {
+		remaining += (header[i]&127)*multiplier;
+		if (!(header[i]&128)) {
+			const size_t total = i+1+remaining;
+			if (total > mqttclient.getBufferSize()) { wificlient.stop(); partial=false; return false; }
+			if (available >= total) { partial=false; return true; }
+			break;
 		}
-		return;
+		if (i==4) { wificlient.stop(); partial=false; return false; }
+		multiplier *= 128;
+	}
+	if (!partial) { partial=true; partial_since=millis(); }
+	else if (uint32_t(millis()-partial_since)>=1000) { wificlient.stop(); partial=false; }
+	return false;
+}
+
+void mqtt_callback(char* topic, byte* payload, unsigned int length) {
+	if (mqttclient.incomingRetained()) { ++mqtt_retained_dropped; return; }
+	const String incoming(topic);
+	const bool state_topic = incoming == mqtt_topic + "/IN/STATE";
+	const bool legacy_topic = incoming == mqtt_topic || incoming.startsWith(mqtt_topic + "/IN/");
+	switch (og_network::command(payload, length, false, state_topic, legacy_topic)) {
+		case og_network::Command::TOGGLE: performDoorAction(ACTION_TOGGLE); break;
+		case og_network::Command::OPEN: performDoorAction(ACTION_OPEN); break;
+		case og_network::Command::CLOSE: performDoorAction(ACTION_CLOSE); break;
+		case og_network::Command::LIGHT: performLightAction(ACTION_TOGGLE); break;
+		case og_network::Command::LOCK: performLockAction(ACTION_TOGGLE); break;
+		default: break;
 	}
 }
 
@@ -1189,6 +1289,10 @@ void do_setup() {
 	Serial.println(secplus2_client_id, HEX);
 	if (!secplus2_identity_ready) Serial.println(F("Security+ 2.0 disabled: identity storage unavailable or invalid"));
 	og.options_setup();
+	mqtt_buffer_ready = mqttclient.setBufferSize(2048);
+	mqttclient.setSocketTimeout(1);
+	wificlient.setTimeout(1000);
+	httpclient.setTimeout(5000);
 	secplus1_garage.set_panel_emulation_disabled(og.options[OPTION_PEM].ival != 0);
 	og.init_sensors();
 	curr_mode = og.get_mode();
@@ -1225,6 +1329,7 @@ void do_setup() {
 	}
 	if(!updateServer) {
 		updateServer = new ESP8266WebServer(8080);
+		updateServer->collectHeaders("X-OG-Device-Key", "X-OG-Upload-Token", "X-OG-Release-Id", "X-OG-Signature", "X-OG-Allow-Downgrade");
 		DEBUG_PRINT(F("update server started"));
 	}
 	led_blink_ms = LED_FAST_BLINK;
@@ -1285,70 +1390,177 @@ void on_update(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_AP) {
 		otf_send_compressed_P(res, (const __FlashStringHelper*)ap_update_html_gz, ap_update_html_gz_len);
 	} else {
-		if(req.isCloudRequest()) otf_send_result(res, HTML_NOT_PERMITTED, "fw update");
+		if(req.isCloudRequest()) {
+			otf_send_result(res, HTML_NOT_PERMITTED, "fw update");
+			return;
+		}
 		otf_send_compressed_P(res, (const __FlashStringHelper*)sta_update_html_gz, sta_update_html_gz_len);
 	}
 }
 
+// All update entry points share the same service and early authorization.
+static char prepare_body[1024];
+static size_t prepare_length = 0;
+static bool prepare_seen = false, prepare_ok = false;
+static String upload_credential;
+static bool upload_signed = false;
+
+static bool updater_busy() {
+ // Existing five-second local-action hold covers pending Sec+1 requests/releases.
+ return og.state == OG_STATE_WAIT_RESTART || network_delivery_busy() || firmware_update.busy() ||
+   firmware_update.phase() == FirmwareUpdatePhase::Success;
+}
+static bool updater_key_ok() {
+ return update_key_matches(updateServer->header("X-OG-Device-Key").c_str(),
+                           og.options[OPTION_DKEY].sval.c_str());
+}
+// Header-stage admission never consumes a token or changes updater state.
+static bool updater_body_authorized() {
+ if (updateServer->method() != HTTP_POST) return false;
+ const String &path = updateServer->uri();
+ bool authorized;
+ if (path == "/update" || path == "/update/prepare") authorized=updater_key_ok();
+ else if (path == "/update/upload")
+  authorized=firmware_update.token_valid(updateServer->header("X-OG-Upload-Token").c_str());
+ else return false;
+ if (!authorized || updater_busy()) {
+  // Explicit pre-body refusal: this request has not written or installed anything.
+  updateServer->sendHeader("Access-Control-Allow-Origin", "*");
+  updateServer->sendHeader("Cache-Control", "no-store");
+  updateServer->sendHeader("Connection", "close");
+  updateServer->send(authorized ? 409 : 401, "application/json",
+    authorized ? "{\"result\":64,\"item\":\"Device busy; wait a few seconds and try again\"}" :
+                 "{\"result\":2,\"item\":\"Check the device key or prepare a new upload token\"}");
+  return false;
+ }
+ return true;
+}
+static void cancel_firmware_upload() {
+ if (update_started) firmware_update.abort_upload();
+ update_started = update_authorized = false;
+ upload_credential = "";
+}
+static void quiesce_for_update() {
+ if (og.options[OPTION_SECV].ival == 2) secplus2_garage.finish_release();
+ if (og.options[OPTION_SECV].ival == 1) secplus1_garage.finish_release();
+ cancel_diagnostic_audio();
+ if (curr_mode == OG_MOD_STA) {
+  mqttclient.disconnect(); WiFiUDP::stopAll();
+ }
+ // OTF0.2.5 has no disconnect API. Close its sockets (and pending local clients)
+ // without deleting the framework or changing its registered routes.
+ WiFiClient::stopAllExcept(&updateServer->client());
+ updateServer->client().keepAlive(5,2,3);
+}
+
 void on_firmware_upload_fin() {
-
-	// Verify the device key.
-	if(!(updateServer->hasArg("dkey") && (updateServer->arg("dkey") == og.options[OPTION_DKEY].sval))) {
-		updateserver_send_result(HTML_UNAUTHORIZED);
-		Update.end(false); // Update.reset(); FAB
-		return;
-	}
-
-	// finish update and check error
-	if(!Update.end(true) || Update.hasError()) {
-		updateserver_send_result(HTML_UPLOAD_FAILED);
-		DEBUG_PRINTLN(F("OTA update failed: "));
-		Update.printError(Serial);
-		return;
-	}
-
-	updateserver_send_result(HTML_SUCCESS);
-	//restart_ticker.once_ms(1000, og.restart);
-	restart_in(1000);
+ const bool authenticated = update_authorized &&
+  (upload_signed ? upload_credential == updateServer->header("X-OG-Upload-Token") : updater_key_ok());
+ bool ok = false;
+ if (authenticated && !update_failed && update_file_seen)
+  ok = upload_signed ? firmware_update.finish_verified() : firmware_update.finish_manual();
+ if (!ok) cancel_firmware_upload();
+ update_file_seen = update_started = update_authorized = false;
+ upload_credential = "";
+ updateserver_send_result(ok ? HTML_SUCCESS : authenticated ? HTML_UPLOAD_FAILED : HTML_UNAUTHORIZED,
+                          ok ? "Update complete; rebooting" : firmware_update.message());
+ // Service schedules the reboot; no second independent timer.
 }
 
 void on_update_options() {
-	updateServer->sendHeader("Access-Control-Allow-Origin", "*");
-	updateServer->sendHeader("Access-Control-Max-Age", "10000");
-	updateServer->sendHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");
-	updateServer->sendHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-	updateServer->send(200, "text/plain", "");
+ updateServer->sendHeader("Access-Control-Allow-Origin", "*");
+ updateServer->sendHeader("Access-Control-Max-Age", "10000");
+ updateServer->sendHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");
+ updateServer->sendHeader("Access-Control-Allow-Headers", "Content-Type, X-OG-Device-Key, X-OG-Upload-Token, X-OG-Release-Id, X-OG-Signature, X-OG-Allow-Downgrade");
+ updateServer->send(200, "text/plain", "");
 }
 
 void on_firmware_upload() {
-	HTTPUpload& upload = updateServer->upload();
-	if(upload.status == UPLOAD_FILE_START){
-		if (og.options[OPTION_SECV].ival == 2) secplus2_garage.finish_release();
-		if (og.options[OPTION_SECV].ival == 1) secplus1_garage.finish_release();
-		if(curr_mode == OG_MOD_STA) {
-			DEBUG_PRINTLN(F("Stopping all network clients"));
-			WiFiUDP::stopAll();
-			Blynk.disconnect(); // disconnect Blynk during firmware upload
-			mqttclient.disconnect();
-		}
-		DEBUG_PRINT(F("prepare to upload: "));
-		DEBUG_PRINTLN(upload.filename);
-		uint32_t maxSketchSpace = (ESP.getFreeSketchSpace()-0x1000)&0xFFFFF000;
-		if(!Update.begin(maxSketchSpace)) {
-			DEBUG_PRINTLN(F("not enough space"));
-		}
-	} else if(upload.status == UPLOAD_FILE_WRITE) {
-		DEBUG_PRINT(".");
-		if(Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-			DEBUG_PRINTLN(F("size mismatch"));
-		}
-	} else if(upload.status == UPLOAD_FILE_END) {
-		DEBUG_PRINTLN(F("upload completed"));
-	} else if(upload.status == UPLOAD_FILE_ABORTED){
-		Update.end();
-		DEBUG_PRINTLN(F("upload aborted"));
-	}
-	delay(0);
+ HTTPUpload& upload = updateServer->upload();
+ if (upload.status == UPLOAD_FILE_START) {
+  if (update_file_seen) {
+   firmware_update.reject("Only one firmware file is allowed"); update_failed=true;
+   updateServer->client().stop(); return;
+  }
+  update_file_seen=true; update_failed=false;
+  upload_signed=updateServer->uri()=="/update/upload";
+  upload_credential=updateServer->header("X-OG-Upload-Token");
+  update_authorized=upload_signed ? firmware_update.token_valid(upload_credential.c_str()) : updater_key_ok();
+  if (!update_authorized || updater_busy()) {
+   update_failed=true;updateServer->client().stop();return;
+  }
+  const bool begun=upload_signed ? firmware_update.begin_verified(upload.filename.c_str(),upload_credential.c_str()) :
+                                  firmware_update.begin_manual_file(upload.filename.c_str());
+  if (!begun) {update_failed=true;updateServer->client().stop();return;}
+  update_started=true;quiesce_for_update();
+ } else if (upload.status == UPLOAD_FILE_WRITE) {
+  if (!update_authorized || update_failed || !update_started || !upload.currentSize) return;
+  bool ok=upload_signed ? firmware_update.write_verified(upload.buf,upload.currentSize) :
+                         firmware_update.write_manual(upload.buf,upload.currentSize);
+  if (!ok) {update_failed=true;updateServer->client().stop();}
+ } else if (upload.status == UPLOAD_FILE_ABORTED) {
+  cancel_firmware_upload();update_file_seen=false;update_failed=true;
+ }
+ delay(0);
+}
+
+static void on_prepare_upload() {
+ HTTPUpload &upload=updateServer->upload();
+ if (upload.status==UPLOAD_FILE_START) {
+  if (prepare_seen) {prepare_ok=false;updateServer->client().stop();return;}
+  prepare_seen=true;prepare_length=0;prepare_ok=updater_key_ok() && !updater_busy();
+  if (!prepare_ok) {updateServer->client().stop();return;}
+ } else if (upload.status==UPLOAD_FILE_WRITE) {
+  if (!prepare_ok) return;
+  if (upload.currentSize>sizeof(prepare_body)-prepare_length) {
+   prepare_ok=false;updateServer->client().stop();return;
+  }
+  memcpy(prepare_body+prepare_length,upload.buf,upload.currentSize);prepare_length+=upload.currentSize;
+ } else if (upload.status==UPLOAD_FILE_ABORTED) {
+  prepare_seen=prepare_ok=false;prepare_length=0;
+ }
+}
+static void on_prepare_fin() {
+ bool ok=prepare_seen && prepare_ok && prepare_length && updater_key_ok() && !updater_busy();
+ prepare_seen=prepare_ok=false;
+ char token[17]={};
+ String id=updateServer->header("X-OG-Release-Id");
+ String sig=updateServer->header("X-OG-Signature");
+ if (ok && (id.length()>31 || sig.length()>144)) ok=false;
+ const bool attempted=ok;
+ if (ok) ok=firmware_update.prepare_verified(reinterpret_cast<uint8_t*>(prepare_body),prepare_length,
+     sig.c_str(),id.c_str(),updateServer->header("X-OG-Allow-Downgrade")=="1",token);
+ prepare_length=0;
+ if (!ok) {updateserver_send_result(HTML_UPLOAD_FAILED, attempted ? firmware_update.message() : "Preparation rejected; check key, release and device status");return;}
+ String json=F("{\"result\":1,\"upload_token\":\"");json+=token;json+=F("\"}");
+ updateServer->sendHeader("Access-Control-Allow-Origin","*");
+ updateServer->sendHeader("Cache-Control","no-store");
+ updateServer->send(200,"application/json",json);
+}
+static void on_update_info() {
+ String json=F("{\"product\":\"opengarage-stock\",\"target\":\"");json+=firmware_update.target();
+ json+=F("\",\"version\":");json+=OG_FWV;
+ json+=F(",\"base_url\":\"https://firmware.opengarage.io\",\"file_extension\":\".bin\",\"configured\":true}");
+ updateServer->sendHeader("Access-Control-Allow-Origin","*");updateServer->sendHeader("Cache-Control","no-store");
+ updateServer->send(200,"application/json",json);
+}
+static void on_update_status() {
+ String json=F("{\"phase\":\"");json+=firmware_update.phase_name();
+ json+=F("\",\"message\":\"");append_json_escaped(json,String(firmware_update.message()));
+ json+=F("\",\"bytes_done\":");json+=firmware_update.bytes_done();
+ json+=F(",\"bytes_total\":");json+=firmware_update.bytes_total();json+='}';
+ updateServer->sendHeader("Access-Control-Allow-Origin","*");updateServer->sendHeader("Cache-Control","no-store");
+ updateServer->send(200,"application/json",json);
+}
+static void register_update_routes() {
+ updateServer->onBodyAuthorization(updater_body_authorized);
+ updateServer->on("/update",HTTP_POST,on_firmware_upload_fin,on_firmware_upload);
+ updateServer->on("/update/upload",HTTP_POST,on_firmware_upload_fin,on_firmware_upload);
+ updateServer->on("/update/prepare",HTTP_POST,on_prepare_fin,on_prepare_upload);
+ updateServer->on("/update/info",HTTP_GET,on_update_info);
+ updateServer->on("/update/status",HTTP_GET,on_update_status);
+ for(const char *path : {"/update","/update/upload","/update/prepare","/update/info","/update/status"})
+  updateServer->on(path,HTTP_OPTIONS,on_update_options);
 }
 
 void check_status_ap() {
@@ -1365,8 +1577,7 @@ void check_status_ap() {
 }
 
 bool mqtt_connect_subscribe() {
-	static ulong mqtt_subscribe_timeout = 0;
-	if(curr_utc_time > mqtt_subscribe_timeout) {
+	if (!network_delivery_busy() && mqtt_retry.ready(millis())) {
 		if (!mqttclient.connected()) {
 			DEBUG_PRINT(F("MQTT Not connected- (Re)connect MQTT"));
 			boolean ret;
@@ -1383,11 +1594,11 @@ bool mqtt_connect_subscribe() {
 				mqttclient.subscribe((mqtt_topic +"/IN/#").c_str());
 				mqttclient.publish((mqtt_topic+"/OUT/STATUS").c_str(), "online", true);
 				DEBUG_PRINTLN(F("......Success, Subscribed to MQTT Topic"));
-				mqtt_subscribe_timeout = curr_utc_time + 5; // if successful, don't check for 5 seconds
+				mqtt_retry.attempt_result(millis(), true);
 				return true;
 			}else {
 				DEBUG_PRINTLN(F("......Failed to Connect to MQTT"));
-				mqtt_subscribe_timeout = curr_utc_time + 60; // if unsuccessful, try again in 60 seconds
+				mqtt_retry.attempt_result(millis(), false);
 				return false;
 			}
 		}
@@ -1395,28 +1606,25 @@ bool mqtt_connect_subscribe() {
 	return false;
 }
 
-void blynkNotify(String s){
-	// Blynk notification
-	DEBUG_PRINTLN(F(" Sending blynk notification"));
-	Blynk.notify(s);
-}
-
-void iftttNotify(String s){
+bool iftttNotify(String s){
+	http.setTimeout(5000);
 	DEBUG_PRINTLN(" Sending IFTTT Notification");
 	http.begin(httpclient, "http://maker.ifttt.com/trigger/opengarage/with/key/"+og.options[OPTION_IFTT].sval);
 	http.addHeader("Content-Type", "application/json");
-	http.POST("{\"value1\":\""+s+"\"}");
+	const int code = http.POST("{\"value1\":\""+s+"\"}");
 	String payload = http.getString();
 	http.end();
-	if(payload.indexOf("Congratulations") >= 0) {
+	const bool ok = code == 200 && payload.indexOf("Congratulations") >= 0;
+	if(ok) {
 		DEBUG_PRINTLN(" Successfully updated IFTTT");
 	}else{
 		DEBUG_PRINT(" Error from IFTTT: ");
 		DEBUG_PRINTLN(payload);
 	}
+	return ok;
 }
 
-void emailNotify(String s){
+bool emailNotify(String s){
 	DEBUG_PRINTLN(" Sending EMail notification");
 	DEBUG_PRINTLN(GET_FREE_HEAP);
 	EMailSender::EMailMessage email_message;
@@ -1433,7 +1641,9 @@ void emailNotify(String s){
 		emailSend.setSMTPPort(email_port);
 		DEBUG_PRINTLN(GET_FREE_HEAP);
 		EMailSender::Response resp = emailSend.send(email_recip, email_message);
+		return resp.status;
 	}
+	return false;
 }
 
 void mqttNotify(String s){
@@ -1444,60 +1654,68 @@ void mqttNotify(String s){
 }
 
 void perform_notify(String s) {
-	DEBUG_PRINT(F("Sending Notify to connected systems, value:"));
-	DEBUG_PRINTLN(s);
+	// One short-lived delivery slot, never an offline/reconnect replay queue.
+	if (WiFi.status() != WL_CONNECTED || !WiFi.localIP()) return;
+	if (pending_notification.length()) ++notification_dropped;
+	pending_notification = s; notification_ms = millis();
+}
 
-	if(og.options[OPTION_CLD].ival==CLOUD_BLYNK && Blynk.connected()){
-		blynkNotify(s);
+void service_notifications() {
+	if (!pending_notification.length()) return;
+	if (WiFi.status() != WL_CONNECTED || !WiFi.localIP() ||
+	    uint32_t(millis()-notification_ms)>30000) {
+		pending_notification=""; ++notification_dropped; return;
 	}
-
-	// IFTTT notification
-	if(og.options[OPTION_IFTT].sval.length()>7) { // key size is at least 8
-		iftttNotify(s);
+	if (network_delivery_busy()) return;
+	String message = pending_notification; pending_notification="";
+	if (og.options[OPTION_MQEN].ival) mqttNotify(message);
+	if (og.options[OPTION_IFTT].sval.length()>7 && ifttt_retry.ready(millis())) {
+		if (iftttNotify(message)) ifttt_retry.success(); else ifttt_retry.failure(millis());
 	}
-
-	// Email notification
-	if(og.options[OPTION_EMEN].ival>0) {
-		emailNotify(s);
-	}
-
-	//Mqtt notification
-	if(og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval)) {
-		mqttNotify(s);
+	if (WiFi.status()==WL_CONNECTED && og.options[OPTION_EMEN].ival && email_retry.ready(millis())) {
+		if (emailNotify(message)) email_retry.success(); else email_retry.failure(millis());
 	}
 }
 
+void service_cloud() {
+	const bool online = WiFi.status()==WL_CONNECTED && WiFi.localIP();
+	const bool connected = otf->getCloudStatus()==OTF::CONNECTED;
+	// OTF owns jittered reconnect backoff and resets it only after a healthy
+	// session. Keep established sessions live during warnings; defer new
+	// connection work while local actions are busy. Local HTTP is always served.
+	otf->loop(online && (connected || !network_delivery_busy()));
+}
+
 void process_dynamics(byte event) {
-	static bool automationclose_triggered=false;
+	const uint32_t now = millis();
 	byte ato = og.options[OPTION_ATO].ival;
 	byte atob = og.options[OPTION_ATOB].ival;
 	byte noto = og.options[OPTION_NOTO].ival;
 	if(!ato && !atob && !noto) {
-		justopen_timestamp = 0;
+		open_duration.reset();
 		return;
 	}
 	if(event == DOOR_EVENT_JUST_OPENED) {
-		justopen_timestamp = curr_utc_time; // record time stamp
+		open_duration.start(now); // record time stamp
 		if (noto & OG_NOTIFY_DO) { perform_notify(og.options[OPTION_NAME].sval + " just OPENED!");}
 
 		// If the door is set to auto close at a certain hour, ensure if manually opened it doesn't autoshut
-		if( (curr_utc_hour == og.options[OPTION_ATIB].ival) && (!automationclose_triggered) ){
+		if( daily_rule.eligible(local_clock.valid, curr_utc_time, og.options[OPTION_ATIB].ival) ){
 			DEBUG_PRINTLN(" Door opened during automation hour, set to not auto-close ");
-			automationclose_triggered=true;
+			daily_rule.mark(curr_utc_time);
 		}
 
 	} else if (event == DOOR_EVENT_JUST_CLOSED) {
-		justopen_timestamp = 0; // reset time stamp
+		open_duration.reset(); // reset time stamp
 		if (noto & OG_NOTIFY_DC) { perform_notify(og.options[OPTION_NAME].sval + " just CLOSED!");}
 
 	} else if (event == DOOR_EVENT_JUST_STOPPED) {
-		justopen_timestamp = 0; // reset time stamp
+		open_duration.reset(); // reset time stamp
 		if (noto & OG_NOTIFY_DS) { perform_notify(og.options[OPTION_NAME].sval + " just STOPPED!");}
 
 	}	else if (event == DOOR_EVENT_REMAIN_OPEN) {
-		if (!justopen_timestamp) justopen_timestamp = curr_utc_time; // record time stamp
-		else {
-			if(curr_utc_time > justopen_timestamp + (ulong)og.options[OPTION_ATI].ival*60L) {
+		{
+			if(ato && open_duration.expired(now, uint32_t(og.options[OPTION_ATI].ival) * 60000UL)) {
 				// reached timeout, perform action
 				if(ato & OG_AUTO_NOTIFY) {
 					// send notification
@@ -1505,7 +1723,7 @@ void process_dynamics(byte event) {
 					s+= og.options[OPTION_ATI].ival;
 					s+= " minutes.";
 					if(ato & OG_AUTO_CLOSE) {
-						s+= " It will be auto-closed shortly";
+						s+= " Auto-close has been requested";
 					} else {
 						s+= " This is a reminder for you.";
 					}
@@ -1517,13 +1735,13 @@ void process_dynamics(byte event) {
 					if(!og.options[OPTION_ALM].ival) { og.set_alarm(OG_ALM_5); }
 					else { og.set_alarm(); }
 				}
-				justopen_timestamp = 0;
+				open_duration.reset();
 			}
 
-			if(( curr_utc_hour == og.options[OPTION_ATIB].ival) && (!automationclose_triggered)) {
+			if(atob && daily_rule.eligible(local_clock.valid, curr_utc_time, og.options[OPTION_ATIB].ival)) {
 				// still open past time, perform action
 				DEBUG_PRINTLN("Door is open at specified close time and automation not yet triggered: ");
-				automationclose_triggered=true;
+				daily_rule.mark(curr_utc_time);
 				if(atob & OG_AUTO_NOTIFY) {
 					// send notification
 					String s = og.options[OPTION_NAME].sval+" is open after ";
@@ -1531,7 +1749,7 @@ void process_dynamics(byte event) {
 					s+= " UTC. Current hour:";
 					s+= curr_utc_hour;
 					if(atob & OG_AUTO_CLOSE) {
-						s+= " It will be auto-closed shortly";
+						s+= " Auto-close has been requested";
 					} else {
 						s+= " This is a reminder for you.";
 					}
@@ -1543,15 +1761,11 @@ void process_dynamics(byte event) {
 					if(!og.options[OPTION_ALM].ival) { og.set_alarm(OG_ALM_5); }
 					else { og.set_alarm(); }
 				}
-				justopen_timestamp = 0;
-			}
-			else if ((curr_utc_hour > og.options[OPTION_ATIB].ival) && (automationclose_triggered)) {
-				DEBUG_PRINTLN("Unlocking automation close function");
-				automationclose_triggered=false; //Unlock the hour after the setting
+				open_duration.reset();
 			}
 		}
 	} else {
-		justopen_timestamp = 0;
+		open_duration.reset();
 	}
 }
 
@@ -1604,9 +1818,10 @@ byte check_door_event() {
 }
 
 void check_status() {
-	static ulong checkstatus_timeout = 0;
+	static og_local::Interval status_interval;
+	static bool history_initialized = false;
 
-	if((curr_utc_time > checkstatus_timeout) || (checkstatus_timeout == 0))  { //also check on first boot
+	if(status_interval.due(millis(), uint32_t(og.options[OPTION_RIV].ival) * 1000UL))  { //also check on first boot
 		last_door_status = door_status; // save the current status to last_door_status
 		if(light_blink_enabled) {
 			og.set_led(HIGH);
@@ -1621,7 +1836,6 @@ void check_status() {
 		if((distance==0 || distance>500 || !fullbuffer) && og.options[OPTION_SNO].ival!=OG_SNO_2ONLY) {
 			// invalid distance value or non full buffer, return immediately except if using SN2 only
 			DEBUG_PRINTLN(F("invalid distance or non-full buffer"));
-			checkstatus_timeout = curr_utc_time + og.options[OPTION_RIV].ival;
 			return;
 		}
 
@@ -1680,7 +1894,8 @@ void check_status() {
 				break;
 		}
 
-		if (checkstatus_timeout == 0){
+		if (!history_initialized){
+			history_initialized = true;
 			DEBUG_PRINTLN(F("First time checking status don't trigger a status change, set full history to current value"));
 			if (door_status) { door_status_hist = B11111111; }
 			else { door_status_hist = B00000000; }
@@ -1709,10 +1924,13 @@ void check_status() {
 
 		// Log door status changes (only record opened, closed, stopped status changes, as the other statuses are transient)
 		if(event == DOOR_EVENT_JUST_OPENED || event == DOOR_EVENT_JUST_CLOSED || event == DOOR_EVENT_JUST_STOPPED) {
+			wifi_door_event_seen = true; wifi_door_event_ms = millis();
 			// write log record
 			DEBUG_PRINTLN(" Update Local Log");
 			LogStruct l;
-			l.tstamp = curr_utc_time;
+			// Zero is the empty-slot marker in the existing binary log format.
+			l.tstamp = local_clock.valid ? curr_utc_time :
+				uint32_t(local_clock.uptime_ms / 1000) + 1;
 			l.status = door_status;
 			l.dist = distance;
 			l.sn2 = 255;	// use 255 to indicate invalid value
@@ -1721,12 +1939,12 @@ void check_status() {
 
 		} //End state change updates
 
-		static ulong force_mqtt_update_timeout = 0;
+		static og_local::Interval mqtt_status_interval;
 		// Send current status on change, or on status_report interval
-		if ((curr_utc_time > force_mqtt_update_timeout) ||
+		if (mqtt_status_interval.due(millis(), 15000) ||
 				(event == DOOR_EVENT_JUST_OPENED || event == DOOR_EVENT_JUST_CLOSED || event == DOOR_EVENT_JUST_STOPPED || event == DOOR_EVENT_START_OPENING || event == DOOR_EVENT_START_CLOSING) ){
 			// Mqtt update
-			if(og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval) && (mqttclient.connected())) {
+			if(WiFi.status() == WL_CONNECTED && og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval) && mqttclient.connected()) {
 				//DEBUG_PRINTLN(F(" Update MQTT (State Refresh)"));
 				if(event == DOOR_EVENT_REMAIN_OPEN) {
 					mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(),"OPEN");
@@ -1740,126 +1958,34 @@ void check_status() {
 				}
 				String msg;
 				sta_controller_fill_json(msg);
-				mqttclient.publish((mqtt_topic + "/OUT/JSON").c_str(),msg.c_str());
+				mqtt_json_bytes = msg.length();
+				const String topic = mqtt_topic + "/OUT/JSON";
+				if (!mqtt_buffer_ready || msg.length() + topic.length() + 7 > mqttclient.getBufferSize() ||
+					!mqttclient.publish(topic.c_str(), msg.c_str())) ++mqtt_json_failures;
 			}
 			// Send status report every 15 seconds: we don't need to send updates frequently if there is no status change.
-			force_mqtt_update_timeout= curr_utc_time + 15;
+			mqtt_status_interval.last = millis(); mqtt_status_interval.started = true;
 		}
 
 		// Process dynamics: automation and notifications
-		// report status to Blynk
-		if(og.options[OPTION_CLD].ival==CLOUD_BLYNK && Blynk.connected()) {
-			DEBUG_PRINTLN(F(" Update Blynk (State Refresh)"));
-
-			static uint old_distance = 0;
-			static byte old_door_status = 0xff, old_vehicle_status = 0xff;
-			static float old_tempC = -100;
-			static float old_humid = -100;
-			static byte old_light_status = 255;
-			static byte old_lock_status = 255;
-
-			// to reduce traffic, only send updated values
-			if(distance != old_distance) {  Blynk.virtualWrite(BLYNK_PIN_DIST, distance); old_distance = distance; }
-			if(door_status != old_door_status) {
-				switch(door_status) {
-					case DOOR_STATUS_OPEN:
-						blynk_door.setColor("#E02040"); // Red for Open
-						blynk_door.on();
-						break;
-					case DOOR_STATUS_STOPPED:
-						blynk_door.setColor("#E0E000"); // Yellow for Stopped
-						blynk_door.on();
-						break;
-					case DOOR_STATUS_OPENING:
-						blynk_door.setColor("#D000D0"); // Purple for Opening
-						blynk_door.on();
-						break;
-					case DOOR_STATUS_CLOSING:
-						blynk_door.setColor("#20A0E0"); // Cyan for Closing
-						blynk_door.on();
-						break;
-					case DOOR_STATUS_CLOSED:
-						//blynk_door.setColor("#20E080"); // Green for Closed
-						blynk_door.off();
-						break;
-					default:
-						blynk_door.setColor("#808080"); // Gray for Unknown
-						blynk_door.on();
-						break;
-				}
-				blynk_dval.setValue(door_status);
-				old_door_status = door_status;
-			}
-			if(vehicle_status != old_vehicle_status) { (vehicle_status==1) ? blynk_car.on() : blynk_car.off(); old_vehicle_status = vehicle_status; }
-			// hack to simulate temp humid changes
-			if(old_tempC != tempC) { Blynk.virtualWrite(BLYNK_PIN_TEMP, tempC); old_tempC = tempC; }
-			if(old_humid != humid) { Blynk.virtualWrite(BLYNK_PIN_HUMID,humid); old_humid = humid; }
-			if(old_light_status != light_status) { Blynk.virtualWrite(BLYNK_PIN_LIGHT, light_status); old_light_status = light_status; }
-			if(old_lock_status != lock_status) { Blynk.virtualWrite(BLYNK_PIN_LOCK, lock_status); old_lock_status = lock_status; }
-		}
-
 		process_dynamics(event);
-		checkstatus_timeout = curr_utc_time + og.options[OPTION_RIV].ival;
 	}
 }
 
 void time_keeping() {
 	static bool configured = false;
-	static ulong prev_millis = 0;
-	static ulong time_keeping_timeout = 0;
-	static unsigned char failed_ntp_calls = 0;
-	const unsigned char MAX_FAILED_NTP_CALLS = 20;
-	const ulong NTP_VALID_TIME = 1577836800UL;
-
-	if(!configured) {
-		if(valid_url(og.options[OPTION_NTP1].sval)) {
-			DEBUG_PRINT(F("NTP1:"));
-			DEBUG_PRINTLN(og.options[OPTION_NTP1].sval);
-			configTime(0, 0, og.options[OPTION_NTP1].sval.c_str(), DEFAULT_NTP1, DEFAULT_NTP2);
-		} else {
-			DEBUG_PRINT(F("NTP1:"));
-			DEBUG_PRINTLN(DEFAULT_NTP1);
-			configTime(0, 0, DEFAULT_NTP1, DEFAULT_NTP2, DEFAULT_NTP3);
-		}
+	if (!configured && WiFi.status() == WL_CONNECTED && WiFi.localIP()) {
+		const String &server = og.options[OPTION_NTP1].sval;
+		if (valid_url(server)) configTime(0, 0, server.c_str(), DEFAULT_NTP1, DEFAULT_NTP2);
+		else configTime(0, 0, DEFAULT_NTP1, DEFAULT_NTP2, DEFAULT_NTP3);
 		configured = true;
-		delay(1000);
 	}
-
-	if(!curr_utc_time || (curr_utc_time > time_keeping_timeout)) {
-		ulong gt = 0;
-		gt = time(nullptr);
-		if(gt<NTP_VALID_TIME) {
-			// we didn't get a valid response
-			if(failed_ntp_calls >= MAX_FAILED_NTP_CALLS) { // if already reached max failed calls
-				time_keeping_timeout = curr_utc_time + 60; // re-try after a minute
-				DEBUG_PRINTLN(F("max failed ntp reached! re-try in 60 seconds"));
-			} else {
-				failed_ntp_calls ++;
-				time_keeping_timeout = curr_utc_time + 2; // re-try after 2 seconds
-				DEBUG_PRINTLN(F("ntp invalid! re-try in 2 seconds"));
-			}
-		} else {
-			failed_ntp_calls = 0;
-			curr_utc_time = gt;
-			curr_utc_hour = (curr_utc_time % 86400)/3600;
-			DEBUG_PRINT(F("Updated time from NTP: "));
-			DEBUG_PRINT(curr_utc_time);
-			DEBUG_PRINT(" Hour: ");
-			DEBUG_PRINTLN(curr_utc_hour);
-			// if we got a response, re-try after TIME_SYNC_TIMEOUT seconds
-			time_keeping_timeout = curr_utc_time + TIME_SYNC_TIMEOUT;
-			prev_millis = millis();
-			if(!start_utc_time) {
-				start_utc_time = curr_utc_time - millis()/1000;
-			}
-		}
-	}
-
-	while(millis() - prev_millis >= 1000) {
-		curr_utc_time ++;
-		curr_utc_hour = (curr_utc_time % 86400)/3600;
-		prev_millis += 1000;
-	}
+	const time_t observed = time(nullptr);
+	local_clock.tick(millis(), observed >= og_local::Clock::MIN_UTC ? uint32_t(observed) : 0);
+	curr_utc_time = local_clock.utc;
+	curr_utc_hour = (curr_utc_time % 86400UL) / 3600UL;
+	if (local_clock.valid && !start_utc_time)
+		start_utc_time = curr_utc_time - uint32_t(local_clock.uptime_ms / 1000);
 }
 
 void process_alarm() {
@@ -1873,6 +1999,7 @@ void process_alarm() {
 		return;
 	}
 	if (warning_audio.tick(millis())) {
+		hold_network_delivery();
 		og.alarm=0; running=false;
 			switch (og.options[OPTION_SECV].ival) {
 				case 2: // SecPlus 2
@@ -1897,8 +2024,19 @@ void process_alarm() {
 }
 
 void do_loop() {
+	firmware_update.loop();
 	LoopMeasurement loop_measurement;
-	static ulong connecting_timeout;
+	static uint32_t sta_address = 0;
+	static bool station_tune_played = false;
+	if (curr_mode == OG_MOD_STA && (og.state == OG_STATE_CONNECTING || og.state == OG_STATE_CONNECTED)) {
+		time_keeping();
+		check_status();
+		const bool motion_busy = door_status == DOOR_STATUS_OPENING || door_status == DOOR_STATUS_CLOSING;
+		service_station_network(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), network_delivery_busy(), motion_busy, og.options[OPTION_WFR].ival != 0,
+			(local_action_seen && uint32_t(millis()-local_action_ms)<30000) ||
+			(wifi_door_event_seen && uint32_t(millis()-wifi_door_event_ms)<30000));
+
+	}
 	switch(og.state) {
 	case OG_STATE_INITIAL:
 		if(curr_mode == OG_MOD_AP) {
@@ -1921,15 +2059,13 @@ void do_loop() {
 			otf->on("/ad", on_auto_detect);
 			// FIXME get update ap updates working.
 			otf->on("/update", on_update, OTF::HTTP_GET);
-			updateServer->on("/update", HTTP_POST, on_firmware_upload_fin, on_firmware_upload);
-			updateServer->on("/update", HTTP_OPTIONS, on_update_options);
+			register_update_routes();
 			otf->on("/resetall",on_reset_all);
 			otf->onMissingPage(on_home);
 			updateServer->begin();
 			DEBUG_PRINTLN(F("Web Server endpoints (AP mode) registered"));
 			og.state = OG_STATE_CONNECTED;
 			DEBUG_PRINTLN(WiFi.softAPIP());
-			connecting_timeout = 0;
 			start_tune(og_audio::Tune::AP);
 		} else {
 			led_blink_ms = LED_SLOW_BLINK;
@@ -1939,10 +2075,27 @@ void do_loop() {
 			String host = og.options[OPTION_HOST].sval;
 			const char* hostname = host.length() == 0 ? NULL : host.c_str(); // use the hostname provided if one is specified
 
+			otf->on("/", on_home);
+			otf->on("/jc", on_sta_controller);
+			otf->on("/jo", on_sta_options);
+			otf->on("/jl", on_sta_logs);
+			otf->on("/ad", on_auto_detect);
+			otf->on("/vo", on_sta_view_options);
+			otf->on("/vl", on_sta_view_logs);
+			otf->on("/cc", on_sta_change_controller);
+			otf->on("/co", on_sta_change_options);
+			otf->on("/db", on_sta_debug);
+			// FIXME get sta updates working.
+			otf->on("/update", on_update, OTF::HTTP_GET);
+			register_update_routes();
+			otf->on("/clearlog", on_clear_log);
+			otf->on("/s2id_gen", on_regenerate_secplus2_id, OTF::HTTP_POST);
+			otf->on("/resetall",on_reset_all);
+			updateServer->begin();
+			DEBUG_PRINTLN(F("Web Server endpoints (STA mode) registered"));
 			start_network_sta(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), hostname);
 			og.config_ip();
 			og.state = OG_STATE_CONNECTING;
-			connecting_timeout = millis() + 60000;
 		}
 		break;
 
@@ -1962,31 +2115,12 @@ void do_loop() {
 		}
 
 	case OG_STATE_CONNECTING:
-		if(WiFi.status() == WL_CONNECTED) {
+		if(WiFi.status() == WL_CONNECTED && WiFi.localIP()) {
 			DEBUG_PRINT(F("Wireless connected, IP: "));
 			DEBUG_PRINTLN(WiFi.localIP());
 
-			time_keeping();
-			otf->on("/", on_home);
-			otf->on("/jc", on_sta_controller);
-			otf->on("/jo", on_sta_options);
-			otf->on("/jl", on_sta_logs);
-			otf->on("/ad", on_auto_detect);
-			otf->on("/vo", on_sta_view_options);
-			otf->on("/vl", on_sta_view_logs);
-			otf->on("/cc", on_sta_change_controller);
-			otf->on("/co", on_sta_change_options);
-			otf->on("/db", on_sta_debug);
-			// FIXME get sta updates working.
-			otf->on("/update", on_update, OTF::HTTP_GET);
-			updateServer->on("/update", HTTP_POST, on_firmware_upload_fin, on_firmware_upload);
-			updateServer->on("/update", HTTP_OPTIONS, on_update_options);
-			otf->on("/clearlog", on_clear_log);
-			otf->on("/s2id_gen", on_regenerate_secplus2_id, OTF::HTTP_POST);
-			otf->on("/resetall",on_reset_all);
-			updateServer->begin();
-			DEBUG_PRINTLN(F("Web Server endpoints (STA mode) registered"));
-
+			sta_address = uint32_t(WiFi.localIP());
+			MDNS.close();
 			// request mDNS host name
 			String host = og.options[OPTION_HOST].sval;
 			if(host.length()==0) host=get_ap_ssid(); // if undefined, AP name as host
@@ -1999,25 +2133,10 @@ void do_loop() {
 				//DEBUG_PRINTLN(og.options[OPTION_HTP].ival);
 			}
 
-			if(og.options[OPTION_CLD].ival==CLOUD_BLYNK) {
-				DEBUG_PRINTLN(F("Attempt to connect to Blynk:"));
-				DEBUG_PRINT(og.options[OPTION_BDMN].sval);
-				DEBUG_PRINT(":");
-				DEBUG_PRINTLN(og.options[OPTION_BPRT].ival);
-				Blynk.config(og.options[OPTION_AUTH].sval.c_str(), og.options[OPTION_BDMN].sval.c_str(), (uint16_t) og.options[OPTION_BPRT].ival); // use the config function
-				if(Blynk.connect()) {DEBUG_PRINTLN(F("Blynk connected"));}
-				else {DEBUG_PRINTLN(F("Blynk failed!"));}
-			}
 			led_blink_ms = 0;
 			og.set_led(LOW);
 			og.state = OG_STATE_CONNECTED;
-			connecting_timeout = 0;
-			start_tune(og_audio::Tune::STATION);
-		} else {
-			if(connecting_timeout && millis() > connecting_timeout) {
-				DEBUG_PRINTLN(F("Wifi Connecting timeout, restart"));
-				og.restart();
-			}
+			if (!station_tune_played) { start_tune(og_audio::Tune::STATION); station_tune_played = true; }
 		}
 		break;
 
@@ -2040,7 +2159,6 @@ void do_loop() {
 			otf->loop();
 			updateServer->handleClient();
 			check_status_ap();
-			connecting_timeout = 0;
 			if(og.options[OPTION_MOD].ival == OG_MOD_STA) {
 				// already in STA mode, waiting to reboot
 				break;
@@ -2052,19 +2170,18 @@ void do_loop() {
 
 		} else {
 			if(WiFi.status() == WL_CONNECTED) {
-				MDNS.update();
-				time_keeping();
-				check_status(); //This checks the door, sends info to services and processes the automation rules
-				otf->loop();
-				updateServer->handleClient();
-
-				if(og.options[OPTION_CLD].ival==CLOUD_BLYNK) {
-					Blynk.run();
+				if (!WiFi.localIP() || uint32_t(WiFi.localIP()) != sta_address) {
+					og.state = OG_STATE_CONNECTING; break;
 				}
+				MDNS.update();
+				service_cloud();
+				updateServer->handleClient();
 
 				//Handle MQTT
 				if(og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval)) { // if enabled and mqtt server looks valid
-					if (!mqttclient.connected()) {
+					const bool mqtt_connected = mqttclient.connected();
+					mqtt_retry.observe(millis(), mqtt_connected);
+					if (!mqtt_connected) {
 						mqtt_id = get_ap_ssid();
 						mqtt_topic = og.options[OPTION_MQTP].sval;
 						if(mqtt_topic.length()==0) mqtt_topic = og.options[OPTION_NAME].sval;
@@ -2072,11 +2189,11 @@ void do_loop() {
 						mqttclient.setCallback(mqtt_callback);
 						mqtt_connect_subscribe();
 					}
-					else {mqttclient.loop();} //Processes MQTT Pings/keep alives
+					else if (mqtt_frame_ready()) {mqttclient.loop();} //Processes MQTT Pings/keep alives
 				}
-				connecting_timeout = 0;
 			} else {
-				//og.state = OG_STATE_INITIAL;
+				og.state = OG_STATE_CONNECTING;
+				led_blink_ms = LED_SLOW_BLINK;
 				DEBUG_PRINTLN(F("WiFi connection lost."));
 			}
 		}
@@ -2097,39 +2214,10 @@ void do_loop() {
 	process_ui();
 
 	process_alarm();
+	if (curr_mode == OG_MOD_STA) service_notifications();
 	if (!og.alarm && !ip_audio_active) startup_audio.tick(millis());
 	if (setup_reboot_pending && !startup_audio.active() && !og.alarm) {
 		setup_reboot_pending=false;
 		restart_in(1000);
-	}
-}
-
-BLYNK_WRITE(BLYNK_PIN_RELAY) {
-	static bool last_button_state = 0;
-	bool current_button_state = param.asInt();
-	if (last_button_state && !current_button_state) { // on button release
-		DEBUG_PRINTLN(F("Received Blynk generated button request"));
-		performDoorAction(ACTION_TOGGLE);
-	}
-	last_button_state = current_button_state;
-}
-
-BLYNK_WRITE(BLYNK_PIN_LIGHT) {
-	if (og.options[OPTION_SECV].ival == 2 && !secplus2_garage.status_valid()) return;
-	if (og.options[OPTION_SECV].ival == 1 && !secplus1_garage.light_lock_valid()) return;
-	bool requested_light_state = param.asInt();
-	if (requested_light_state != light_status) {
-		DEBUG_PRINTLN(F("Received Blynk generated light change request"));
-		performLightAction(ACTION_TOGGLE);
-	}
-}
-
-BLYNK_WRITE(BLYNK_PIN_LOCK) {
-	if (og.options[OPTION_SECV].ival == 2 && !secplus2_garage.status_valid()) return;
-	if (og.options[OPTION_SECV].ival == 1 && !secplus1_garage.light_lock_valid()) return;
-	bool requested_lock_state = param.asInt();
-	if (requested_lock_state != lock_status) {
-		DEBUG_PRINTLN(F("Received Blynk generated lock change request"));
-		performLockAction(ACTION_TOGGLE);
 	}
 }
