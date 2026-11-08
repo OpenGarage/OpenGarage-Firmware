@@ -1,8 +1,8 @@
 #pragma once
 #include <stddef.h>
 
-template<class StringType>
-void append_json_escaped(StringType &out, const StringType &value) {
+template<class OutputType, class StringType>
+void append_json_escaped(OutputType &out, const StringType &value) {
   static const char hex[] = "0123456789abcdef";
   for (size_t i = 0; i < value.length(); ++i) {
     const unsigned char c = value[i];

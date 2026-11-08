@@ -7,7 +7,7 @@ import tempfile
 
 source = (Path(__file__).resolve().parents[1] / 'OpenGarage/main.cpp').read_text()
 functions = []
-for name in ('append_age', 'append_health_json', 'append_debug_details', 'on_sta_debug', 'on_ap_debug'):
+for name in ('append_age', 'append_health_json', 'append_debug_details', 'send_debug_json', 'on_sta_debug', 'on_ap_debug'):
     match = re.search(r'(?:static )?void ' + name + r'\([^\n]+\) \{.*?^\}', source, re.S | re.M)
     assert match, name
     functions.append(match.group())
@@ -18,6 +18,7 @@ stub = r'''
 #include <iostream>
 #include <cstring>
 #include <cstdint>
+#include <cassert>
 #include "OpenGarage/json_escape.h"
 #include "OpenGarage/local_time.h"
 #include "OpenGarage/wifi_manager.h"
@@ -31,19 +32,25 @@ og_local::Clock local_clock;
 #define F(x) x
 #define HEX 16
 #define STRING_RESERVE_SIZE 256
+static int allocation_budget=-1;
+static bool alloc_ok(){if(allocation_budget<0)return true;if(!allocation_budget)return false;--allocation_budget;return true;}
 struct String : std::string {
   using std::string::string;
   using std::string::operator+=;
   using std::string::operator=;
+  bool reserve(unsigned){return alloc_ok();}
+  template<class T> bool concat(const T &x){if(!alloc_ok())return false;*this+=x;return true;}
   String(unsigned n,int) { std::ostringstream s; s<<std::hex<<n; assign(s.str()); }
   template<class T> String& operator+=(T n) { append(std::to_string(n)); return *this; }
   String& operator+=(const char *s) { append(s); return *this; }
   String& operator+=(const String &s) { append(s); return *this; }
   String& operator+=(char c) { push_back(c); return *this; }
 };
+#include "OpenGarage/checked_json.h"
 namespace OTF {
 struct Request { const char *value; const char *getQueryParameter(const char*) const { return value; } };
-struct Response {};
+struct Response {int status=200;void writeStatus(unsigned n){status=n;}template<class T>void writeHeader(const char*,T){}
+ void writeBodyData(const char *p,size_t n){assert(status==503);std::cout.write(p,n);std::cout<<'\n';} };
 }
 struct Option { int ival=125; String sval="test"; };
 enum { OPTION_FWV, OPTION_NAME, OPTION_SECV };
@@ -129,3 +136,40 @@ for item in results:
         assert item['otf_revision'] == otf_pin
         assert item['largest_free_heap_block'] == 28000
         assert len(item['build_time']) == 8
+
+# Fail each builder reservation/append in turn, including escaping and nested
+# health/crash serializers. Every response must still be complete JSON.
+fault_runner = r'''
+int main() {
+ og.has_swrx=1;og.options[OPTION_SECV].ival=2;
+ for(auto handler : {on_sta_debug,on_ap_debug}) for(const char *value : {static_cast<const char*>(nullptr),"1"}) {
+  for(int budget=0;budget<600;++budget) {
+   allocation_budget=budget;OTF::Response response;
+   std::ostringstream capture;auto *prior=std::cout.rdbuf(capture.rdbuf());
+   handler(OTF::Request{value},response);std::cout.rdbuf(prior);
+   std::cout<<"{\"status\":"<<response.status<<",\"body\":"<<capture.str()<<"}\n";
+  }
+ }
+}
+'''
+with tempfile.TemporaryDirectory(prefix='og-db-oom-') as scratch:
+    binary = str(Path(scratch) / 'test')
+    subprocess.run(['g++','-std=c++11','-Wall','-Wextra','-I',str(Path(__file__).resolve().parents[1]),
+                    '-x','c++','-','-o',binary],input=stub+'\n'.join(functions)+fault_runner,text=True,check=True)
+    output=subprocess.check_output([binary],text=True)
+    decoder=json.JSONDecoder();fault_results=[];offset=0
+    while offset<len(output):
+        while offset<len(output) and output[offset].isspace(): offset+=1
+        if offset==len(output):break
+        item,size=decoder.raw_decode(output[offset:]);fault_results.append(item);offset+=size
+assert len(fault_results)==2400
+assert any(x['status']==200 for x in fault_results)
+assert any(x['status']==503 for x in fault_results)
+for item in fault_results:
+    if item['status']==503:
+        assert item['body']=={'result':48,'item':'Not enough memory for diagnostics'}
+    else:
+        assert item['status']==200
+        assert 'fwv' in item['body']
+assert 'void otf_send_json(OTF::Response &res, const String &json)' in source
+print('/db: 2400 injected reservation/append failure cases returned complete JSON or fixed HTTP503')

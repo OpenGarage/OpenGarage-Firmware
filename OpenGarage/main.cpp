@@ -27,6 +27,7 @@
 #include <Response.h>
 
 #include "json_escape.h"
+#include "checked_json.h"
 #include "update_auth.h"
 #include "firmware_update.h"
 #include "local_time.h"
@@ -155,7 +156,7 @@ void otf_send_compressed_P(OTF::Response& res, const __FlashStringHelper* conten
 	DEBUG_PRINTLN(F(" bytes sent."));
 }
 
-void otf_send_json(OTF::Response &res, String json) {
+void otf_send_json(OTF::Response &res, const String &json) {
 	res.writeStatus(200, F("OK"));
 	res.writeHeader(F("Content-Type"), F("application/json"));
 	res.writeHeader(F("Access-Control-Allow-Origin"), F("*")); // from esp8266 2.4 this has to be sent explicitly
@@ -194,12 +195,12 @@ bool valid_url(String s) {
 
 String ipString;
 
-static void append_age(String &json, uint32_t age) {
+static void append_age(DebugJson &json, uint32_t age) {
 	if (age==UINT32_MAX) json += F("-1");
 	else json += age;
 }
 
-static void append_health_json(String &json) {
+static void append_health_json(DebugJson &json) {
 	json += F(",\"active_security_protocol\":"); json += og.options[OPTION_SECV].ival;
 	json += F(",\"free_heap\":"); json += ESP.getFreeHeap();
 	json += F(",\"largest_free_heap_block\":"); json += ESP.getMaxFreeBlockSize();
@@ -466,7 +467,7 @@ void on_sta_controller(const OTF::Request &req, OTF::Response &res) {
 	otf_send_json(res, json);
 }
 
-static void append_debug_details(const OTF::Request &req, String &json) {
+static void append_debug_details(const OTF::Request &req, DebugJson &json) {
 	const char *verbose = req.getQueryParameter("verbose");
 	if (!verbose || strcmp(verbose, "1") != 0) return;
 	if (og.has_swrx && og.options[OPTION_SECV].ival == 2) {
@@ -496,8 +497,20 @@ static void append_debug_details(const OTF::Request &req, String &json) {
 	json += F(",\"wifi_channel\":"); json += WiFi.channel();
 }
 
+static void send_debug_json(OTF::Response &res, DebugJson &json) {
+    if (json.good()) { otf_send_json(res, json); return; }
+    json.discard();
+    res.writeStatus(503);
+    res.writeHeader(F("Content-Type"), F("application/json"));
+    res.writeHeader(F("Access-Control-Allow-Origin"), F("*"));
+    res.writeHeader(F("Connection"), F("close"));
+    res.writeHeader(F("Content-Length"), sizeof("{\"result\":48,\"item\":\"Not enough memory for diagnostics\"}")-1);
+    res.writeBodyData(F("{\"result\":48,\"item\":\"Not enough memory for diagnostics\"}"),
+        sizeof("{\"result\":48,\"item\":\"Not enough memory for diagnostics\"}")-1);
+}
+
 void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
-	String json = "";
+	DebugJson json;
 	json.reserve(STRING_RESERVE_SIZE);
 	json += F("{");
 	json += F("\"rcnt\":");
@@ -528,7 +541,7 @@ void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
 	json += F(",\"has_swrx\":");
 	json += og.has_swrx;
 	json += F("}");
-	otf_send_json(res, json);
+	send_debug_json(res, json);
 }
 
 void sta_logs_fill_json(String& json, OTF::Response &res) {
@@ -1210,7 +1223,8 @@ void on_ap_try_connect(const OTF::Request &req, OTF::Response &res) {
 }
 
 void on_ap_debug(const OTF::Request &req, OTF::Response &res) {
-	String json = "";
+	DebugJson json;
+    json.reserve(STRING_RESERVE_SIZE);
 	json += F("{");
 	json += F("\"dist\":");
 	json += og.read_distance();
@@ -1220,7 +1234,7 @@ void on_ap_debug(const OTF::Request &req, OTF::Response &res) {
 	json += og.has_swrx;
 	append_debug_details(req, json);
 	json += F("}");
-	otf_send_json(res, json);
+	send_debug_json(res, json);
 }
 
 // MQTT callback to read "Button" requests

@@ -107,3 +107,10 @@ Run outside a ptrace-based sandbox because LeakSanitizer cannot operate there.
 `python3 tests/test_email_encoding.py` checks the production Base64 encoder
 against reference vectors and oversized credentials with ASan/UBSan. The options
 security suite also covers 64-byte SMTP field limits and atomic rejection.
+
+
+The diagnostic response test also injects 2,400 failed reservations/appends into
+AP/station compact/verbose JSON builders. It requires complete JSON or the fixed
+HTTP 503 reply. CheckedJsonBuffer must remain the type through diagnostic
+serialization helpers; convert to the base String only after good() succeeds.
+The JSON sender takes a const reference, avoiding a second full response copy.
