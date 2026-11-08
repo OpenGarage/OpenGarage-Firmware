@@ -99,3 +99,7 @@ UPDATER_GENERATED=1 node tests/test_updater_notes.cjs
 All requests are intercepted. The test covers formatting, inert embedded resources,
 unsafe links, input/depth/node limits, fallback, and mobile/desktop layout. The
 second command checks the compressed page embedded in `htmls.h`.
+
+`python3 tests/test_email_lifetime.py` checks actual EMailSender allocation code
+with AddressSanitizer/LeakSanitizer, including injected string-copy failures.
+Run outside a ptrace-based sandbox because LeakSanitizer cannot operate there.

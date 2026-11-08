@@ -1639,6 +1639,7 @@ bool emailNotify(String s){
 		EMailSender emailSend(email_sender, email_pword);
 		emailSend.setSMTPServer(email_host);
 		emailSend.setSMTPPort(email_port);
+		if (!emailSend.readyToSend()) return false;
 		DEBUG_PRINTLN(GET_FREE_HEAP);
 		EMailSender::Response resp = emailSend.send(email_recip, email_message);
 		return resp.status;

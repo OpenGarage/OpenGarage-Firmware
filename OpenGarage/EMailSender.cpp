@@ -163,35 +163,55 @@ EMailSender::EMailSender(const char* email_login, const char* email_password){
 //	this->isSecure = isSecure;
 }
 
+EMailSender::~EMailSender() {
+	free(this->smtp_server);
+	free(this->email_login);
+	free(this->email_from);
+	free(this->name_from);
+	free(this->email_password);
+}
+
 void EMailSender::setSMTPPort(uint16_t smtp_port){
 	this->smtp_port = smtp_port;
 };
+// Setters use strdup()/free() consistently with the header's initial value
+// (smtp_server = strdup("smtp.gmail.com")). Mixing strdup() with delete[] is
+// undefined behavior — pair the same allocator on both sides of the lifetime.
 void EMailSender::setSMTPServer(const char* smtp_server){
-	delete [] this->smtp_server;
-	this->smtp_server = new char[strlen(smtp_server)+1];
-	strcpy(this->smtp_server, smtp_server);
+	char *copy = smtp_server ? strdup(smtp_server) : nullptr;
+	free(this->smtp_server);
+	this->smtp_server = copy;
+	if (!copy) allocation_failed = true;
 };
 
 void EMailSender::setEMailLogin(const char* email_login){
-	delete [] this->email_login;
-	this->email_login = new char[strlen(email_login)+1];
-	strcpy(this->email_login, email_login);
+	char *copy = email_login ? strdup(email_login) : nullptr;
+	free(this->email_login);
+	this->email_login = copy;
+	if (!copy) allocation_failed = true;
 };
 void EMailSender::setEMailFrom(const char* email_from){
-	delete [] this->email_from;
-	this->email_from = new char[strlen(email_from)+1];
-	strcpy(this->email_from, email_from);
+	char *copy = email_from ? strdup(email_from) : nullptr;
+	free(this->email_from);
+	this->email_from = copy;
+	if (!copy) allocation_failed = true;
 };
 void EMailSender::setNameFrom(const char* name_from){
-	delete [] this->name_from;
-	this->name_from = new char[strlen(name_from)+1];
-	strcpy(this->name_from, name_from);
+	char *copy = name_from ? strdup(name_from) : nullptr;
+	free(this->name_from);
+	this->name_from = copy;
+	if (!copy) allocation_failed = true;
 };
 void EMailSender::setEMailPassword(const char* email_password){
-	delete [] this->email_password;
-	this->email_password = new char[strlen(email_password)+1];
-	strcpy(this->email_password, email_password);
+	char *copy = email_password ? strdup(email_password) : nullptr;
+	free(this->email_password);
+	this->email_password = copy;
+	if (!copy) allocation_failed = true;
 };
+
+bool EMailSender::readyToSend() const {
+    return !allocation_failed && smtp_server && email_login && email_from && email_password;
+}
 
 void EMailSender::setIsSecure(bool isSecure) {
 	this->isSecure = isSecure;
@@ -464,6 +484,15 @@ EMailSender::Response EMailSender::send(const char* to[], byte sizeOfTo,  byte s
 
 EMailSender::Response EMailSender::send(const char* to[], byte sizeOfTo,  byte sizeOfCc,byte sizeOfCCn, EMailMessage &email, Attachments attachments)
 {
+  // Check before constructing the TLS client (and its shared encryption stack).
+  if (!readyToSend()) {
+      EMailSender::Response failed;
+      failed.status = false;
+      failed.code = F("2");
+      failed.desc = F("Email settings allocation failed");
+      return failed;
+  }
+
 #ifdef SSLCLIENT_WRAPPER
 	EMAIL_DEBUG_PRINTLN(F("SSLClient active!"));
 #else
