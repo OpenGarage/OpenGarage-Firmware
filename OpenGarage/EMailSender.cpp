@@ -95,23 +95,16 @@ int base64_encode(char *output, char *input, int inputLen) {
   return encLen;
 }
 
-int base64_enc_length(int plainLen) {
-  int n = plainLen;
-  return (n + 2 - ((n + 2) % 3)) / 3 * 4;
-}
-
-const char* encode64_f(char* input, uint8_t len) {
-  // encoding
-
-	EMAIL_DEBUG_PRINTLN(F("Encoding"));
-	EMAIL_DEBUG_PRINTLN(input);
-	EMAIL_DEBUG_PRINTLN(len);
-
-  //int encodedLen =
- base64_enc_length(len);
+const char* encode64_f(char* input, size_t len) {
   static char encoded[256];
-  // note input is consumed in this step: it will be empty afterwards
-  base64_encode(encoded, input, len);
+  // Reserve the terminator. Check the input bound before size arithmetic or
+  // narrowing: 189 bytes -> 252 encoded bytes, while 190 -> 256 plus NUL.
+  const size_t maxInput = ((sizeof(encoded) - 1) / 4) * 3;
+  if (len > maxInput || (!input && len)) {
+    encoded[0] = '\0';
+    return encoded;
+  }
+  base64_encode(encoded, input, static_cast<int>(len));
   return encoded;
 }
 
@@ -142,7 +135,6 @@ EMailSender::EMailSender(const char* email_login, const char* email_password, co
 	this->setEMailLogin(email_login);
 	this->setEMailFrom(email_from);
 	this->setEMailPassword(email_password);
-	this->setNameFrom(name_from);
 	this->setNameFrom(name_from);
 
 //	this->isSecure = isSecure;

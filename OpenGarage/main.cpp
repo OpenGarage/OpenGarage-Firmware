@@ -881,8 +881,8 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 		 og.options[OPTION_CLD].ival != CLOUD_OTC || og.options[OPTION_AUTH].sval.length() < 32))) {
 		otf_send_result(res, HTML_DATA_OUTOFBOUND, "auth: OTC requires a token"); return;
 	}
-	// Bound MQTT-controlled user strings; escaping can expand each byte sixfold.
-	for (const char *field : {"name", "mqtp"}) {
+	// Match UI bounds for MQTT text and SMTP settings (UTF-8 bytes).
+	for (const char *field : {"name", "mqtp", "smtp", "send", "apwd", "recp"}) {
 		const char *value = req.getQueryParameter(field);
 		if (value && strlen(value) > 64) { otf_send_result(res, HTML_DATA_OUTOFBOUND, field); return; }
 	}

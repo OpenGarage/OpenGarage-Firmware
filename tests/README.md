@@ -103,3 +103,7 @@ second command checks the compressed page embedded in `htmls.h`.
 `python3 tests/test_email_lifetime.py` checks actual EMailSender allocation code
 with AddressSanitizer/LeakSanitizer, including injected string-copy failures.
 Run outside a ptrace-based sandbox because LeakSanitizer cannot operate there.
+
+`python3 tests/test_email_encoding.py` checks the production Base64 encoder
+against reference vectors and oversized credentials with ASan/UBSan. The options
+security suite also covers 64-byte SMTP field limits and atomic rejection.

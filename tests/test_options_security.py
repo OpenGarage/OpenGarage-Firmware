@@ -52,7 +52,8 @@ String get_ap_ssid(){return "OG_TEST";}
 code += serializer + '\nvoid save(Request& req){OptionStruct* o;byte i;' + save + '}\n'
 code += '''enum {CLOUD_NONE=0,CLOUD_OTC=2, OG_SN2_NONE=0, HTML_DATA_OUTOFBOUND=3,HTML_DATA_FORMATERROR=4};
 int result=0,res=0;
-void otf_send_result(int&,int code,const char*){result=code;}
+std::string result_item;
+void otf_send_result(int&,int code,const char* item){result=code;result_item=item?item:"";}
 void validate(Request& req){const char *cloud=req.getQueryParameter("cld");
 ''' + validation + '}\n'
 code += '''
@@ -102,6 +103,23 @@ code += 'int main(){\n' + setup + r'''
  for(const char* port:{"80","8081","65535"}){
   Request allowed;allowed.values["htp"]=port;result=0;validate(allowed);assert(result==0);
  }
+ og.options[OPTION_CLD].ival=CLOUD_NONE;
+ for(const char* field:{"name","mqtp","smtp","send","apwd","recp"}){
+  for(unsigned length:{0U,64U,65U,189U,190U,255U,256U}){
+   Request value;value.values[field]=std::string(length,'x');result=0;result_item="";
+   validate(value);
+   assert((result==0)==(length<=64));
+   if(length>64){assert(result==HTML_DATA_OUTOFBOUND);assert(result_item==field);}
+  }
+ }
+ // Bounds are bytes, including multibyte UTF-8 values.
+ Request unicode;unicode.values["send"]=std::string(63,'x')+"\xc3\xa9";
+ result=0;validate(unicode);assert(result==HTML_DATA_OUTOFBOUND);
+ // A bad email value rejects the whole save, including unrelated fields.
+ auto previous_name=og.options[OPTION_NAME].sval;
+ Request atomic;atomic.values["name"]="would-change";atomic.values["apwd"]=std::string(65,'x');
+ result=0;validate(atomic);if(!result)save(atomic);
+ assert(result==HTML_DATA_OUTOFBOUND);assert(og.options[OPTION_NAME].sval==previous_name);
  Request conflict;conflict.values["apwd"]="new";conflict.values["clear_apwd"]="1";
  result=0;validate(conflict);assert(result!=0);
  og.options[OPTION_NAME].sval=String(64,'\x01');
@@ -128,4 +146,4 @@ with tempfile.TemporaryDirectory(prefix='og-options-') as tmp:
     assert before['name'] == 'name"\\\n\t\x01'
     assert [value['secv'] for value in mqtt] == [0, 1, 2]
     assert all(value['name'] == '\x01'*64 for value in mqtt)
-print('PASS: write-only credentials, save/migration policy, escaped MQTT JSON and packet capacity')
+print('PASS: write-only credentials, SMTP byte limits, atomic rejection, migration and MQTT payloads')
