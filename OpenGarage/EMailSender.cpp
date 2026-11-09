@@ -33,6 +33,10 @@
  */
 
 #include "EMailSender.h"
+#include "smtp_exchange.h"
+#if defined(ESP8266)
+#include "smtp_probe.h"
+#endif
 #include <stdio.h>
 #if defined(ESP32)
 #include <mbedtls/base64.h>
@@ -476,6 +480,26 @@ EMailSender::Response EMailSender::send(const char* to[], byte sizeOfTo,  byte s
 
 EMailSender::Response EMailSender::send(const char* to[], byte sizeOfTo,  byte sizeOfCc,byte sizeOfCCn, EMailMessage &email, Attachments attachments)
 {
+  network_attempted_=false;
+  const uint32_t smtpStarted=millis();
+  bool smtpSmallFragments=false;
+#if defined(ESP8266)
+  // Stock-layout measurement: 18.7 KB consumed by a send. Keep ~3 KB reserve;
+  // require a 12 KB block for the stack and initial TLS contexts.
+  if(!og_smtp::memory_ready(ESP.getFreeHeap(),ESP.getMaxFreeBlockSize())) {
+      Response failed;failed.code="2";failed.desc="Not enough memory for SMTP";return failed;
+  }
+#endif
+
+  if (!og_smtp::credential_safe(email_login) || !og_smtp::credential_safe(email_password) ||
+      !og_smtp::header_safe(email_from) || !og_smtp::header_safe(smtp_server) ||
+      !og_smtp::header_safe(email.subject.c_str()) ||
+      !og_smtp::header_safe(email.date.c_str()) || !og_smtp::header_safe(email.messageId.c_str())) {
+      Response failed; failed.code="2";failed.desc="Invalid email settings";return failed;
+  }
+  for(unsigned i=0;i<unsigned(sizeOfTo)+sizeOfCc+sizeOfCCn;++i) {
+      if (!og_smtp::header_safe(to[i])) {Response failed;failed.code="2";failed.desc="Invalid recipient";return failed;}
+  }
   // Check before constructing the TLS client (and its shared encryption stack).
   if (!readyToSend()) {
       EMailSender::Response failed;
@@ -492,6 +516,9 @@ EMailSender::Response EMailSender::send(const char* to[], byte sizeOfTo,  byte s
 	  EMAIL_NETWORK_CLASS client;
 	#endif
 
+  network_attempted_=true; // Includes DNS failures, which should back off.
+  IPAddress smtpIp;
+  if(!WiFi.hostByName(smtp_server,smtpIp,5000)) {Response failed;failed.code="2";failed.desc="SMTP DNS failed";return failed;}
   // Preserve the ESP8266 TLS handshake budget; a 1s limit breaks slow servers.
   client.setTimeout(15000);
   EMAIL_DEBUG_PRINT(F("Insecure client:"));
@@ -501,7 +528,8 @@ EMailSender::Response EMailSender::send(const char* to[], byte sizeOfTo,  byte s
 			#ifndef ARDUINO_ESP8266_RELEASE_2_4_2
 			  if (this->isSecure == false){
 				  client.setInsecure();
-				  bool mfln = client.probeMaxFragmentLength(this->smtp_server, this->smtp_port, 512);
+				  bool mfln = og_smtp::probeMfln(smtpIp, this->smtp_port, 512);
+                  smtpSmallFragments=mfln;
 
 				  EMAIL_DEBUG_PRINT("MFLN supported: ");
 				  EMAIL_DEBUG_PRINTLN(mfln?"yes":"no");
@@ -538,6 +566,11 @@ EMailSender::Response EMailSender::send(const char* to[], byte sizeOfTo,  byte s
   EMAIL_DEBUG_PRINTLN(this->smtp_server);
   EMAIL_DEBUG_PRINTLN(this->smtp_port);
 
+  const uint32_t elapsed=uint32_t(millis()-smtpStarted);
+  if(elapsed>=20000) {Response failed;failed.code="2";failed.desc="SMTP deadline";return failed;}
+  // The core may resolve the hostname again (10 s default). Reserve that
+  // separately, then split the remaining budget between TCP and TLS waits.
+  client.setTimeout(uint32_t((20000-elapsed)/2));
   if(!client.connect(this->smtp_server, this->smtp_port)) {
 	  response.desc = F("Could not connect to mail server");
 	  response.code = F("2");
@@ -549,6 +582,23 @@ EMailSender::Response EMailSender::send(const char* to[], byte sizeOfTo,  byte s
 	  return response;
   }
 
+#if defined(ESP8266)
+  if(smtpSmallFragments && !client.getMFLNStatus()) {
+      client.stop();response.code="2";response.desc="SMTP fragment negotiation changed";return response;
+  }
+#endif
+#if defined(ESP8266) && !defined(ENABLE_ATTACHMENTS)
+  // Stock OG must take this bounded text/plain AUTH LOGIN path.
+  if(sizeOfTo==1 && !sizeOfCc && !sizeOfCCn && useAuth && !isSASLLogin && email.mime==F("text/plain")) {
+  struct SmtpClock {uint32_t now(){return millis();}void idle(){yield();}} timer;
+  og_smtp::Exchange<EMAIL_NETWORK_CLASS,SmtpClock> exchange(client,timer,smtpStarted);
+  auto result=exchange.send(WiFi.localIP().toString().c_str(),email_login,email_password,
+      email_from,to[0],email.subject.c_str(),email.message.c_str(),email.date.c_str(),email.messageId.c_str());
+  client.stop();
+  response.status=result.accepted;response.code=String(result.code);response.desc=result.stage;
+  return response;
+  }
+#endif
   EMAIL_DEBUG_PRINTLN("Connected");
 
   response = awaitSMTPResponse(client, "220", "Connection Error");

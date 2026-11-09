@@ -32,6 +32,7 @@
 #include "firmware_update.h"
 #include "local_time.h"
 #include "network_policy.h"
+#include "smtp_exchange.h"
 #include "pitches.h"
 #include "OpenGarage.h"
 #include "espconnect.h"
@@ -58,6 +59,8 @@ static og_network::MqttRecovery mqtt_retry;
 static og_network::Backoff email_retry(60000, 600000), ifttt_retry(60000, 600000);
 static String pending_notification;
 static uint32_t notification_ms = 0, notification_dropped = 0;
+static uint32_t email_failures = 0;
+static char email_last[96] = "Not attempted";
 static uint32_t local_action_ms = 0;
 static bool local_action_seen = false;
 static uint32_t wifi_door_event_ms = 0;
@@ -485,6 +488,8 @@ static void append_debug_details(const OTF::Request &req, DebugJson &json) {
 	json += F(",\"mqtt_buffer_ready\":"); json += mqtt_buffer_ready ? 1 : 0;
 	json += F(",\"mqtt_retained_dropped\":"); json += mqtt_retained_dropped;
 	json += F(",\"notification_dropped\":"); json += notification_dropped;
+	json += F(",\"email_failures\":"); json += email_failures;
+	json += F(",\"email_last\":\""); append_json_escaped(json,String(email_last)); json += F("\"");
 	json += F(",\"wifi_recovery\":\""); json += station_recovery.status(); json += F("\"");
 	json += F(",\"wifi_attempts\":"); json += station_recovery.attempts();
 	json += F(",\"wifi_timeouts\":"); json += station_recovery.timeouts();
@@ -714,7 +719,8 @@ static void hold_network_delivery() {
 	local_action_seen = true; local_action_ms = millis();
 }
 static bool network_delivery_busy() {
-	return og.alarm || update_started || identity_restart_pending || setup_reboot_pending ||
+	// Keep blocking connection attempts/notifications out of the short melody.
+	return startup_audio.active() || og.alarm || update_started || identity_restart_pending || setup_reboot_pending ||
 		secplus2_garage.command_pending() ||
 		(local_action_seen && uint32_t(millis()-local_action_ms)<5000);
 }
@@ -902,6 +908,10 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 		const char *value = req.getQueryParameter(field);
 		if (value && strlen(value) > 64) { otf_send_result(res, HTML_DATA_OUTOFBOUND, field); return; }
 	}
+    for(const char *field : {"name","smtp","send","recp"}) {
+        const char *value=req.getQueryParameter(field);
+        if(value && !og_smtp::header_safe(value)) {otf_send_result(res,HTML_DATA_FORMATERROR,field);return;}
+    }
 	const char *http_port = req.getQueryParameter("htp");
 	if (http_port && String(http_port).toInt() == 8080) {
 		otf_send_result(res, HTML_DATA_OUTOFBOUND, "htp: port 8080 is reserved for firmware updates"); return;
@@ -1642,12 +1652,40 @@ bool iftttNotify(String s){
 	return ok;
 }
 
-bool emailNotify(String s){
+static void __attribute__((noinline)) prepare_email_headers(EMailSender::EMailMessage &email_message) {
+    if(local_clock.valid) {
+        time_t utc=curr_utc_time;struct tm stamp;char date[48];
+        gmtime_r(&utc,&stamp);
+        static const char days[] PROGMEM="SunMonTueWedThuFriSat";
+        static const char months[] PROGMEM="JanFebMarAprMayJunJulAugSepOctNovDec";
+        char day[4]={},month[4]={};memcpy_P(day,days+3*stamp.tm_wday,3);memcpy_P(month,months+3*stamp.tm_mon,3);
+        snprintf_P(date,sizeof(date),PSTR("%s, %02d %s %04d %02d:%02d:%02d +0000"),day,stamp.tm_mday,month,
+            stamp.tm_year+1900,stamp.tm_hour,stamp.tm_min,stamp.tm_sec);
+        email_message.date=date;
+    }
+    static const uint32_t mailBoot=ESP.random();static uint32_t mailSequence=0;
+    char id[80];snprintf(id,sizeof(id),"%06lx.%08lx.%lu@opengarage.local",
+        (unsigned long)ESP.getChipId(),(unsigned long)mailBoot,(unsigned long)++mailSequence);
+    email_message.messageId=id;
+
+}
+
+static og_smtp::Delivery record_email_result(og_smtp::Delivery result, const char *stage, const char *code) {
+    if (result != og_smtp::Delivery::SENT) ++email_failures;
+    // Only local stage descriptions and numeric codes, never server text/credentials.
+    snprintf(email_last,sizeof(email_last),"%s: %s (%s)",
+        result==og_smtp::Delivery::SENT ? "Sent" : result==og_smtp::Delivery::REFUSED ? "Refused" : "Failed",stage,code);
+    return result;
+}
+
+og_smtp::Delivery emailNotify(String s){
 	DEBUG_PRINTLN(" Sending EMail notification");
 	DEBUG_PRINTLN(GET_FREE_HEAP);
 	EMailSender::EMailMessage email_message;
+    email_message.mime="text/plain";
 	email_message.subject = og.options[OPTION_NAME].sval.c_str();
 	email_message.message = s;
+    prepare_email_headers(email_message);
 	const char *email_host = og.options[OPTION_SMTP].sval.c_str();
 	const char *email_pword = og.options[OPTION_APWD].sval.c_str();
 	const char *email_sender = og.options[OPTION_SEND].sval.c_str();
@@ -1657,12 +1695,15 @@ bool emailNotify(String s){
 		EMailSender emailSend(email_sender, email_pword);
 		emailSend.setSMTPServer(email_host);
 		emailSend.setSMTPPort(email_port);
-		if (!emailSend.readyToSend()) return false;
+		if (!emailSend.readyToSend()) return record_email_result(og_smtp::Delivery::REFUSED,"Settings allocation failed","2");
 		DEBUG_PRINTLN(GET_FREE_HEAP);
 		EMailSender::Response resp = emailSend.send(email_recip, email_message);
-		return resp.status;
+        DEBUG_PRINT("SMTP result: ");DEBUG_PRINTLN(resp.desc);
+		return record_email_result(resp.status ? og_smtp::Delivery::SENT :
+            emailSend.networkAttempted() ? og_smtp::Delivery::FAILED : og_smtp::Delivery::REFUSED,
+            resp.desc.c_str(),resp.code.c_str());
 	}
-	return false;
+	return record_email_result(og_smtp::Delivery::REFUSED,"Missing settings","2");
 }
 
 void mqttNotify(String s){
@@ -1692,7 +1733,10 @@ void service_notifications() {
 		if (iftttNotify(message)) ifttt_retry.success(); else ifttt_retry.failure(millis());
 	}
 	if (WiFi.status()==WL_CONNECTED && og.options[OPTION_EMEN].ival && email_retry.ready(millis())) {
-		if (emailNotify(message)) email_retry.success(); else email_retry.failure(millis());
+		const auto result=emailNotify(message);
+        if (result==og_smtp::Delivery::SENT) email_retry.success();
+        else if (result==og_smtp::Delivery::FAILED) email_retry.failure(millis());
+        // Local preflight refusal sends nothing: do not penalize the next event.
 	}
 }
 

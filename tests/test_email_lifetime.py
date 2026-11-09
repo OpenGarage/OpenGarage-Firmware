@@ -13,7 +13,7 @@ b = h.index('#define STORAGE_SPIFFS', a)
 decls = h[a:b]
 for name in ('setSMTPPort', 'setSMTPServer', 'setEMailLogin', 'setEMailFrom', 'setNameFrom', 'setEMailPassword'):
     decls += re.search(r'void ' + name + r'\([^;{]+\);', h).group(0) + '\n'
-a = h.index('uint16_t smtp_port = 465;')
+a = h.index('bool network_attempted_ = false;')
 b = h.index('const char* publicIPDescriptor', a)
 fields = h[a:b]
 a = s.index('EMailSender::EMailSender(')

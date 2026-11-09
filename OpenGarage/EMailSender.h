@@ -386,6 +386,7 @@ public:
 
 	~EMailSender();
 	bool readyToSend() const;
+    bool networkAttempted() const { return network_attempted_; }
 
 	// Owns five heap-allocated C-strings — non-copyable and non-movable to avoid
 	// double-free / dangling-pointer surprises.
@@ -421,6 +422,8 @@ public:
 		String mime = "text/html";
 		String subject;
 		String message;
+        String date;
+        String messageId;
 	} EMailMessage;
 
 #ifdef ENABLE_ATTACHMENTS
@@ -503,6 +506,7 @@ public:
 	}
 
 private:
+    bool network_attempted_ = false;
 	uint16_t smtp_port = 465;
 	char* smtp_server = strdup("smtp.gmail.com");
 	char* email_login = 0;

@@ -110,9 +110,34 @@ Run outside a ptrace-based sandbox because LeakSanitizer cannot operate there.
 against reference vectors and oversized credentials with ASan/UBSan. The options
 security suite also covers 64-byte SMTP field limits and atomic rejection.
 
+SMTP notification exchange tests (scripted peer; no real email or device):
+
+```sh
+g++ -std=c++11 -Wall -Wextra -Werror tests/test_smtp_exchange.cpp -o /tmp/og-smtp-exchange
+/tmp/og-smtp-exchange
+python3 tests/test_smtp_probe.py
+```
+
+These exercise the production bounded parser, multiline responses, UTF-8
+encoding, dot stuffing, acceptance/rejection, shared deadline, and memory gate.
+The MFLN test executes the bounded probe against a fake transport. The probe is
+adapted from pinned ESP8266 core 3.1.2 (LGPL notice retained in smtp_probe.h).
+Real TLS/provider timing and the stock Sec+ 2.0 memory gate still need hardware
+validation; these tests do not establish universal server compatibility.
+
+SMTP review follow-up: `test_network_delivery.py` also checks that local email
+refusals update the failure counter/last result without starting retry backoff;
+`test_debug_response.py` covers their verbose diagnostic serialization. SMTP peer
+cases include DATA rejection codes, long UTF-8 subjects, quoted-printable soft
+breaks with dot stuffing, and lone-CR normalization. The provisional memory gate
+still needs a stock Security+ 2.0 send and final-image hardware stack measurements.
 
 The diagnostic response test also injects 2,400 failed reservations/appends into
 AP/station compact/verbose JSON builders. It requires complete JSON or the fixed
 HTTP 503 reply. CheckedJsonBuffer must remain the type through diagnostic
 serialization helpers; convert to the base String only after good() succeeds.
 The JSON sender takes a const reference, avoiding a second full response copy.
+
+The network-delivery suite drives the real startup melody and production busy
+policy through all 560 ms, checking deferred connection/notification work and
+continued local/established-cloud serving, completion and cancellation.

@@ -77,6 +77,7 @@ struct Garage {
 } secplus1_garage,secplus2_garage;
 unsigned read_cnt=10,secplus2_client_id=0x12342908;
 bool secplus2_identity_ready=true;
+unsigned email_failures=2;const char *email_last="Refused: Not enough memory for SMTP (2)";
 unsigned mqtt_json_failures=0,mqtt_json_bytes=0,mqtt_retained_dropped=0,notification_dropped=0;
 bool mqtt_buffer_ready=true;
 String mqtt_topic="test";
@@ -119,7 +120,7 @@ for hardware in (0, 1):
         for baseline in (station, ap):
             for offset in range(7):
                 data = next(iterator)
-                mqtt_extra = {'mqtt_json_failures', 'mqtt_json_bytes', 'mqtt_buffer_ready', 'mqtt_retained_dropped', 'notification_dropped', 'wifi_recovery', 'wifi_attempts', 'wifi_timeouts', 'wifi_disconnects', 'wifi_retry_in_ms', 'wifi_disconnect_reason', 'wifi_selection', 'wifi_scans', 'wifi_roams', 'wifi_smoothed_rssi', 'wifi_channel', 'crash_count', 'crash_new', 'crash', 'stage_max_us'}
+                mqtt_extra = {'mqtt_json_failures', 'mqtt_json_bytes', 'mqtt_buffer_ready', 'mqtt_retained_dropped', 'notification_dropped', 'email_failures', 'email_last', 'wifi_recovery', 'wifi_attempts', 'wifi_timeouts', 'wifi_disconnects', 'wifi_retry_in_ms', 'wifi_disconnect_reason', 'wifi_selection', 'wifi_scans', 'wifi_roams', 'wifi_smoothed_rssi', 'wifi_channel', 'crash_count', 'crash_new', 'crash', 'stage_max_us'}
                 assert set(data) == baseline | ((extra | mqtt_extra) if offset == 6 else set()), data
                 if offset == 6:
                     assert data['active_security_protocol'] == protocol

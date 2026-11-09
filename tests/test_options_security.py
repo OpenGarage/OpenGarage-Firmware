@@ -22,6 +22,7 @@ stub = r'''
 #include <cassert>
 #include <cstring>
 #include "OpenGarage/json_escape.h"
+#include "OpenGarage/smtp_exchange.h"
 #define F(x) x
 #define HEX 16
 #define STRING_RESERVE_SIZE 256
@@ -115,6 +116,10 @@ code += 'int main(){\n' + setup + r'''
  // Bounds are bytes, including multibyte UTF-8 values.
  Request unicode;unicode.values["send"]=std::string(63,'x')+"\xc3\xa9";
  result=0;validate(unicode);assert(result==HTML_DATA_OUTOFBOUND);
+ for(const char* field:{"name","smtp","send","recp"}){
+  Request injection;injection.values[field]="safe\r\nInjected";result=0;validate(injection);
+  assert(result==HTML_DATA_FORMATERROR);assert(result_item==field);
+ }
  // A bad email value rejects the whole save, including unrelated fields.
  auto previous_name=og.options[OPTION_NAME].sval;
  Request atomic;atomic.values["name"]="would-change";atomic.values["apwd"]=std::string(65,'x');
