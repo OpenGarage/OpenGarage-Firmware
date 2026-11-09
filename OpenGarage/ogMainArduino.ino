@@ -25,6 +25,7 @@
 #include <WiFiUdp.h>
 #include <time.h>
 #include <FS.h>
+#include "crash_diagnostics.h"
 
 struct tcp_pcb;
 extern struct tcp_pcb* tcp_tw_pcbs;
@@ -42,5 +43,7 @@ void setup() {
 
 void loop() {
   do_loop();
+  og_crash::mark(og_crash::STAGE_TCP_CLEANUP);
   tcpCleanup();
+  og_crash::mark(og_crash::STAGE_BETWEEN_LOOPS);
 }

@@ -33,6 +33,8 @@ node tests/test_updater_page.cjs
 python3 tests/test_options_security.py
 g++ -std=c++11 -Wall -Wextra -Werror tests/test_audio_timing.cpp -o /tmp/og-test-audio
 /tmp/og-test-audio
+g++ -std=c++11 -Wall -Wextra -Werror tests/test_crash_record.cpp -o /tmp/og-test-crash-record
+/tmp/og-test-crash-record
 ```
 
 These test production distance-consensus, health, identity lifecycle and exact POST-body authentication helpers without Arduino dependencies. The Node test checks the Security+ option visibility, exclusive Panel Emulate selection, and client-ID button's JavaScript, request body, cancellation and placement.

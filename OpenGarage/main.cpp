@@ -99,6 +99,7 @@ SecPlus1::Garage secplus1_garage(PIN_SW_RX, PIN_SW_TX);
 #include "body_device_key.h"
 #include "health_stats.h"
 #include "audio_timing.h"
+#include "crash_diagnostics.h"
 struct BuzzerSink {
 	void note(unsigned frequency, unsigned duration) { tone(PIN_BUZZER, frequency, duration); }
 	void silence() { noTone(PIN_BUZZER); }
@@ -495,6 +496,8 @@ static void append_debug_details(const OTF::Request &req, DebugJson &json) {
 	json += F(",\"wifi_roams\":"); json += station_selection.roams();
 	json += F(",\"wifi_smoothed_rssi\":"); json += station_selection.smoothed();
 	json += F(",\"wifi_channel\":"); json += WiFi.channel();
+	const char *crash = req.getQueryParameter("crash");
+	og_crash::append_json(json, crash ? (unsigned)atoi(crash) : 0);
 }
 
 static void send_debug_json(OTF::Response &res, DebugJson &json) {
@@ -1292,6 +1295,7 @@ void do_setup() {
 	}
 	WiFi.persistent(false); // turn off persistent, fixing flash crashing issue
 	og.begin();
+	og_crash::begin();
 	Secplus2IdentityStore identity_store;
 	secplus2_identity_ready = og_identity::load(identity_store,
 		[]() -> uint32_t { return ESP.random(); },
@@ -2039,19 +2043,25 @@ void process_alarm() {
 }
 
 void do_loop() {
+	og_crash::loop_start(health_stats.uptime_s());
+	og_crash::mark(og_crash::STAGE_FW_UPDATE);
 	firmware_update.loop();
 	LoopMeasurement loop_measurement;
 	static uint32_t sta_address = 0;
 	static bool station_tune_played = false;
 	if (curr_mode == OG_MOD_STA && (og.state == OG_STATE_CONNECTING || og.state == OG_STATE_CONNECTED)) {
+		og_crash::mark(og_crash::STAGE_TIME);
 		time_keeping();
+		og_crash::mark(og_crash::STAGE_CHECK_STATUS);
 		check_status();
+		og_crash::mark(og_crash::STAGE_STATION);
 		const bool motion_busy = door_status == DOOR_STATUS_OPENING || door_status == DOOR_STATUS_CLOSING;
 		service_station_network(og.options[OPTION_SSID].sval.c_str(), og.options[OPTION_PASS].sval.c_str(), network_delivery_busy(), motion_busy, og.options[OPTION_WFR].ival != 0,
 			(local_action_seen && uint32_t(millis()-local_action_ms)<30000) ||
 			(wifi_door_event_seen && uint32_t(millis()-wifi_door_event_ms)<30000));
 
 	}
+	og_crash::mark(og_crash::STAGE_STATE);
 	switch(og.state) {
 	case OG_STATE_INITIAL:
 		if(curr_mode == OG_MOD_AP) {
@@ -2188,11 +2198,15 @@ void do_loop() {
 				if (!WiFi.localIP() || uint32_t(WiFi.localIP()) != sta_address) {
 					og.state = OG_STATE_CONNECTING; break;
 				}
+				og_crash::mark(og_crash::STAGE_MDNS);
 				MDNS.update();
+				og_crash::mark(og_crash::STAGE_CLOUD);
 				service_cloud();
+				og_crash::mark(og_crash::STAGE_UPDATE_SERVER);
 				updateServer->handleClient();
 
 				//Handle MQTT
+				og_crash::mark(og_crash::STAGE_MQTT);
 				if(og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval)) { // if enabled and mqtt server looks valid
 					const bool mqtt_connected = mqttclient.connected();
 					mqtt_retry.observe(millis(), mqtt_connected);
@@ -2217,6 +2231,7 @@ void do_loop() {
 
 	// secplus process loop
 	if (identity_restart_pending) return;
+	og_crash::mark(og_crash::STAGE_SECPLUS);
 	switch (og.options[OPTION_SECV].ival) {
 		case 2: // SecPlus 2
 			secplus2_garage.loop();
@@ -2226,10 +2241,14 @@ void do_loop() {
 			break;
 	}
 
+	og_crash::mark(og_crash::STAGE_UI);
 	process_ui();
 
+	og_crash::mark(og_crash::STAGE_ALARM);
 	process_alarm();
+	og_crash::mark(og_crash::STAGE_NOTIFY);
 	if (curr_mode == OG_MOD_STA) service_notifications();
+	og_crash::mark(og_crash::STAGE_AUDIO);
 	if (!og.alarm && !ip_audio_active) startup_audio.tick(millis());
 	if (setup_reboot_pending && !startup_audio.active() && !og.alarm) {
 		setup_reboot_pending=false;
