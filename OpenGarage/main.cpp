@@ -25,6 +25,8 @@
 #include <OpenThingsFramework.h>
 #include <Request.h>
 #include <Response.h>
+#include <sntp.h>
+#include <coredecls.h>
 
 #include "json_escape.h"
 #include "etag_match.h"
@@ -33,6 +35,7 @@
 #include "update_auth.h"
 #include "firmware_update.h"
 #include "local_time.h"
+#include "time_sync.h"
 #include "network_policy.h"
 #include "smtp_exchange.h"
 #include "pitches.h"
@@ -40,6 +43,7 @@
 #include "espconnect.h"
 
 OpenGarage og;
+og_time::SyncState time_sync;
 OTF::OpenThingsFramework *otf = NULL;
 ESP8266WebServer *updateServer = NULL;
 DNSServer *dns = NULL;
@@ -505,6 +509,55 @@ void on_sta_controller(const OTF::Request &req, OTF::Response &res) {
 	otf_send_json(res, json);
 }
 
+// One copy of the SNTP slot view, shared by time_keeping() and /db (both run in the loop).
+static og_time::Slot ntp_slots[og_time::SLOTS];
+
+// lwIP's SNTP slots as og_time::Slot values: DHCP-installed slots have an address and no name.
+static void read_ntp_slots(og_time::Slot cur[og_time::SLOTS], uint8_t reach[og_time::SLOTS]) {
+	for (uint8_t i = 0; i < og_time::SLOTS; ++i) {
+		const char *name = sntp_getservername(i);
+		const ip_addr_t *addr = sntp_getserver(i);
+		snprintf(cur[i].name, sizeof(cur[i].name), "%s", name ? name : "");
+		cur[i].ip = addr ? ip_addr_get_ip4_u32(addr) : 0;
+		reach[i] = sntp_getreachability(i);
+	}
+}
+
+// Time sources (verbose /db): last sync (age and attributed source, "unknown" when ambiguous),
+// the boot DHCP snapshot, whether DHCP may install servers, and the SNTP slots now.
+static void append_time_json(DebugJson &json) {
+	og_time::Slot *cur = ntp_slots;
+	uint8_t reach[og_time::SLOTS];
+	char text[64];
+	read_ntp_slots(cur, reach);
+	json += F(",\"time\":{\"sync_age_s\":"); json += time_sync.sync_age_s(health_stats.uptime_s());
+	json += F(",\"last_source\":\""); append_json_escaped(json, String(time_sync.last_source)); json += F("\"");
+	json += F(",\"dhcp_ntp_boot\":");
+	if (!time_sync.dhcp_captured) json += F("null");
+	else {
+		json += F("[");
+		bool first = true;
+		for (uint8_t i = 0; i < og_time::SLOTS; ++i) {
+			if (!time_sync.dhcp_boot[i]) continue;
+			og_time::format_ip4(time_sync.dhcp_boot[i], text, sizeof(text));
+			json += first ? F("\"") : F(",\""); json += text; json += F("\"");
+			first = false;
+		}
+		json += F("]");
+	}
+	json += F(",\"dhcp_updates\":"); json += time_sync.dhcp_updates ? F("true") : F("false");
+	json += F(",\"servers\":[");
+	for (uint8_t i = 0; i < og_time::SLOTS; ++i) {
+		if (i) json += F(",");
+		json += F("{\"name\":\""); append_json_escaped(json, String(cur[i].name));
+		json += F("\",\"addr\":\"");
+		if (cur[i].ip) { og_time::format_ip4(cur[i].ip, text, sizeof(text)); json += text; }
+		json += F("\",\"reach\":"); json += reach[i];
+		json += F("}");
+	}
+	json += F("]}");
+}
+
 static void append_debug_details(const OTF::Request &req, DebugJson &json) {
 	const char *verbose = req.getQueryParameter("verbose");
 	if (!verbose || strcmp(verbose, "1") != 0) return;
@@ -517,6 +570,7 @@ static void append_debug_details(const OTF::Request &req, DebugJson &json) {
 	}
 	append_health_json(json);
 	json += F(",\"time_valid\":"); json += local_clock.valid ? 1 : 0;
+	append_time_json(json);
 	json += F(",\"mqtt_json_failures\":"); json += mqtt_json_failures;
 	json += F(",\"mqtt_json_bytes\":"); json += mqtt_json_bytes;
 	json += F(",\"mqtt_buffer_ready\":"); json += mqtt_buffer_ready ? 1 : 0;
@@ -953,8 +1007,8 @@ void sta_change_options_main(const OptionParams &req, OTF::Response &res) {
 		 og.options[OPTION_CLD].ival != CLOUD_OTC || og.options[OPTION_AUTH].sval.length() < 32))) {
 		otf_send_result(res, HTML_DATA_OUTOFBOUND, "auth: OTC requires a token"); return;
 	}
-	// Match UI bounds for MQTT text and SMTP settings (UTF-8 bytes).
-	for (const char *field : {"name", "mqtp", "smtp", "send", "apwd", "recp"}) {
+	// Match UI bounds for MQTT text, SMTP and NTP server settings (UTF-8 bytes).
+	for (const char *field : {"name", "mqtp", "smtp", "send", "apwd", "recp", "ntp1"}) {
 		const char *value = req.getQueryParameter(field);
 		if (value && strlen(value) > 64) { otf_send_result(res, HTML_DATA_OUTOFBOUND, field); return; }
 	}
@@ -2097,13 +2151,63 @@ void check_status() {
 	}
 }
 
+static const char *const ntp_defaults[og_time::SLOTS] = {DEFAULT_NTP1, DEFAULT_NTP2, DEFAULT_NTP3};
+
+// The configured NTP server, or "" (valid_url's rule, without copying the String every sample).
+static const char *configured_ntp() {
+	const String &s = og.options[OPTION_NTP1].sval;
+	return (s.length() > 0 && s[0] != '-' && s.indexOf('.') > 0) ? s.c_str() : "";
+}
+
+// Install a plan. lwIP keeps pointers to server names, so they live in static storage (never in an
+// option String that a save can reallocate). DHCP mode is set before sntp_init(), as lwIP requires.
+static void apply_ntp_plan(const og_time::Plan &plan) {
+	static char names[og_time::SLOTS][sizeof(og_time::Slot::name)];
+	sntp_stop();
+	sntp_servermode_dhcp(plan.dhcp_updates ? 1 : 0);
+	for (uint8_t i = 0; i < og_time::SLOTS; ++i) {
+		const og_time::Slot &slot = plan.slots[i];
+		if (slot.name[0]) {
+			snprintf(names[i], sizeof(names[i]), "%s", slot.name);
+			sntp_setservername(i, names[i]);
+		} else if (slot.ip) {
+			ip_addr_t addr;
+			ip_addr_set_ip4_u32(&addr, slot.ip);
+			sntp_setserver(i, &addr);
+		} else {
+			sntp_setserver(i, nullptr);
+		}
+	}
+	sntp_init();
+	time_sync.applied_plan(plan, millis());
+	uint8_t reach[og_time::SLOTS];
+	read_ntp_slots(ntp_slots, reach);
+	time_sync.baseline(ntp_slots, reach);   // a reply before the next sample stays attributable
+}
+
 void time_keeping() {
 	static bool configured = false;
+	static uint32_t last_sample = 0;
+	og_time::Slot *cur = ntp_slots;
+	og_time::Plan plan;
+	uint8_t reach[og_time::SLOTS];
 	if (!configured && WiFi.status() == WL_CONNECTED && WiFi.localIP()) {
-		const String &server = og.options[OPTION_NTP1].sval;
-		if (valid_url(server)) configTime(0, 0, server.c_str(), DEFAULT_NTP1, DEFAULT_NTP2);
-		else configTime(0, 0, DEFAULT_NTP1, DEFAULT_NTP2, DEFAULT_NTP3);
+		// Before OG installs its list, the slots hold only what DHCP option 42 advertised.
+		read_ntp_slots(cur, reach);
+		time_sync.capture_dhcp(cur);
+		settimeofday_cb([](bool from_sntp) { if (from_sntp) time_sync.on_sync(health_stats.uptime_s()); });
+		plan = og_time::choose(configured_ntp(), time_sync.dhcp_boot, ntp_defaults);
+		apply_ntp_plan(plan);
 		configured = true;
+		last_sample = millis();
+	} else if (configured && uint32_t(millis() - last_sample) >= 250) {
+		// Attribute a pending sync, then repair the list if a DHCP renewal or an option change
+		// altered it (a lease with one server clears OG's Internet defaults from the other slots).
+		last_sample = millis();
+		read_ntp_slots(cur, reach);
+		time_sync.observe(cur, reach);
+		if (time_sync.reconcile(configured_ntp(), cur, ntp_defaults, last_sample, 60000UL, plan))
+			apply_ntp_plan(plan);
 	}
 	const time_t observed = time(nullptr);
 	local_clock.tick(millis(), observed >= og_local::Clock::MIN_UTC ? uint32_t(observed) : 0);

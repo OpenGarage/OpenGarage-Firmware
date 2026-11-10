@@ -7,7 +7,7 @@ import tempfile
 
 source = (Path(__file__).resolve().parents[1] / 'OpenGarage/main.cpp').read_text()
 functions = []
-for name in ('append_age', 'append_health_json', 'append_debug_details', 'send_debug_json', 'on_sta_debug', 'on_ap_debug'):
+for name in ('append_age', 'append_health_json', 'append_time_json', 'append_debug_details', 'send_debug_json', 'on_sta_debug', 'on_ap_debug'):
     match = re.search(r'(?:static )?void ' + name + r'\([^\n]+\) \{.*?^\}', source, re.S | re.M)
     assert match, name
     functions.append(match.group())
@@ -29,6 +29,17 @@ og_wifi::Recovery station_recovery;
 uint8_t station_disconnect_reason=0;
 uint32_t millis(){return 100;}
 og_local::Clock local_clock;
+#include "OpenGarage/time_sync.h"
+og_time::SyncState time_sync;
+// SNTP slots as the firmware would read them: one DHCP-installed address, one named, one empty.
+static og_time::Slot ntp_slots[og_time::SLOTS];
+static void read_ntp_slots(og_time::Slot cur[og_time::SLOTS], uint8_t reach[og_time::SLOTS]) {
+  cur[0].set_ip(0x0501a8c0u); cur[1].set_name("time.google.com"); cur[1].ip = 0x0023efd8u; cur[2].clear();
+  reach[0] = 0; reach[1] = 0xff; reach[2] = 0; }
+static const bool time_setup = [] {
+  og_time::Slot boot[og_time::SLOTS]; boot[0].set_ip(0x0501a8c0u); boot[1].clear(); boot[2].clear();
+  time_sync.capture_dhcp(boot);   // 192.168.1.5 in lwIP byte order
+  return true; }();
 #define F(x) x
 #define HEX 16
 #define STRING_RESERVE_SIZE 256
@@ -120,13 +131,18 @@ for hardware in (0, 1):
         for baseline in (station, ap):
             for offset in range(7):
                 data = next(iterator)
-                mqtt_extra = {'mqtt_json_failures', 'mqtt_json_bytes', 'mqtt_buffer_ready', 'mqtt_retained_dropped', 'notification_dropped', 'email_failures', 'email_last', 'wifi_recovery', 'wifi_attempts', 'wifi_timeouts', 'wifi_disconnects', 'wifi_retry_in_ms', 'wifi_disconnect_reason', 'wifi_selection', 'wifi_scans', 'wifi_roams', 'wifi_smoothed_rssi', 'wifi_channel', 'crash_count', 'crash_new', 'crash', 'stage_max_us'}
+                mqtt_extra = {'mqtt_json_failures', 'mqtt_json_bytes', 'mqtt_buffer_ready', 'mqtt_retained_dropped', 'notification_dropped', 'email_failures', 'email_last', 'wifi_recovery', 'wifi_attempts', 'wifi_timeouts', 'wifi_disconnects', 'wifi_retry_in_ms', 'wifi_disconnect_reason', 'wifi_selection', 'wifi_scans', 'wifi_roams', 'wifi_smoothed_rssi', 'wifi_channel', 'crash_count', 'crash_new', 'crash', 'stage_max_us', 'time'}
                 assert set(data) == baseline | ((extra | mqtt_extra) if offset == 6 else set()), data
                 if offset == 6:
                     assert data['active_security_protocol'] == protocol
                     if hardware and protocol == 2:
                         assert data['secplus2_client_id'] == '0x12342908'
                         assert data['secplus2_identity_ready'] is True
+                    assert data['time'] == {'sync_age_s': -1, 'last_source': '', 'dhcp_ntp_boot': ['192.168.1.5'],
+                        'dhcp_updates': True,
+                        'servers': [{'name': '', 'addr': '192.168.1.5', 'reach': 0},
+                                    {'name': 'time.google.com', 'addr': '216.239.35.0', 'reach': 255},
+                                    {'name': '', 'addr': '', 'reach': 0}]}, data['time']
 print('/db: 84 AP/station, compact/verbose, hardware and protocol response cases passed')
 
 for item in results:
