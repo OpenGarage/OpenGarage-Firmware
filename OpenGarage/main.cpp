@@ -744,8 +744,48 @@ int run_auto_detect() {
 	return 0; // Detected nothing
 }
 
+// Restart the configured protocol as at boot. Both protocols share one software serial port and
+// each detect() re-creates it for itself, so after detection it belongs to whichever protocol was
+// tried last (Security+ 1.0): a Security+ 2.0 unit would stop monitoring until reboot. With no
+// protocol, release the port and return its TX pin (the relay pin) to relay-low.
+static void restart_configured_protocol() {
+	secplus2_garage.stop();
+	secplus1_garage.stop();
+	switch (og.options[OPTION_SECV].ival) {
+		case 2:
+			secplus2_garage.begin();
+			secplus2_garage.reset_state();
+			secplus_door_status = DOOR_STATUS_UNKNOWN;
+			secplus2_garage.enable_callback(secplus2_state_callback);
+			break;
+		case 1:
+			secplus1_garage.begin();
+			secplus1_garage.reset_state();
+			secplus_door_status = DOOR_STATUS_UNKNOWN;
+			secplus1_garage.enable_callback(secplus1_state_callback);
+			break;
+		default:
+			SecPlusCommon::delete_sw_serial();
+			digitalWrite(PIN_RELAY, LOW);
+			pinMode(PIN_RELAY, OUTPUT);
+	}
+}
+
+static bool auto_detect_busy();
+
+// Outside setup (AP) mode the device key is required: Security+ 2.0 probing can move a Security+
+// 1.0 door. Setup mode stays keyless for first-time detection (that flow is temporary; plan 4a).
 void on_auto_detect(const OTF::Request &req, OTF::Response &res) {
+	if (curr_mode != OG_MOD_AP && !verify_device_key(req)) {
+		otf_send_result(res, HTML_UNAUTHORIZED, nullptr);
+		return;
+	}
+	if (auto_detect_busy()) {
+		otf_send_result(res, HTML_NOT_PERMITTED, "busy");
+		return;
+	}
 	int detected_version = run_auto_detect();
+	restart_configured_protocol();
 	String json = "{\"version\": " + String(detected_version) + "}";
 	otf_send_json(res, json);
 }
@@ -758,6 +798,15 @@ static bool network_delivery_busy() {
 	return startup_audio.active() || og.alarm || update_started || identity_restart_pending || setup_reboot_pending ||
 		secplus2_garage.command_pending() ||
 		(local_action_seen && uint32_t(millis()-local_action_ms)<5000);
+}
+
+// Detection stops both protocols (discarding unsent door actions) and blocks the loop for up to
+// ~12.5 s, so it is refused while anything time-critical is in progress: a warning countdown, a
+// pending or recent door command (Security+ 1.0 exposes no pending flag; the 5 s window covers it),
+// door motion, a firmware update or a scheduled restart.
+static bool auto_detect_busy() {
+	return network_delivery_busy() || firmware_update.busy() || og.state == OG_STATE_WAIT_RESTART ||
+		door_status == DOOR_STATUS_OPENING || door_status == DOOR_STATUS_CLOSING;
 }
 
 void performDoorAction(uint8_t action, bool force_alarm_off = false) {

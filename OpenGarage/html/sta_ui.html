@@ -593,6 +593,7 @@ $('btn_submit').addEventListener('click', function(e) {
 
 $('btn_autodetect').addEventListener('click', function(e) {
   e.preventDefault();
+  if (!okey.value) { show_msg('Enter the Device Key below first.', 'err'); return; }
   if (!confirm('Auto-detecting Security+ version may take up to 15 seconds, and the door may move during this process. Continue?')) return;
   $('popupStatusText').textContent = 'Detecting Security+ Version';
   $('popupMessageText').textContent = 'This will take up to 15 seconds. Please do not close or refresh the page.';
@@ -605,9 +606,19 @@ $('btn_autodetect').addEventListener('click', function(e) {
   }, 500);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 20000);
-  fetch('ad', {signal: controller.signal})
+  fetch('ad?dkey=' + encodeURIComponent(saveDeviceKey(okey)), {signal: controller.signal, cache: 'no-store'})
     .then(response => response.json())
     .then(data => {
+      if (data.result === 2) {
+        $('popupStatusText').textContent = 'Not authorized';
+        $('popupMessageText').textContent = 'Check the device key and try again.';
+        return;
+      }
+      if (data.result === 48) {
+        $('popupStatusText').textContent = 'Device busy';
+        $('popupMessageText').textContent = 'Wait for the current door action, warning or update to finish, then try again.';
+        return;
+      }
       const resultText = data.version > 0 ? 'Found Security+ v' + data.version + '.' : 'No supported protocol was found.';
       $('popupStatusText').textContent = 'Detection Complete!';
       $('popupMessageText').textContent = resultText;
