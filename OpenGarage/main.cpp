@@ -953,8 +953,8 @@ void sta_change_options_main(const OptionParams &req, OTF::Response &res) {
 		 og.options[OPTION_CLD].ival != CLOUD_OTC || og.options[OPTION_AUTH].sval.length() < 32))) {
 		otf_send_result(res, HTML_DATA_OUTOFBOUND, "auth: OTC requires a token"); return;
 	}
-	// Match UI bounds for MQTT text and SMTP settings (UTF-8 bytes).
-	for (const char *field : {"name", "mqtp", "smtp", "send", "apwd", "recp"}) {
+	// Match UI bounds for MQTT text, SMTP and NTP server settings (UTF-8 bytes).
+	for (const char *field : {"name", "mqtp", "smtp", "send", "apwd", "recp", "ntp1"}) {
 		const char *value = req.getQueryParameter(field);
 		if (value && strlen(value) > 64) { otf_send_result(res, HTML_DATA_OUTOFBOUND, field); return; }
 	}
@@ -2100,9 +2100,15 @@ void check_status() {
 void time_keeping() {
 	static bool configured = false;
 	if (!configured && WiFi.status() == WL_CONNECTED && WiFi.localIP()) {
+		// lwIP keeps the name pointers it is given, and an options save can reallocate the ntp1
+		// String, so pass a stable copy. /co bounds ntp1 to 64 bytes; a longer value saved earlier
+		// is not shortened (that would query a different server): the defaults are used instead.
+		static char ntp1[65];
 		const String &server = og.options[OPTION_NTP1].sval;
-		if (valid_url(server)) configTime(0, 0, server.c_str(), DEFAULT_NTP1, DEFAULT_NTP2);
-		else configTime(0, 0, DEFAULT_NTP1, DEFAULT_NTP2, DEFAULT_NTP3);
+		if (valid_url(server) && server.length() < sizeof(ntp1)) {
+			memcpy(ntp1, server.c_str(), server.length() + 1);
+			configTime(0, 0, ntp1, DEFAULT_NTP1, DEFAULT_NTP2);
+		} else configTime(0, 0, DEFAULT_NTP1, DEFAULT_NTP2, DEFAULT_NTP3);
 		configured = true;
 	}
 	const time_t observed = time(nullptr);
