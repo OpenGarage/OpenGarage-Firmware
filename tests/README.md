@@ -141,3 +141,5 @@ policy through all 560 ms, checking deferred connection/notification work and
 continued local/established-cloud serving, completion and cancellation.
 
 RAM batch 1: `python3 tests/test_lazy_mqtt.py` checks deferred MQTT buffer growth, allocation failure/retry and reuse. `test_update_security.py` also checks request-scope preparation-buffer cleanup after completed and interrupted requests.
+
+`python3 tests/test_log_reader.py` compiles the real log-reader opener and checks short headers, invalid indices, failed opens and replacement of an existing reader.

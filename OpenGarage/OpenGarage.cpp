@@ -432,8 +432,8 @@ bool OpenGarage::read_log_start() {
 	log_file = FILESYS.open(log_fname, "r");
 	if(!log_file) return false;
 	uint curr;
-	if(log_file.readBytes((char*)&curr, sizeof(curr)) != sizeof(curr)) return false;
-	if(curr>=MAX_LOG_SIZE) return false;
+	if(log_file.readBytes((char*)&curr, sizeof(curr)) != sizeof(curr)) { log_file.close(); return false; }
+	if(curr>=MAX_LOG_SIZE) { log_file.close(); return false; }
 	return true;
 }
 
