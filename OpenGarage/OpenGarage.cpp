@@ -294,7 +294,8 @@ void OpenGarage::options_save() {
 	}
 	OptionStruct *o = options;
 	for(byte i=0;i<NUM_OPTIONS;i++,o++) {
-		file.print(o->name + ":");
+		file.print(o->name);
+		file.print(':');
 		if(o->max)
 		  file.println(o->ival);
 		else

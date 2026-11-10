@@ -4,9 +4,11 @@ The actual streaming/crypto service is tested separately by test_firmware_servic
 from pathlib import Path
 import re,subprocess,tempfile
 root=Path(__file__).resolve().parents[1];source=(root/'OpenGarage/main.cpp').read_text()
-callbacks=source[source.index('static char prepare_body[1024]'):source.index('static void on_update_info()')]
+callbacks=source[source.index('static std::unique_ptr<char[]> prepare_body'):source.index('static void on_update_info()')]
 stub=r'''
 #include <cassert>
+#include <memory>
+#include <new>
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -21,7 +23,7 @@ enum class FirmwareUpdatePhase {Idle,Prepared,Uploading,Success,Error};
 struct HTTPUpload {int status=UPLOAD_FILE_START;uint8_t buf[2048]={};size_t currentSize=0;String filename="fw.bin";} upload;
 int http_status=0,closed=0,disruptions=0,result=0,curr_mode=OG_MOD_STA,actions=0;bool busy=false;
 struct WiFiClient {void stop(){++closed;}void keepAlive(int,int,int){}static void stopAllExcept(WiFiClient*){++disruptions;}} client;
-struct Server {int verb=HTTP_POST;int method(){return verb;}String path="/update";std::map<std::string,String>headers;
+struct Server { void handleClient() {} int verb=HTTP_POST;int method(){return verb;}String path="/update";std::map<std::string,String>headers;
 String header(const char*k){return headers[k];}String uri(){return path;}HTTPUpload&upload(){return ::upload;}
 WiFiClient&client(){return ::client;}void sendHeader(const char*,const char*){}void send(int status,const char*,const String&){http_status=status;}
 } server,*updateServer=&server;
@@ -84,6 +86,13 @@ reset();server.headers["X-OG-Device-Key"]="hex:74657374";upload.status=UPLOAD_FI
 upload.status=UPLOAD_FILE_WRITE;upload.currentSize=512;on_prepare_upload();busy=true;on_prepare_fin();assert(firmware_update.prepares==0);
 reset();server.headers["X-OG-Device-Key"]="hex:74657374";upload.status=UPLOAD_FILE_START;on_prepare_upload();
 upload.status=UPLOAD_FILE_WRITE;upload.currentSize=512;on_prepare_upload();on_prepare_fin();assert(firmware_update.prepares==1);
+assert(prepare_body);service_update_server();assert(!prepare_body && !prepare_seen && !prepare_ok && prepare_length==0);
+// Simulate allocation refusal: no descriptor may be dereferenced or verified.
+reset();server.headers["X-OG-Device-Key"]="hex:74657374";prepare_seen=true;prepare_ok=false;prepare_body.reset();
+on_prepare_fin();assert(result==HTML_UPLOAD_FAILED && firmware_update.prepares==0 && !prepare_seen);
+// Interrupted upload without a final or abort callback is cleaned up by request scope.
+reset();server.headers["X-OG-Device-Key"]="hex:74657374";upload.status=UPLOAD_FILE_START;on_prepare_upload();
+assert(prepare_body);service_update_server();assert(!prepare_body);
 puts("Update callbacks: early auth, busy recheck, connection cleanup, abort, prepare cap and no unauthorized cancellation PASS");
 }
 '''

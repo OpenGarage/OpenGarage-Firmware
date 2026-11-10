@@ -20,6 +20,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include <memory>
+#include <new>
 #include <DNSServer.h>
 #include <PubSubClient.h>
 #include <OpenThingsFramework.h>
@@ -56,6 +58,11 @@ String mqtt_id;
 static uint32_t mqtt_json_failures = 0;
 static uint32_t mqtt_json_bytes = 0;
 static bool mqtt_buffer_ready = false;
+// Retain the small default buffer until MQTT is enabled; reuse after growth.
+static bool ensure_mqtt_buffer() {
+	if (!mqtt_buffer_ready) mqtt_buffer_ready = mqttclient.setBufferSize(2048);
+	return mqtt_buffer_ready;
+}
 static uint32_t mqtt_retained_dropped = 0;
 static og_network::MqttRecovery mqtt_retry;
 static og_network::Backoff email_retry(60000, 600000), ifttt_retry(60000, 600000);
@@ -1028,7 +1035,7 @@ void sta_change_options_main(const OptionParams &req, OTF::Response &res) {
 	// FIRST ROUND: check option validity
 	// do not save option values yet
 	for(i=0;i<NUM_OPTIONS;i++,o++) {
-		const char *key = o->name.c_str();
+		const char *key = o->name;
 		// these options cannot be modified here
 		if(i==OPTION_FWV || i==OPTION_MOD  || i==OPTION_SSID ||
 			i==OPTION_PASS || i==OPTION_DKEY)
@@ -1132,7 +1139,7 @@ void sta_change_options_main(const OptionParams &req, OTF::Response &res) {
 	uint old_pem = og.options[OPTION_PEM].ival;
 	o = og.options;
 	for(i=0;i<NUM_OPTIONS;i++,o++) {
-		const char *key = o->name.c_str();
+		const char *key = o->name;
 		// these options cannot be modified here
 		if(i==OPTION_FWV || i==OPTION_MOD  || i==OPTION_SSID ||
 			i==OPTION_PASS || i==OPTION_DKEY)
@@ -1428,7 +1435,7 @@ void do_setup() {
 	Serial.println(secplus2_client_id, HEX);
 	if (!secplus2_identity_ready) Serial.println(F("Security+ 2.0 disabled: identity storage unavailable or invalid"));
 	og.options_setup();
-	mqtt_buffer_ready = mqttclient.setBufferSize(2048);
+	if (og.options[OPTION_MQEN].ival) ensure_mqtt_buffer();
 	mqttclient.setSocketTimeout(1);
 	wificlient.setTimeout(1000);
 	httpclient.setTimeout(5000);
@@ -1538,7 +1545,8 @@ void on_update(const OTF::Request &req, OTF::Response &res) {
 }
 
 // All update entry points share the same service and early authorization.
-static char prepare_body[1024];
+static std::unique_ptr<char[]> prepare_body;
+static constexpr size_t prepare_capacity = 1024;
 static size_t prepare_length = 0;
 static bool prepare_seen = false, prepare_ok = false;
 static String upload_credential;
@@ -1648,18 +1656,26 @@ static void on_prepare_upload() {
  if (upload.status==UPLOAD_FILE_START) {
   if (prepare_seen) {prepare_ok=false;updateServer->client().stop();return;}
   prepare_seen=true;prepare_length=0;prepare_ok=updater_key_ok() && !updater_busy();
+  if (prepare_ok) prepare_body.reset(new (std::nothrow) char[prepare_capacity]);
   if (!prepare_ok) {updateServer->client().stop();return;}
+  // On allocation refusal, consume the bounded multipart request and reply in the final callback.
+  // Closing here could reset TCP before the browser receives an error.
+  if (!prepare_body) {prepare_ok=false;return;}
  } else if (upload.status==UPLOAD_FILE_WRITE) {
   if (!prepare_ok) return;
-  if (upload.currentSize>sizeof(prepare_body)-prepare_length) {
+  if (upload.currentSize>prepare_capacity-prepare_length) {
    prepare_ok=false;updateServer->client().stop();return;
   }
-  memcpy(prepare_body+prepare_length,upload.buf,upload.currentSize);prepare_length+=upload.currentSize;
+  memcpy(prepare_body.get()+prepare_length,upload.buf,upload.currentSize);prepare_length+=upload.currentSize;
  } else if (upload.status==UPLOAD_FILE_ABORTED) {
   prepare_seen=prepare_ok=false;prepare_length=0;
  }
 }
 static void on_prepare_fin() {
+ if (prepare_seen && !prepare_body && updater_key_ok() && !updater_busy()) {
+  prepare_seen=prepare_ok=false;prepare_length=0;
+  updateserver_send_result(HTML_UPLOAD_FAILED, "Not enough contiguous memory to verify release; retry later");return;
+ }
  bool ok=prepare_seen && prepare_ok && prepare_length && updater_key_ok() && !updater_busy();
  prepare_seen=prepare_ok=false;
  char token[17]={};
@@ -1667,7 +1683,7 @@ static void on_prepare_fin() {
  String sig=updateServer->header("X-OG-Signature");
  if (ok && (id.length()>31 || sig.length()>144)) ok=false;
  const bool attempted=ok;
- if (ok) ok=firmware_update.prepare_verified(reinterpret_cast<uint8_t*>(prepare_body),prepare_length,
+ if (ok) ok=firmware_update.prepare_verified(reinterpret_cast<uint8_t*>(prepare_body.get()),prepare_length,
      sig.c_str(),id.c_str(),updateServer->header("X-OG-Allow-Downgrade")=="1",token);
  prepare_length=0;
  if (!ok) {updateserver_send_result(HTML_UPLOAD_FAILED, attempted ? firmware_update.message() : "Preparation rejected; check key, release and device status");return;}
@@ -1675,6 +1691,13 @@ static void on_prepare_fin() {
  updateServer->sendHeader("Access-Control-Allow-Origin","*");
  updateServer->sendHeader("Cache-Control","no-store");
  updateServer->send(200,"application/json",json);
+}
+// The vendored parser completes or aborts multipart parsing within handleClient().
+// Scope cleanup also covers disconnects that bypass the upload/final callbacks.
+static void service_update_server() {
+ updateServer->handleClient();
+ prepare_body.reset();
+ prepare_seen=prepare_ok=false;prepare_length=0;
 }
 static void on_update_info() {
  String json=F("{\"product\":\"opengarage-stock\",\"target\":\"");json+=firmware_update.target();
@@ -1717,6 +1740,7 @@ void check_status_ap() {
 
 bool mqtt_connect_subscribe() {
 	if (!network_delivery_busy() && mqtt_retry.ready(millis())) {
+		if (!ensure_mqtt_buffer()) { mqtt_retry.attempt_result(millis(), false); return false; }
 		if (!mqttclient.connected()) {
 			DEBUG_PRINT(F("MQTT Not connected- (Re)connect MQTT"));
 			boolean ret;
@@ -2337,14 +2361,14 @@ void do_loop() {
 	case OG_STATE_WAIT_RESTART:
 		if(dns) dns->processNextRequest();
 		if(otf) otf->loop();
-		if(updateServer) updateServer->handleClient();
+		if(updateServer) service_update_server();
 		break;
 
 	case OG_STATE_CONNECTED: //THIS IS THE MAIN LOOP
 		if(curr_mode == OG_MOD_AP) {
 			dns->processNextRequest();
 			otf->loop();
-			updateServer->handleClient();
+			service_update_server();
 			check_status_ap();
 			if(og.options[OPTION_MOD].ival == OG_MOD_STA) {
 				// already in STA mode, waiting to reboot
@@ -2365,7 +2389,7 @@ void do_loop() {
 				og_crash::mark(og_crash::STAGE_CLOUD);
 				service_cloud();
 				og_crash::mark(og_crash::STAGE_UPDATE_SERVER);
-				updateServer->handleClient();
+				service_update_server();
 
 				//Handle MQTT
 				og_crash::mark(og_crash::STAGE_MQTT);

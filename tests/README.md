@@ -139,3 +139,5 @@ The JSON sender takes a const reference, avoiding a second full response copy.
 The network-delivery suite drives the real startup melody and production busy
 policy through all 560 ms, checking deferred connection/notification work and
 continued local/established-cloud serving, completion and cancellation.
+
+RAM batch 1: `python3 tests/test_lazy_mqtt.py` checks deferred MQTT buffer growth, allocation failure/retry and reuse. `test_update_security.py` also checks request-scope preparation-buffer cleanup after completed and interrupted requests.

@@ -39,7 +39,7 @@ struct String : std::string {
  String operator+(const char* s)const{String r=*this;r.append(s);return r;}
  int toInt()const{return std::stoi(*this);}
 };
-struct OptionStruct {String name,sval;int ival=0,max=0;};
+struct OptionStruct {const char *name; String sval;int ival=0,max=0;};
 struct Request {
  std::map<std::string,std::string> values;
  char* getQueryParameter(const char* k){auto it=values.find(k);return it==values.end()?nullptr:&it->second[0];}

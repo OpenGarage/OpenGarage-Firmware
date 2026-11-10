@@ -34,7 +34,7 @@
 #include "defines.h"
 
 struct OptionStruct {
-	String name;
+	const char *name;
 	uint ival;
 	uint max;
 	String sval;
