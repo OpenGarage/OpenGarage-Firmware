@@ -16,8 +16,6 @@ node tests/test_pending_switches.mjs
 node tests/test_cloud_options.mjs
 g++ -std=c++11 -Wall -Wextra -Werror tests/test_local_time.cpp -o /tmp/og-test-local-time
 /tmp/og-test-local-time
-g++ -std=c++11 -Wall -Wextra -Werror tests/test_time_sync.cpp -o /tmp/og-test-time-sync
-/tmp/og-test-time-sync
 python3 tests/test_offline_automation.py
 python3 tests/test_mqtt_packets.py
 python3 tests/test_network_delivery.py

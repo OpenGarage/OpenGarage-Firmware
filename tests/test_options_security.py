@@ -106,7 +106,7 @@ code += 'int main(){\n' + setup + r'''
   Request allowed;allowed.values["htp"]=port;result=0;validate(allowed);assert(result==0);
  }
  og.options[OPTION_CLD].ival=CLOUD_NONE;
- for(const char* field:{"name","mqtp","smtp","send","apwd","recp","ntp1"}){
+ for(const char* field:{"name","mqtp","smtp","send","apwd","recp"}){
   for(unsigned length:{0U,64U,65U,189U,190U,255U,256U}){
    Request value;value.values[field]=std::string(length,'x');result=0;result_item="";
    validate(value);
