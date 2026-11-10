@@ -32,6 +32,8 @@ python3 tests/test_firmware_release.py
 python3 tests/test_firmware_service.py
 node tests/test_updater_page.cjs
 python3 tests/test_options_security.py
+python3 tests/test_options_post.py
+python3 tests/test_device_key.py
 g++ -std=c++11 -Wall -Wextra -Werror tests/test_audio_timing.cpp -o /tmp/og-test-audio
 /tmp/og-test-audio
 g++ -std=c++11 -Wall -Wextra -Werror tests/test_crash_record.cpp -o /tmp/og-test-crash-record

@@ -511,11 +511,8 @@ $('btn_regenerate_id').addEventListener('click', function(e) {
 });
 
 var comm;
-function bc(n, e = 0) {
-  comm += '&' + n + '=';
-  if (e) comm += encodeURIComponent($(n).value);
-  else comm += $(n).value;
-}
+// Append one field to the form body; every value is encoded, so no input can split a pair.
+function bc(n) { comm += '&' + n + '=' + encodeURIComponent($(n).value); }
 function cloud_endpoint(jd) {
   const legacy = jd.cld === 1 || (jd.cld !== 2 && (!jd.bdmn || jd.bdmn === 'blynk.openthings.io'));
   return {host: legacy ? 'ws.cloud.openthings.io' : jd.bdmn, port: legacy ? 80 : jd.bprt};
@@ -536,7 +533,8 @@ $('btn_submit').addEventListener('click', function(e) {
   const secret_error = secret_edit_error(values, clear, !!eval_cb('cld'));
   if (secret_error) { show_msg(secret_error); return; }
   if (!confirm('Submit changes?')) return;
-  comm = 'co?dkey=' + encodeURIComponent(saveDeviceKey(okey));
+  // POST on the local network: no request-line limit, and secrets stay out of URLs. GET /co still works.
+  comm = 'dkey=' + encodeURIComponent(saveDeviceKey(okey));
   bc('sn1'); bc('sn2'); bc('sno'); bc('dth'); bc('vth'); bc('riv'); bc('bas'); bc('alm');
   bc('wfr'); bc('lsz'); bc('tsn'); bc('htp'); bc('cdt'); bc('dri'); bc('ati'); bc('atib');
   comm += '&aoo=' + eval_cb('aoo');
@@ -560,25 +558,28 @@ $('btn_submit').addEventListener('click', function(e) {
     comm += '&cld=2';
     if (($('auth').value.length && $('auth').value.length < 32) || (!$('auth').value.length && !saved_otc_token)) { show_msg('Cloud token is too short!'); return; }
   } else comm += '&cld=0';
-  bc('name', 1); bc('bdmn', 1);
+  bc('name'); bc('bdmn');
   for (const field of ['auth', 'iftt', 'apwd', 'mqpw']) {
     if ($('clear_' + field).checked) comm += '&clear_' + field + '=1';
-    else if ($(field).value.length) bc(field, 1);
+    else if ($(field).value.length) bc(field);
   }
-  bc('mqtt', 1); bc('mqur', 1); bc('mqtp', 1); bc('mqpt');
+  bc('mqtt'); bc('mqur'); bc('mqtp'); bc('mqpt');
   comm += '&mqen=' + eval_cb('mqen');
-  bc('smtp', 1); bc('send', 1); bc('recp', 1); bc('sprt');
+  bc('smtp'); bc('send'); bc('recp'); bc('sprt');
   comm += '&emen=' + eval_cb('emen');
-  bc('bprt'); bc('ntp1', 1); bc('host', 1);
+  bc('bprt'); bc('ntp1'); bc('host');
   if ($('cb_key').checked) {
     if (!$('nkey').value && !confirm('New device key is empty. Are you sure?')) return;
-    bc('nkey', 1); bc('ckey', 1);
+    bc('nkey'); bc('ckey');
   }
   if ($('usi').checked) {
     comm += '&usi=1';
     bc('dvip'); bc('gwip'); bc('subn'); bc('dns1');
   } else comm += '&usi=0';
-  getJSON(comm).then(function(jd) {
+  // The deployed OTC proxy forwards a POST body but never relays the reply, so through OTC
+  // keep the GET (forwarded requests have no request-line limit). Use POST once it is fixed.
+  const viaOTC = /\/forward\/v1\//.test(location.pathname);
+  (viaOTC ? getJSON('co?' + comm) : postForm('co', comm)).then(function(jd) {
     if (jd.result != 1) {
       if (jd.result == 2) show_msg('Check device key and try again.');
       else show_msg('Error code: ' + jd.result + ', item: ' + jd.item);

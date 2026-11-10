@@ -11,6 +11,15 @@ function getJSON(url, ms) {
     .finally(() => clearTimeout(t));
 }
 
+/* POST an already-encoded application/x-www-form-urlencoded body; resolves to the JSON reply. */
+function postForm(url, body, ms) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms || 10000);
+  return fetch(url, {method: 'POST', signal: ctl.signal, cache: 'no-store',
+                     headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: body})
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .finally(() => clearTimeout(t));
+}
+
 /* Message line: text, class (ok / err / info), optional auto-clear in ms. */
 function showMsg(el, text, cls, ms) {
   el = typeof el === 'string' ? $(el) : el;

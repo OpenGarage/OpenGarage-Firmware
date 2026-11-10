@@ -28,6 +28,7 @@
 
 #include "json_escape.h"
 #include "etag_match.h"
+#include "form_params.h"
 #include "checked_json.h"
 #include "update_auth.h"
 #include "firmware_update.h"
@@ -630,14 +631,15 @@ void on_sta_logs(const OTF::Request &req, OTF::Response &res) {
 	otf_send_json(res, json);
 }
 
+// The device key is required on every path, OTC included. (Before 1.2.7 an OTC request was
+// trusted without it, following Blynk's token-only model; the OTC token alone no longer
+// authorizes changes, matching OpenSprinkler.)
+static bool device_key_matches(const char *dkey) {
+	return dkey != NULL && strcmp(dkey, og.options[OPTION_DKEY].sval.c_str()) == 0;
+}
+
 bool verify_device_key(const OTF::Request &req) {
-	if(req.isCloudRequest()){ // no need for dkey if this is coming from cloud connection
-		return true;
-	}
-	const char *dkey = req.getQueryParameter("dkey");
-	if(dkey != NULL && strcmp(dkey, og.options[OPTION_DKEY].sval.c_str()) == 0)
-		return true;
-	return false;
+	return device_key_matches(req.getQueryParameter("dkey"));
 }
 
 void on_reset_all(const OTF::Request &req, OTF::Response &res){
@@ -650,7 +652,7 @@ void on_reset_all(const OTF::Request &req, OTF::Response &res){
 	otf_send_result(res, HTML_SUCCESS, nullptr);
 }
 
-// POST only. Keep credentials out of URLs and require a key even over OTC.
+// POST only. Keep credentials out of URLs; the key is required over OTC too, as everywhere.
 void on_regenerate_secplus2_id(const OTF::Request &req, OTF::Response &res) {
 	if (!body_device_key_matches(req.getBody(), req.getBodyLength(), og.options[OPTION_DKEY].sval.c_str())) {
 		otf_send_result(res, HTML_UNAUTHORIZED, nullptr);
@@ -905,7 +907,22 @@ void on_sta_change_controller(const OTF::Request &req, OTF::Response &res) {
 	sta_change_controller_main(req, res);
 }
 
-void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
+// Parameters of one /co request. GET (and any method other than POST, as before) reads the URL
+// query; POST reads only its application/x-www-form-urlencoded body, which has no request-line
+// limit and keeps secrets out of URLs. Both are decoded with the same rules (form_params.h).
+struct OptionParams {
+	const OTF::Request &request;
+	const og_form::Form *form;
+	char *getQueryParameter(const char *key) const {
+		return form ? form->get(key) : request.getQueryParameter(key);
+	}
+};
+
+bool verify_device_key(const OptionParams &params) {
+	return device_key_matches(params.getQueryParameter("dkey"));
+}
+
+void sta_change_options_main(const OptionParams &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_AP) return;
 
 	if(!verify_device_key(req)) {
@@ -1135,7 +1152,19 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 }
 
 void on_sta_change_options(const OTF::Request &req, OTF::Response &res) {
-	sta_change_options_main(req, res);
+	sta_change_options_main(OptionParams{req, nullptr}, res);
+}
+
+void on_sta_change_options_post(const OTF::Request &req, OTF::Response &res) {
+	if(curr_mode == OG_MOD_AP) return;
+	og_form::Form form;
+	switch (form.parse(req.getBody(), req.getBodyLength())) {
+		case og_form::Form::OK: break;
+		case og_form::Form::TOO_MANY: otf_send_result(res, HTML_DATA_OUTOFBOUND, "body: too many fields"); return;
+		case og_form::Form::NO_MEMORY: otf_send_result(res, HTML_NOT_PERMITTED, "body: not enough memory"); return;
+		default: otf_send_result(res, HTML_DATA_FORMATERROR, "body"); return;
+	}
+	sta_change_options_main(OptionParams{req, &form}, res);
 }
 
 void sta_options_fill_json(String& json) {
@@ -2185,7 +2214,8 @@ void do_loop() {
 			otf->on("/vo", on_sta_view_options, OTF::HTTP_GET);
 			otf->on("/vl", on_sta_view_logs, OTF::HTTP_GET);
 			otf->on("/cc", on_sta_change_controller);
-			otf->on("/co", on_sta_change_options);
+			otf->on("/co", on_sta_change_options);  // GET as documented; any method but POST, as before
+			otf->on("/co", on_sta_change_options_post, OTF::HTTP_POST);
 			otf->on("/db", on_sta_debug);
 			// FIXME get sta updates working.
 			otf->on("/update", on_update, OTF::HTTP_GET);
