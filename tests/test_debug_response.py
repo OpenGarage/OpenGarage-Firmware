@@ -134,8 +134,20 @@ for item in results:
         assert item["min_free_cont_stack"] == 1536
 
 # Keep the diagnostic identity tied to the exact dependency pin used by the build.
-otf_pin = re.search(r'OpenThings-Framework-Firmware-Library\.git#([0-9a-f]{40})',
-                    Path('OpenGarage/platformio.ini').read_text()).group(1)
+ini = Path('OpenGarage/platformio.ini').read_text()
+pin = re.search(r'OpenThings-Framework-Firmware-Library\.git#([0-9a-f]{40})', ini)
+if pin:
+    otf_pin = pin.group(1)
+else:
+    # Temporary unreleased local OTF checkout: the revision is that checkout's HEAD.
+    local = re.search(r'^\s*symlink://(\S+)', ini, re.M).group(1)
+    checkout = str(Path('OpenGarage') / local)
+    otf_pin = subprocess.check_output(['git', '-C', checkout, 'rev-parse', 'HEAD'], text=True).strip()
+    # Uncommitted changes would make otf_revision name code the build does not contain.
+    assert not subprocess.check_output(['git', '-C', checkout, 'status', '--porcelain'], text=True).strip(), \
+        f'local OTF checkout {checkout} has uncommitted changes; commit them and update otf_revision'
+    # Development only: tools/firmware_release.py prepare refuses local dependencies.
+    print(f'WARNING: OTF is a local unreleased checkout ({otf_pin[:7]}); pin a release before shipping')
 for item in results:
     if 'otf_revision' in item:
         assert item['otf_revision'] == otf_pin

@@ -188,7 +188,45 @@ def verify_tree(output, public_header):
     return catalog
 
 
+OTF_LIB = 'OpenThings-Framework-Firmware-Library'
+
+
+def require_pinned_dependencies(root=ROOT):
+    """A release build uses exact published dependency commits, never a local checkout.
+
+    Fails (does not warn) on symlink:// or file:// dependencies, unpinned git
+    dependencies, an otf_revision that differs from the OTF pin, or a resolved
+    OTF copy whose HEAD differs from the pin or that has local modifications.
+    """
+    og = Path(root) / 'OpenGarage'
+    ini = (og / 'platformio.ini').read_text()
+    block = re.search(r'^lib_deps\s*=[^\n]*\n((?:[ \t]+[^\n]*\n?)*)', ini, re.M)
+    deps = [line.split(';')[0].strip() for line in (block.group(1).splitlines() if block else [])]
+    deps = [dep for dep in deps if dep]
+    for dep in deps:
+        if re.match(r'(symlink|file)://', dep) or dep.startswith(('/', '.', '~')):
+            raise ValueError(f'Release must not use a local dependency: {dep}')
+        if '.git' in dep and not re.search(r'\.git#[0-9a-f]{40}$', dep):
+            raise ValueError(f'Git dependency must pin a full commit: {dep}')
+    pins = [re.search(r'#([0-9a-f]{40})$', dep).group(1) for dep in deps if OTF_LIB + '.git#' in dep]
+    if len(pins) != 1:
+        raise ValueError('OTF must be pinned to exactly one published commit')
+    pin = pins[0]
+    revision = re.search(r'otf_revision\\":\\"([0-9a-f]{40})', (og / 'main.cpp').read_text())
+    if not revision or revision.group(1) != pin:
+        raise ValueError('otf_revision in main.cpp does not match the OTF pin')
+    lib = og / '.pio/libdeps/d1_mini' / OTF_LIB
+    head = subprocess.run(['git', '-C', str(lib), 'rev-parse', 'HEAD'], capture_output=True, text=True)
+    if head.returncode or head.stdout.strip() != pin:
+        raise ValueError('Resolved OTF dependency does not match the pin; rebuild with pio')
+    dirty = subprocess.run(['git', '-C', str(lib), 'status', '--porcelain'], capture_output=True, text=True)
+    if dirty.returncode or dirty.stdout.strip():
+        raise ValueError('Resolved OTF dependency has local modifications')
+    return pin
+
+
 def prepare(args):
+    require_pinned_dependencies(getattr(args, 'root', ROOT))
     key=require_matching_key(args.private_key,args.public_header)
     rid=version_id(args.version)
     source=image_valid(args.esp8266)

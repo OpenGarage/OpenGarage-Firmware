@@ -25,6 +25,7 @@ g++ -std=c++11 -Wall -Wextra -Werror tests/test_wifi_selection.cpp -o /tmp/og-te
 /tmp/og-test-selection
 python3 tests/test_wifi_adapter.py
 python3 tests/test_debug_response.py
+python3 tests/test_cached_page.py
 python3 tests/test_update_security.py
 python3 tests/test_update_parser.py
 python3 tests/test_firmware_release.py

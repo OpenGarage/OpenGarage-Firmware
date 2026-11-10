@@ -27,6 +27,7 @@
 #include <Response.h>
 
 #include "json_escape.h"
+#include "etag_match.h"
 #include "checked_json.h"
 #include "update_auth.h"
 #include "firmware_update.h"
@@ -163,12 +164,15 @@ void otf_send_compressed_P(OTF::Response& res, const __FlashStringHelper* conten
 // Station UI page with browser caching. `etag` is the page's quoted content ID from htmls.h: the
 // browser may reuse its copy for 5 minutes, then revalidates and gets a bodyless 304 while the page
 // is unchanged. A firmware update changes the ID; the UI also compares it with "ui" in /jc and
-// reloads itself. OTF lowercases header names; its local server (0.2.6) keeps only Content-Length,
-// so If-None-Match arrives only on OTC-forwarded requests (the max-age cache works on both paths).
+// reloads itself. OTF lowercases header names. Its local server keeps If-None-Match only from the
+// OTF revision below onward; 0.2.6 dropped it, so only OTC-forwarded requests could revalidate.
+// Callers register these routes for GET only, so a 304 never answers another method.
 void otf_send_cached_page_P(const OTF::Request &req, OTF::Response &res, const __FlashStringHelper* content, size_t len, const __FlashStringHelper* etag) {
-	const char *inm = req.getHeader(F("If-None-Match"));
-	if (!inm) inm = req.getHeader(F("if-none-match"));
-	const bool unchanged = inm && strstr_P(inm, (PGM_P)etag);
+	char tag[24];
+	strncpy_P(tag, (PGM_P)etag, sizeof(tag) - 1);
+	tag[sizeof(tag) - 1] = 0;
+	const char *inm = req.getHeader(F("if-none-match"));
+	const bool unchanged = inm && etag_list_matches(inm, tag);
 	res.writeStatus(unchanged ? 304 : 200, unchanged ? F("Not Modified") : F("OK"));
 	res.writeHeader(F("ETag"), etag);
 	res.writeHeader(F("Cache-Control"), F("private, max-age=300"));
@@ -176,6 +180,9 @@ void otf_send_cached_page_P(const OTF::Request &req, OTF::Response &res, const _
 	res.writeHeader(F("Access-Control-Allow-Origin"), F("*"));
 	if (unchanged) {
 		res.writeHeader(F("Connection"), F("close"));
+		// End the header block. A 304 has no body, and no Content-Length: if present it would
+		// have to describe the 200 representation (RFC 9110 8.6).
+		res.writeBodyData("", 0);
 		return;
 	}
 	res.writeHeader(F("Content-Type"), F("text/html; charset=utf-8"));
@@ -234,7 +241,7 @@ static void append_health_json(DebugJson &json) {
 	json += F(",\"free_heap\":"); json += ESP.getFreeHeap();
 	json += F(",\"largest_free_heap_block\":"); json += ESP.getMaxFreeBlockSize();
 	json += F(",\"build_time\":\""); json += F(__TIME__); json += F("\"");
-	json += F(",\"otf_revision\":\"8651d0929a9de41c114b8a182f343cb54eb7d52f\"");
+	json += F(",\"otf_revision\":\"4d9d072abf4edab983626918cf42900d3da8166c\"");
 	json += F(",\"reset_reason\":\""); json += ESP.getResetReason(); json += F("\"");
 	json += F(",\"reset_reason_code\":"); json += ESP.getResetInfoPtr()->reason;
 	json += F(",\"uptime_s\":"); json += health_stats.uptime_s();
@@ -2170,13 +2177,13 @@ void do_loop() {
 			String host = og.options[OPTION_HOST].sval;
 			const char* hostname = host.length() == 0 ? NULL : host.c_str(); // use the hostname provided if one is specified
 
-			otf->on("/", on_home);
+			otf->on("/", on_home, OTF::HTTP_GET);
 			otf->on("/jc", on_sta_controller);
 			otf->on("/jo", on_sta_options);
 			otf->on("/jl", on_sta_logs);
 			otf->on("/ad", on_auto_detect);
-			otf->on("/vo", on_sta_view_options);
-			otf->on("/vl", on_sta_view_logs);
+			otf->on("/vo", on_sta_view_options, OTF::HTTP_GET);
+			otf->on("/vl", on_sta_view_logs, OTF::HTTP_GET);
 			otf->on("/cc", on_sta_change_controller);
 			otf->on("/co", on_sta_change_options);
 			otf->on("/db", on_sta_debug);
