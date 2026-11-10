@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-const html = fs.readFileSync(new URL('../OpenGarage/html/sta_options.html', import.meta.url), 'utf8');
+const html = fs.readFileSync(new URL('../OpenGarage/html/sta_ui.html', import.meta.url), 'utf8');
 const source = fs.readFileSync(new URL('../OpenGarage/main.cpp', import.meta.url), 'utf8');
 const optionsJson = source.slice(source.indexOf('void sta_options_fill_json('), source.indexOf('void on_sta_options('));
 assert.match(optionsJson, /F\(",.*s2id/);
@@ -10,48 +10,46 @@ assert.doesNotMatch(optionsJson, /F\(",.*secplus2_client_id/);
 assert.match(source, /otf->on\("\/s2id_gen", on_regenerate_secplus2_id, OTF::HTTP_POST\)/);
 assert.doesNotMatch(source, /otf->on\("\/secplus2\/regenerate-id"/);
 assert.match(html, /jd\.s2id \|\| 'Unavailable'/);
-assert(html.indexOf("id='secv'") < html.indexOf("id='tr_panel_emu'"));
-assert(html.indexOf("id='tr_panel_emu'") < html.indexOf("id='tr_client_id'"));
-assert(html.indexOf("id='tr_client_id'") < html.indexOf("id='dth'"));
-assert.match(html, /id='tr_client_id' style='display:none;'[\s\S]*?id='btn_regenerate_id'/);
-const visibility = html.match(/function update_security_details\(\)\{[\s\S]*?\n\}/)[0];
+assert(!html.includes('jquery'), 'station UI must not load jQuery');
+// Row order: Security+ version, Panel Emulate (1.0), Client ID (2.0), then the door threshold.
+assert(html.indexOf('data-row="secv"') < html.indexOf('data-row="pem"'));
+assert(html.indexOf('data-row="pem"') < html.indexOf('data-row="cid"'));
+assert(html.indexOf('data-row="cid"') < html.indexOf('id="dth"'));
+assert.match(html, /<span data-row="cid" hidden><button[^>]*id="btn_regenerate_id"/);
+const visibility = html.match(/function update_security_details\(\) \{[\s\S]*?\n\}/)[0];
 for (const capable of [false,true]) for (const saved of [false,true]) {
   for (const selected of ['0','1','2',undefined]) {
-    let panelVisible, clientVisible, buttonState;
+    const rows = {}; const button = {disabled: null};
     vm.runInNewContext(visibility+';update_security_details();', {
       security_capable:capable, saved_secplus2:saved,
-      $: selector => selector==='#tr_panel_emu' ? {toggle:v=>{panelVisible=v;}} :
-        selector==='#tr_client_id' ? {toggle:v=>{clientVisible=v;}} :
-        selector==='#btn_regenerate_id' ? {button:v=>{buttonState=v;}} : {val:()=>selected}
+      checked_val: name => { assert.equal(name, 'secv'); return selected; },
+      show_row: (name, show) => { rows[name] = show; },
+      $: id => { assert.equal(id, 'btn_regenerate_id'); return button; }
     });
-    assert.equal(panelVisible,capable && selected==='1');
-    assert.equal(clientVisible,capable && selected==='2');
-    assert.equal(buttonState,saved ? 'enable' : 'disable');
+    assert.equal(rows.pem, capable && selected==='1');
+    assert.equal(rows.cid, capable && selected==='2');
+    assert.equal(button.disabled, !saved);
   }
 }
-assert.match(html, /saved_secplus2=!!jd\.has_swrx && jd\.secv===2;/);
-const radioStart = html.indexOf("$('input[name=\"pem\"]').prop('checked', false);");
-const radioEnd = html.indexOf('if(jd.has_swrx)', radioStart);
-assert(radioStart>=0 && radioEnd>radioStart);
+assert.match(html, /saved_secplus2 = !!jd\.has_swrx && jd\.secv === 2;/);
+// Panel Emulate: exactly one radio of the pair is selected from the saved value.
+const pemLine = html.match(/cbt\('pem' \+ \(jd\.pem === 1 \? 1 : 0\)\);/);
+assert(pemLine);
 for (const pem of [0,1,undefined]) {
-  const checked = {pem0:true,pem1:false}; // Auto starts checked in the HTML.
-  vm.runInNewContext(html.slice(radioStart,radioEnd), {
-    jd:{pem},
-    $: selector => selector==='input[name="pem"]' ? {
-      prop: (_,value) => {checked.pem0=value; checked.pem1=value;}, checkboxradio:()=>{}
-    } : {prop:(_,value)=>{checked[selector.slice(1)]=value;}}
-  });
-  assert.deepEqual(checked,pem===1 ? {pem0:false,pem1:true} : {pem0:true,pem1:false});
+  let selected;
+  vm.runInNewContext(pemLine[0], {jd:{pem}, cbt: id => { selected = id; }});
+  assert.equal(selected, pem===1 ? 'pem1' : 'pem0');
 }
-const start = html.indexOf("$('#btn_regenerate_id').click(");
-const end = html.indexOf('\nfunction bc(', start);
+assert.match(html, /<input type="radio" name="pem" id="pem0" value="0" checked>/); // Auto before /jo arrives
+const start = html.indexOf("$('btn_regenerate_id').addEventListener('click',");
+const end = html.indexOf('\nvar comm;', start);
 assert(start >= 0 && end > start);
 async function run(key, accepted, result) {
-  let handler, request, message, disabled;
-  const button = {prop: (_, value) => { disabled = value; }};
+  let handler, request, message;
+  const button = {disabled: false, addEventListener: (type, fn) => { assert.equal(type, 'click'); handler = fn; }};
   const context = {
-    $: selector => selector === '#btn_regenerate_id' ? {click: fn => { handler = fn; }} :
-      selector === '#dkey' ? {val: () => key} : button,
+    $: id => { assert.equal(id, 'btn_regenerate_id'); return button; },
+    okey: {value: key},
     confirm: text => { assert.match(text, /restart.*WiFi/s); return accepted; },
     show_msg: text => { message = text; },
     fetch: async (url, options) => { request = {url, options}; return {json: async () => result}; }
@@ -59,7 +57,7 @@ async function run(key, accepted, result) {
   vm.runInNewContext(html.slice(start, end), context);
   handler.call(button, {preventDefault() {}});
   await new Promise(resolve => setImmediate(resolve));
-  return {request, message, disabled};
+  return {request, message, disabled: button.disabled};
 }
 assert.equal((await run('', true)).request, undefined);
 assert.equal((await run('test-key', false)).request, undefined);

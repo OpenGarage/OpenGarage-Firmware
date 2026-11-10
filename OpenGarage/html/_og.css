@@ -1,0 +1,209 @@
+/* OpenGarage station pages: jQuery Mobile 1.3.1 look without jQuery Mobile.
+   Shared by sta_home, sta_options and sta_logs (inlined by compress_htmls.mjs).
+   Plain CSS on native elements; values come from jquery.mobile-1.3.1.css
+   (swatches a, b, c, e; corners, shadows, focus glow, 18px icon discs). */
+
+/* ---------- Base ---------- */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:Helvetica,Arial,sans-serif;font-size:16px;color:#333;
+  text-shadow:0 1px 0 #fff;background:#eee}
+.page{min-height:100vh;background:#f9f9f9 linear-gradient(#f9f9f9,#eee)}
+.content{padding:15px}
+a{color:#2489ce;font-weight:bold}
+small{font-size:13px;font-weight:normal}
+[hidden]{display:none!important}
+
+/* ---------- Bars (header swatch a, footer swatch c) ---------- */
+.hdr{background:#111 linear-gradient(#3c3c3c,#111);border-bottom:1px solid #333;color:#fff;
+  text-shadow:0 -1px 0 #000;font-weight:bold;text-align:center}
+.hdr h1{font-size:16px;margin:0;padding:.6em 15px .8em;min-height:1.1em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Title-bar actions: frameless, icon + label (as in the OpenSprinkler app) */
+.hdr{position:relative}
+.hdr.btns h1{padding-left:88px;padding-right:88px}
+.hbtn{position:absolute;top:0;bottom:0;display:flex;align-items:center;gap:2px;margin:0;padding:0 12px;border:0;background:none;
+  color:#fff;font:bold 15px Helvetica,Arial,sans-serif;text-shadow:0 -1px 0 #000;text-decoration:none;cursor:pointer}
+.hbtn.left{left:0;padding-left:6px}.hbtn.right{right:0}
+.hbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.hbtn:hover,.hbtn:focus-visible{background:rgba(255,255,255,.12);outline:0}
+.hbtn:active{background:rgba(255,255,255,.2)}
+.hbtn:disabled{opacity:.4;cursor:default}
+.hdr.btns.wide h1{padding-left:56px;padding-right:56px}
+.hbtn.icon{padding:0 14px}
+.hbtn.icon svg{width:22px;height:22px;stroke-width:2}
+/* Home: one large door action, then a compact row of maintenance actions */
+.btn svg.i{width:1.15em;height:1.15em;margin-right:.35em;vertical-align:-.2em;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.btn.door{display:flex;align-items:center;justify-content:center;max-width:325px;margin:8px 0 6px;padding:.6em 20px;font-size:18px;border-radius:.8em}
+.btn.door svg.i{width:24px;height:24px;margin-right:9px;vertical-align:0}
+.cg.fill{width:100%;max-width:325px;margin:0}
+.cg.fill>.btn{flex:1 1 auto;padding-left:6px;padding-right:6px;white-space:nowrap}
+.ftr{background:#eee linear-gradient(#f0f0f0,#ddd);border-top:1px solid #b3b3b3;color:#3e3e3e;
+  font-weight:bold;text-shadow:0 1px 0 #fff;padding:1.2em 10px .7em}
+.ftr p{margin:0 0 .9em}
+
+/* ---------- Buttons ---------- */
+.btn{display:block;width:100%;margin:.5em 0;padding:.6em 20px;border:1px solid;border-radius:1em;
+  font:bold 16px Helvetica,Arial,sans-serif;text-align:center;text-decoration:none;cursor:pointer;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 1px 3px rgba(0,0,0,.2);-webkit-tap-highlight-color:transparent}
+.btn.inline{display:inline-block;width:auto;vertical-align:middle;margin-left:5px;margin-right:5px}
+.btn.mini,.mini .btn{font-size:12.5px;padding:.55em 11px .5em}
+.btn:focus{outline:0}
+.btn:focus-visible{box-shadow:inset 0 0 3px #387bbe,0 0 9px #387bbe;z-index:1}
+.btn:disabled,.btn.disabled{opacity:.3;cursor:default;pointer-events:none}
+.a{border-color:#111;color:#fff;text-shadow:0 1px 0 #111;background:#333 linear-gradient(#444,#2d2d2d)}
+.a:hover{border-color:#000;background:#444 linear-gradient(#555,#383838)}
+.a:active{border-color:#000;background:#222 linear-gradient(#202020,#2c2c2c)}
+.b{border-color:#044062;color:#fff;text-shadow:0 1px 0 #194b7e;background:#396b9e linear-gradient(#5f9cc5,#396b9e)}
+.b:hover{border-color:#00415e;background:#4b88b6 linear-gradient(#6facd5,#4272a4)}
+.b:active{border-color:#225377;background:#4e89c5 linear-gradient(#295b8e,#3e79b5)}
+.c{border-color:#ccc;color:#222;text-shadow:0 1px 0 #fff;background:#eee linear-gradient(#fff,#f1f1f1)}
+.c:hover{border-color:#bbb;background:#dfdfdf linear-gradient(#f6f6f6,#e0e0e0)}
+.c:active{border-color:#bbb;background:#d6d6d6 linear-gradient(#d0d0d0,#dfdfdf)}
+/* icon-only round button (info, refresh) */
+.btn.icon{width:24px;height:24px;padding:0;border-radius:1em;display:inline-block;vertical-align:middle;margin:0 5px}
+.btn.icon .ic{display:block;margin:2px 0 0 2px}
+
+/* ---------- Icons: 18px dark disc with white glyph ---------- */
+.ic{display:inline-block;width:18px;height:18px;border-radius:9px;background-color:rgba(0,0,0,.4);
+  background-repeat:no-repeat;background-position:center;box-shadow:0 1px 0 rgba(255,255,255,.4);vertical-align:middle}
+.ic-info{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Ccircle cx='9' cy='5' r='1.7' fill='%23fff'/%3E%3Cpath d='M9 8.2v6' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E")}
+.ic-del{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M5.5 5.5l7 7M12.5 5.5l-7 7' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E")}
+
+/* ---------- Control groups (horizontal) ---------- */
+.cg{display:flex;width:max-content;flex-wrap:nowrap;margin:.5em 0;border-radius:.6em;
+  box-shadow:0 1px 3px rgba(0,0,0,.2);max-width:100%}
+.cg.mini{margin:.25em 0}
+.cg>.btn,.cg>label>.btn{margin:0;border-radius:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.3);width:auto;flex:none}
+.cg>.btn+.btn,.cg>label+label>.btn,.cg>label+.btn{border-left-width:0}
+.cg>:first-child,.cg>:first-child>.btn{border-top-left-radius:.6em;border-bottom-left-radius:.6em}
+.cg>:last-child,.cg>:last-child>.btn{border-top-right-radius:.6em;border-bottom-right-radius:.6em}
+.cg>label{display:flex;margin:0}
+/* segmented radio / checkbox: native input kept for keyboard and screen readers */
+.seg>label{position:relative}
+.seg input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.seg input:checked+.btn{border-color:#2373a5;color:#fff;text-shadow:0 1px 0 #3373a5;
+  background:#5393c5 linear-gradient(#5393c5,#6facd5)}
+.seg input:focus-visible+.btn{box-shadow:inset 0 0 3px #387bbe,0 0 9px #387bbe;z-index:1}
+.seg input:disabled+.btn{opacity:.3}
+/* Security+ learn-button colors (match the existing inline styles) */
+.seg input.sec-yellow:checked+.btn{background:#F0F000;color:#000;text-shadow:none}
+.seg input.sec-purple:checked+.btn{background:#A000A0;color:#fff;text-shadow:none}
+.seg input.sec-green:checked+.btn{background:#00A000;color:#fff;text-shadow:none}
+
+/* ---------- Checkbox (full-width button with icon) ---------- */
+.cb{display:block;position:relative;margin:.5em 0}
+.cb input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.cb .btn{text-align:left;padding-left:40px;margin:0;cursor:pointer}
+.cb.mini .btn,.mini .cb .btn{padding-left:30px;font-size:12.5px;padding-top:.55em;padding-bottom:.5em}
+.cb .btn::before{content:"";position:absolute;left:10px;top:50%;margin-top:-9px;width:18px;height:18px;border-radius:3px;
+  background:rgba(0,0,0,.1);box-shadow:inset 0 1px 2px rgba(0,0,0,.12),0 1px 0 rgba(255,255,255,.4)}
+.cb.mini .btn::before,.mini .cb .btn::before{left:5px}
+.cb input:checked+.btn::before{background:#4596ce url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M4.5 9.5l3 3 6-7' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center no-repeat;box-shadow:0 1px 0 rgba(255,255,255,.4)}
+.cb input:focus-visible+.btn{box-shadow:inset 0 0 3px #387bbe,0 0 9px #387bbe}
+.cb input:disabled+.btn{opacity:.3;cursor:default}
+.cb.inline{display:inline-block}
+
+/* ---------- Text inputs ---------- */
+.inp{display:block;position:relative;margin:.5em 0;border:1px solid #aaa;border-radius:.6em;
+  background:#f9f9f9 linear-gradient(#f9f9f9,#eee);box-shadow:inset 0 1px 4px rgba(0,0,0,.2)}
+.inp:focus-within{box-shadow:0 0 12px #387bbe}
+.inp input{display:block;width:100%;margin:0;padding:.4em;border:0;background:transparent;color:#333;
+  font:16px/1.4 Helvetica,Arial,sans-serif;text-shadow:0 1px 0 #fff;outline:0;border-radius:inherit}
+.mini .inp input,.inp.mini input{font-size:14px;padding:.4em .4em}
+.inp input::placeholder{color:#888}
+.inp input:disabled{opacity:.3}
+.inp.clear input{padding-right:34px}
+.inp .x{position:absolute;right:5px;top:50%;margin-top:-12px;width:24px;height:24px;padding:3px;border:0;
+  background:transparent;cursor:pointer}
+.inp .x .ic{display:block}
+
+/* ---------- Select (native, styled as a c-swatch button with arrow icon) ---------- */
+.sel{display:block;position:relative;margin:.5em 0;border-radius:1em;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.sel select{display:block;width:100%;margin:0;padding:.6em 40px .6em 20px;border:1px solid #ccc;border-radius:1em;
+  font:bold 16px Helvetica,Arial,sans-serif;color:#222;text-shadow:0 1px 0 #fff;text-align:center;text-align-last:center;
+  background:#eee linear-gradient(#fff,#f1f1f1);-webkit-appearance:none;appearance:none;cursor:pointer;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.sel select:hover{border-color:#bbb;background:#dfdfdf linear-gradient(#f6f6f6,#e0e0e0)}
+.sel select:focus{outline:0}
+.sel select:focus-visible{box-shadow:inset 0 0 3px #387bbe,0 0 9px #387bbe}
+.sel select:disabled{opacity:.3;cursor:default}
+.sel::after{content:"";position:absolute;right:10px;top:50%;margin-top:-9px;width:18px;height:18px;border-radius:9px;pointer-events:none;
+  background:rgba(0,0,0,.4) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M5 7.5l4 4 4-4' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center no-repeat;
+  box-shadow:0 1px 0 rgba(255,255,255,.4)}
+.sel.mini select,.mini .sel select{font-size:12.5px;padding:.55em 30px .5em 11px}
+.sel.mini::after,.mini .sel::after{right:5px}
+.sel.dis::after{opacity:.3}
+.w160{width:160px}
+
+/* ---------- Flip switch (checkbox role=switch; handle in swatch e) ---------- */
+.flip{display:inline-block;position:relative;width:160px;height:2.1em;margin:.5em 5px 0 0;vertical-align:middle;cursor:pointer}
+.flip input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.flip .track{position:absolute;inset:0;border:1px solid #bbb;border-radius:1em;overflow:hidden;
+  background:#d6d6d6 linear-gradient(#d0d0d0,#dfdfdf);box-shadow:inset 0 1px 4px rgba(0,0,0,.2)}
+.flip .on,.flip .off{position:absolute;top:0;bottom:0;display:flex;align-items:center;font-weight:bold;white-space:nowrap}
+.flip .on{left:0;right:0;padding:1px 30px 0 0;justify-content:center;color:#fff;text-shadow:0 1px 0 #3373a5;
+  background:#5393c5 linear-gradient(#5393c5,#6facd5);clip-path:inset(0 100% 0 0);transition:clip-path .15s}
+.flip .off{left:0;right:0;padding:1px 0 0 30px;justify-content:center;color:#333}
+.flip .handle{position:absolute;top:50%;left:1px;width:28px;height:28px;margin-top:-14px;border-radius:14px;
+  border:1px solid #f4c63f;background:#fadb4e linear-gradient(#ffefaa,#ffe155);box-shadow:0 1px 3px rgba(0,0,0,.2);
+  transition:left .15s}
+.flip input:checked~.track .on{clip-path:inset(0 0 0 0)}
+.flip input:checked~.track .off{visibility:hidden}
+.flip input:checked~.handle{left:calc(100% - 29px)}
+.flip input:focus-visible~.track{box-shadow:0 0 12px #387bbe}
+.flip input:disabled~.track,.flip input:disabled~.handle{opacity:.3}
+.flip.pending .handle{background:#fadb4e repeating-linear-gradient(45deg,#ffe155 0 4px,#ffefaa 4px 8px)}
+
+/* ---------- Layout helpers ---------- */
+.rows{display:grid;grid-template-columns:max-content minmax(0,198px);column-gap:3px;row-gap:2px;align-items:center}
+.rows>.lbl{font-weight:bold;line-height:1.1}
+.rows>.lbl small{display:block;font-weight:normal}
+.rows>.full{grid-column:1/-1;contain:inline-size}
+.rows .inp,.rows .sel,.rows .cg,.rows .cb{margin:.25em 0}
+/* Options rows: geometry measured from the live JQM page (via Codex's comparison) */
+.rows>.lbl{line-height:normal}
+.rows>.lbl small{font-size:13.33px;line-height:normal}
+.rows.mini .inp input,.rows .mini .inp input,.mini .rows .inp input{padding:5.6px 6.4px;line-height:19.6px}
+.rows.mini .seg .btn,.mini .rows .seg .btn,.rows.mini .cg>.btn{padding:7.875px 11px;line-height:normal}
+.mini .rows .cb .btn,.rows.mini .cb .btn{padding-top:6px;padding-bottom:6px;line-height:16.125px}
+.rows .inp.key{width:225px;max-width:100%}
+.rows .inp input::placeholder{font-size:12px}
+.status{display:grid;grid-template-columns:max-content max-content 1fr;column-gap:12px;row-gap:12px;align-items:center;margin:20px 6px 0}
+.status .inp{max-width:13.5em;margin:0}
+.status+.msg{margin:6px 6px 8px;min-height:0}
+.v{color:#000}
+.status>.k{font-weight:bold}
+.status>.wide{grid-column:2/-1}
+hr{border:0;border-top:1px solid rgba(0,0,0,.15);margin:.8em 0}
+.msg{min-height:1.2em;margin:.5em 0;font-weight:normal}
+.ok{color:green}.err{color:red}.info{color:#555}
+#lightlock:not([hidden]){display:flex;flex-wrap:wrap}
+.section-title{font-weight:bold;margin:.9em 0 .3em}
+
+/* ---------- Door picture (layered images, as today) ---------- */
+.pic{position:relative;width:112px;height:64px;margin-left:20px}
+.pic img{position:absolute;inset:0;width:100%;height:100%}
+.pic img[src=""],.pic img:not([src]){display:none}
+
+/* ---------- Tables (log) ---------- */
+table.log{border-collapse:collapse}
+table.log th,table.log td{border:1px solid #333;padding:6px;white-space:nowrap;text-align:left;vertical-align:middle}
+table.log th{text-align:center}
+@media (max-width:420px){table.log.sw{font-size:15px}table.log.sw th,table.log.sw td{padding:6px 3px}}
+@media (max-width:360px){table.log.sw{font-size:14px}table.log.sw td{white-space:normal}}
+table.log td.num{text-align:right;white-space:nowrap}
+table.log img{width:20px;height:15px;vertical-align:-2px;margin-right:4px}
+table.kv td{padding:1px 4px 1px 0}
+
+/* ---------- Popups (native <dialog>) ---------- */
+dialog.popup{padding:0;border:1px solid #bbb;border-radius:.6em;max-width:min(400px,calc(100% - 30px));
+  background:#fff;color:#333;box-shadow:0 0 15px rgba(0,0,0,.4)}
+dialog.popup::backdrop{background:rgba(17,17,17,.5)}
+dialog.popup .hdr{border-radius:.6em .6em 0 0}
+dialog.popup .hdr h1{padding-left:15px;padding-right:15px}
+dialog.popup .body{padding:15px}
+dialog.popup h3{margin:.2em 0 .6em;font-size:1.17em}
+dialog.popup.note{border-color:#999;max-width:280px;background:#f3f3f3 linear-gradient(#ddd,#ccc);color:#222}
+

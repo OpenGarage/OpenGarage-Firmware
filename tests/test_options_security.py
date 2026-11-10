@@ -26,6 +26,7 @@ stub = r'''
 #define F(x) x
 #define HEX 16
 #define STRING_RESERVE_SIZE 256
+#define STA_UI_HTML_GZ_ID "0123456789abcdef"
 using byte=unsigned char;
 struct String : std::string {
  using std::string::string; using std::string::operator=;

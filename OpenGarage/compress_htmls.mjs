@@ -2,6 +2,7 @@
 import { promises as fs } from "fs";
 import path from "path";
 import zlib from "zlib";
+import crypto from "crypto";
 import { minify } from "html-minifier-terser";
 
 const WEB_DIR = path.resolve("html");        // <-- adjust if needed
@@ -39,9 +40,26 @@ async function main() {
   console.log("OpenGarage HTML Compressor");
   console.log("--------------------------------------------------");
 
+  // Partials (leading underscore: shared CSS, JS and images) are inlined into the
+  // pages that include them, so every page stays a single self-contained request
+  // (also through the OTC proxy). They are never emitted as assets of their own.
   const files = (await fs.readdir(WEB_DIR))
-    .filter(f => f.endsWith(".html"))
+    .filter(f => f.endsWith(".html") && !f.startsWith("_"))
     .sort();
+
+  async function expandIncludes(text, from, depth = 0) {
+    if (depth > 4) throw new Error(`Include nesting too deep in ${from}`);
+    const pattern = /<!--\s*#include\s+([A-Za-z0-9_.-]+)\s*-->/g;
+    let out = "";
+    let last = 0;
+    for (const m of text.matchAll(pattern)) {
+      if (!m[1].startsWith("_")) throw new Error(`${from}: only _partials can be included (${m[1]})`);
+      const part = await fs.readFile(path.join(WEB_DIR, m[1]), "utf8");
+      out += text.slice(last, m.index) + await expandIncludes(part, m[1], depth + 1);
+      last = m.index + m[0].length;
+    }
+    return out + text.slice(last);
+  }
 
   let totalOrig = 0;
   let totalGz   = 0;
@@ -61,7 +79,12 @@ typedef struct {
 
   for (const fname of files) {
     const inPath = path.join(WEB_DIR, fname);
-    const raw = await fs.readFile(inPath, "utf8");
+    const expanded = await expandIncludes(await fs.readFile(inPath, "utf8"), fname);
+    // Content ID: hash of the page source (before the ID is substituted). Used as the HTTP ETag,
+    // and a page may embed its own ID through the __OG_PAGE_ID__ placeholder (the UI compares it with
+    // the ID the device reports, to reload itself after a firmware update).
+    const pageId = crypto.createHash("sha256").update(expanded).digest("hex").slice(0, 16);
+    const raw = expanded.split("__OG_PAGE_ID__").join(pageId);
     const origSize = Buffer.byteLength(raw, "utf8");
 
     const minified = await minify(raw, MINIFY_OPTIONS);
@@ -83,6 +106,7 @@ const uint8_t ${ident}[] PROGMEM = {
   ${chunkBytes([...gz])}
 };
 const size_t ${ident}_len = ${gz.length};
+#define ${ident.toUpperCase()}_ID "${pageId}"
 
 `;
 

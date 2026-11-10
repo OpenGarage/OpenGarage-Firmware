@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-const html=fs.readFileSync(new URL('../OpenGarage/html/sta_options.html',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../OpenGarage/html/sta_ui.html',import.meta.url),'utf8');
 const context=vm.createContext({});
 const start=html.indexOf('function cloud_endpoint(');
-vm.runInContext(html.slice(start,html.indexOf("$('#btn_submit').click",start)),context);
+const end=html.indexOf("$('btn_submit').addEventListener('click'",start);
+assert(start>=0 && end>start);
+vm.runInContext(html.slice(start,end),context);
 const hosts=['', 'blynk.openthings.io','ws.cloud.openthings.io','custom.example'];
 const expectedMigration=[
   [true,true,false,false], // Disabled: preserve custom/OTC endpoints.

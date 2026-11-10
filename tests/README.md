@@ -47,17 +47,11 @@ logic for write-only secrets and Blynk-to-OTC migration, and checks escaped MQTT
 status payloads against the configured packet capacity. A real browser/device
 upload and broker subscription remain necessary integration checks.
 
-For the real-widget slider regression, supply local copies of the exact
-`jquery-1.9.1.min.js` and `jquery.mobile-1.3.1.js` assets referenced by the page:
-
-```sh
-node tests/test_slider_gestures.cjs /path/to/jquery-1.9.1.min.js /path/to/jquery.mobile-1.3.1.js
-```
-
-This optional browser test uses `/opt/google/chrome/chrome`, a temporary profile,
-and a loopback-only simulated page. All commands are mocked; no device is contacted.
-It exercises jQuery Mobile's actual drag/disable lifecycle, which the smaller
-pending-state unit test does not model.
+The station pages (`sta_home`, `sta_options`, `sta_logs`) no longer use jQuery
+Mobile. Shared CSS, JavaScript and images live in `OpenGarage/html/_*` partials,
+which `compress_htmls.mjs` inlines into each page through `<!--#include ...-->`.
+The light/lock switches are native checkboxes, so the pending-state unit test
+covers their whole lifecycle; the earlier jQuery Mobile slider test was removed.
 
 The local-time tests cover rollover, NTP corrections and daily automation. The
 offline automation harness executes the production automation function with

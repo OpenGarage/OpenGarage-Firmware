@@ -160,6 +160,31 @@ void otf_send_compressed_P(OTF::Response& res, const __FlashStringHelper* conten
 	DEBUG_PRINTLN(F(" bytes sent."));
 }
 
+// Station UI page with browser caching. `etag` is the page's quoted content ID from htmls.h: the
+// browser may reuse its copy for 5 minutes, then revalidates and gets a bodyless 304 while the page
+// is unchanged. A firmware update changes the ID; the UI also compares it with "ui" in /jc and
+// reloads itself. OTF lowercases header names; its local server (0.2.6) keeps only Content-Length,
+// so If-None-Match arrives only on OTC-forwarded requests (the max-age cache works on both paths).
+void otf_send_cached_page_P(const OTF::Request &req, OTF::Response &res, const __FlashStringHelper* content, size_t len, const __FlashStringHelper* etag) {
+	const char *inm = req.getHeader(F("If-None-Match"));
+	if (!inm) inm = req.getHeader(F("if-none-match"));
+	const bool unchanged = inm && strstr_P(inm, (PGM_P)etag);
+	res.writeStatus(unchanged ? 304 : 200, unchanged ? F("Not Modified") : F("OK"));
+	res.writeHeader(F("ETag"), etag);
+	res.writeHeader(F("Cache-Control"), F("private, max-age=300"));
+	res.writeHeader(F("Vary"), F("Accept-Encoding"));
+	res.writeHeader(F("Access-Control-Allow-Origin"), F("*"));
+	if (unchanged) {
+		res.writeHeader(F("Connection"), F("close"));
+		return;
+	}
+	res.writeHeader(F("Content-Type"), F("text/html; charset=utf-8"));
+	res.writeHeader(F("Content-Length"), len);
+	res.writeHeader(F("Content-Encoding"), F("gzip"));
+	res.writeHeader(F("Connection"), F("close"));
+	res.writeBodyData(content, len);
+}
+
 void otf_send_json(OTF::Response &res, const String &json) {
 	res.writeStatus(200, F("OK"));
 	res.writeHeader(F("Content-Type"), F("application/json"));
@@ -320,21 +345,21 @@ void complete_ap_setup() {
 	start_tune(og_audio::Tune::SETUP_SUCCESS);
 }
 
+static void send_sta_ui(const OTF::Request &req, OTF::Response &res) {
+	otf_send_cached_page_P(req, res, (const __FlashStringHelper*)sta_ui_html_gz, sta_ui_html_gz_len, F("\"" STA_UI_HTML_GZ_ID "\""));
+}
+
 void on_home(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_AP) {
 		otf_send_compressed_P(res, (const __FlashStringHelper*)ap_home_html_gz, ap_home_html_gz_len);
 	} else {
-	otf_send_compressed_P(res, (const __FlashStringHelper*)sta_home_html_gz, sta_home_html_gz_len);
+		send_sta_ui(req, res);
 	}
 }
 
-void on_sta_view_options(const OTF::Request &req, OTF::Response &res) {
-	otf_send_compressed_P(res, (const __FlashStringHelper*)sta_options_html_gz, sta_options_html_gz_len);
-}
-
-void on_sta_view_logs(const OTF::Request &req, OTF::Response &res) {
-	otf_send_compressed_P(res, (const __FlashStringHelper*)sta_logs_html_gz, sta_logs_html_gz_len);
-}
+// Home, Options and Log are one page (sta_ui.html); it opens the view that matches the path.
+void on_sta_view_options(const OTF::Request &req, OTF::Response &res) { send_sta_ui(req, res); }
+void on_sta_view_logs(const OTF::Request &req, OTF::Response &res) { send_sta_ui(req, res); }
 
 char dec2hexchar(byte dec) {
 	if(dec<10) return '0'+dec;
@@ -401,6 +426,7 @@ void sta_controller_fill_json(String& json) {
 	json += read_cnt;
 json += F(",\"fwv\":");
 	json += og.options[OPTION_FWV].ival;
+	json += F(",\"ui\":\"" STA_UI_HTML_GZ_ID "\"");  // station UI content ID: an open page reloads when it changes
 	json += F(",\"has_swrx\":");
 	json += og.has_swrx;
 	if(og.has_swrx) {

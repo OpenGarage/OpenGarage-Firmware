@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenGarage</title>
+<style>
+<!--#include _og.css-->
+/* Door state colors: one solid color per state, shared by the door button and the status text.
+   0 closed, 1 open, 2 stopped, 3 closing, 4 opening; no state class = unknown/offline. */
+.btn.door{color:#fff;text-shadow:none;border-color:#2e5680;background:#396b9e}
+.btn.door.s0{border-color:#106432;background:#15803d}
+.btn.door.s1{border-color:#9e2020;background:#c62828}
+.btn.door.s2{border-color:#b8651b;background:#e67e22}
+.btn.door.s3{border-color:#216694;background:#2980b9}
+.btn.door.s4{border-color:#621882;background:#7b1fa2}
+.btn.door:hover{filter:brightness(1.08)}
+.btn.door:active{filter:brightness(.9)}
+  #div_cloud .rows{grid-template-columns:max-content minmax(0,195px)}
+  #div_other{grid-template-columns:max-content minmax(0,160px)}
+  .auto-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:.2em 0 .5em}
+  .auto-row .inp.num{width:39px;margin:0}
+  .auto-row .cb.inline{margin:0}
+  .rows .cb.full{margin:4px 0}
+  #div_cloud hr{margin:8px 0}
+  #o_msg:empty{min-height:0;margin:0 0 12px}
+  .auto-row .u{width:57px}
+  .rows>span>.cb{margin:.25em 0}
+#chart_sec{margin-top:1em;padding:8px 8px 2px;border:1px solid #ccc;border-radius:.6em;background:#fafafa;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.chart-bar{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px}
+.chart-bar .cg{margin:0}
+.chart-hint{font-size:12px;color:#777}
+.chart{position:relative;margin:.4em 0 0;user-select:none;-webkit-user-select:none}
+.chart svg{display:block;width:100%;height:206px;touch-action:pan-y;font:11px Helvetica,Arial,sans-serif;cursor:crosshair}
+.chart .fr{fill:#fff;stroke:#bbb}
+.chart .gl{stroke:#ebebeb}
+.chart .yl{fill:#555}
+.chart .xl{fill:#555;text-anchor:middle}
+.chart .th{stroke:#999;stroke-dasharray:4 3}
+.chart .tl{fill:#888;font-size:10px}
+.chart .vc{stroke:#888;stroke-width:1.5}
+.chart .dl{fill:none;stroke:#387bbe;stroke-width:1.5}
+.chart #ch_sel{fill:#387bbe;opacity:.2}
+.chart #ch_cur{stroke:#333;stroke-dasharray:2 2}
+.ctip{position:absolute;top:2px;pointer-events:none;background:rgba(40,40,40,.92);color:#fff;font-size:12px;line-height:1.35;
+  padding:4px 8px;border-radius:5px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.ctip b{font-weight:bold}
+</style></head>
+<body><div class="page">
+<header class="hdr btns wide" id="hdr"><a class="hbtn left icon" id="btn_opts" href="vo" aria-label="Options" title="Options"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.9 5.0L10.1 2.2L13.9 2.2L14.1 5.0L17.0 6.7L19.5 5.4L21.5 8.7L19.1 10.4L19.1 13.6L21.5 15.3L19.5 18.6L17.0 17.3L14.1 19.0L13.9 21.8L10.1 21.8L9.9 19.0L7.0 17.3L4.5 18.6L2.5 15.3L4.9 13.6L4.9 10.4L2.5 8.7L4.5 5.4L7.0 6.7Z"/><circle cx="12" cy="12" r="2.8"/></svg></a><a class="hbtn left" id="btn_back" href="./" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Back</a><h1 id="title">OG</h1><a class="hbtn right icon" id="btn_log" href="vl" aria-label="Log" title="Log"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><g fill="currentColor" stroke="none"><circle cx="4.5" cy="6" r="1.5"/><circle cx="4.5" cy="12" r="1.5"/><circle cx="4.5" cy="18" r="1.5"/></g></svg></a></header>
+<main class="content" id="v_home">
+  <div class="status">
+    <span class="k">Door:</span><span id="lbl_status">-</span>
+    <div class="pic" id="pic" style="grid-row:span 2"><img id="car_pic" alt=""><img id="door_pic" alt=""><img id="arrow_pic" alt=""></div>
+    <span class="k" id="lbl_vstatus1">Vehicle:</span><span id="lbl_vstatus">-</span>
+    <span class="k">Distance:</span><span class="wide v" id="lbl_dist">-</span>
+    <span class="k">Read Cnt.:</span><span class="wide v" id="lbl_beat">-</span>
+    <span class="k" data-row="sn2" hidden>Switch Sn. :</span><span class="wide" data-row="sn2" id="lbl_sn2" hidden>-</span>
+    <span class="k" data-row="obstruct" hidden>Obstructed:</span><span class="wide" data-row="obstruct" id="lbl_obstruct" hidden>-</span>
+    <span class="k" data-row="pemu" hidden>Panel Emulate:</span><span class="wide" data-row="pemu" id="lbl_pemu" hidden>-</span>
+    <span class="k" data-row="fault" hidden>Control Fault:</span><span class="wide err" data-row="fault" hidden>Command delivery uncertain. Check the opener, then restart OpenGarage to restore controls.</span>
+    <span class="k" data-row="llunk" hidden>Light / Lock:</span><span class="wide" data-row="llunk" hidden>Unknown (waiting for status)</span>
+    <span class="k">WiFi Signal:</span><span class="wide" id="lbl_rssi">-</span>
+    <span class="k">Cloud:</span><span class="wide" id="lbl_cld">-</span>
+    <span class="k" data-row="th" hidden>T/H sensor:</span><span class="wide" data-row="th" id="lbl_th" hidden>-</span>
+    <label class="k" for="dkey">Device Key:</label>
+    <span class="wide"><span class="inp clear"><input type="password" id="dkey" maxlength="64" autocomplete="current-password"><button type="button" class="x" aria-label="Clear device key"><span class="ic ic-del"></span></button></span></span>
+  </div>
+  <p class="msg" id="msg" role="status"></p>
+
+  <div id="lightlock" hidden>
+    <label class="flip" id="flip_light"><input type="checkbox" role="switch" id="lightflip" aria-label="Light" disabled>
+      <span class="track"><span class="on">Light On</span><span class="off">Light Off</span></span><span class="handle"></span></label>
+    <label class="flip" id="flip_lock"><input type="checkbox" role="switch" id="lockflip" aria-label="Lock" disabled>
+      <span class="track"><span class="on">Lock Active</span><span class="off">Lock Inactive</span></span><span class="handle"></span></label>
+  </div>
+  <button type="button" class="btn b door" id="btn_click"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 10 12 3.5 21.5 10V20.5h-19z"/><path d="M6.5 20.5V12h11v8.5M6.5 15h11M6.5 18h11"/></svg><span id="lbl_click">Door</span></button>
+  <div class="cg fill">
+    <button type="button" class="btn c" id="btn_rbt">Reboot</button>
+    <button type="button" class="btn c" id="btn_rap">Reset WiFi</button>
+    <button type="button" class="btn c" id="btn_cll">Clear Log</button>
+  </div>
+</main>
+<main class="content" id="v_opts" hidden>
+  <div class="cg seg" role="radiogroup" aria-label="Option group">
+    <label><input type="radio" name="opt_group" id="basic" value="basic" checked><span class="btn c">Basic</span></label>
+    <label><input type="radio" name="opt_group" id="cloud" value="cloud"><span class="btn c">Integration</span></label>
+    <label><input type="radio" name="opt_group" id="other" value="other"><span class="btn c">Advanced</span></label>
+  </div>
+
+  <!-- Basic -->
+  <div id="div_basic" class="rows mini">
+    <label class="lbl" for="name">Device Name:</label><span class="inp"><input type="text" id="name" maxlength="32"></span>
+    <label class="lbl" for="sn1">Distance Sensor:<small>mounting method</small></label>
+    <span class="sel w160"><select id="sn1"><option value="0">Ceiling Mount</option><option value="1">Side Mount</option></select></span>
+    <span class="lbl" data-row="secv" hidden>Security+ Ver. :<small>Learn button color</small></span>
+    <div class="cg seg mini" data-row="secv" hidden role="radiogroup" aria-label="Security+ version">
+      <label><input type="radio" name="secv" id="secv2" value="2" class="sec-yellow"><span class="btn c">2.0</span></label>
+      <label><input type="radio" name="secv" id="secv1" value="1" class="sec-purple"><span class="btn c">1.0</span></label>
+      <label><input type="radio" name="secv" id="secv0" value="0" class="sec-green" checked><span class="btn c">None</span></label>
+      <button type="button" class="btn a" id="btn_autodetect">Detect</button>
+    </div>
+    <span class="lbl" data-row="pem" hidden>Panel Emulate:</span>
+    <div class="cg seg mini" data-row="pem" hidden role="radiogroup" aria-label="Panel emulation">
+      <label><input type="radio" name="pem" id="pem0" value="0" checked><span class="btn c">Auto</span></label>
+      <label><input type="radio" name="pem" id="pem1" value="1"><span class="btn c">Disable</span></label>
+    </div>
+    <span class="lbl" data-row="cid" hidden>Client ID:<small id="secplus2_client_id">-</small></span>
+    <span data-row="cid" hidden><button type="button" class="btn c mini inline" style="margin-left:0" id="btn_regenerate_id">Regenerate Sec+ 2 Client ID</button></span>
+    <label class="lbl" for="dth" data-row="dth">Door Thres. (cm):</label><span class="inp" data-row="dth"><input type="text" inputmode="numeric" id="dth" maxlength="4"></span>
+    <label class="lbl" for="vth">Car Thres. (cm):<small>set to 0 to disable</small></label><span class="inp"><input type="text" inputmode="numeric" id="vth" maxlength="4"></span>
+    <label class="lbl" for="riv">Status Check (s):<small>check status every</small></label><span class="inp"><input type="text" inputmode="numeric" id="riv" maxlength="3"></span>
+    <label class="lbl" for="cdt">Click Time (ms):</label><span class="inp"><input type="text" inputmode="numeric" id="cdt" maxlength="5"></span>
+    <label class="lbl" for="sn2" data-row="sn2">Switch Sensor:<small>on G04 and GND</small></label>
+    <span class="sel w160" data-row="sn2"><select id="sn2"><option value="0">(none)</option><option value="1">Normally Closed</option><option value="2">Normally Open</option></select></span>
+    <label class="lbl" for="sno" data-row="sno">Sensor Logic:</label>
+    <span class="sel w160" data-row="sno" id="sel_sno"><select id="sno"><option value="0">Dist. sensor only</option><option value="1">Switch sensor only</option><option value="2">Dist. AND Switch</option><option value="3">Dist. OR Switch</option></select></span>
+    <label class="lbl" for="tsn">T/H Sensor:</label>
+    <span class="sel w160"><select id="tsn"><option value="0">(none)</option><option value="2">DHT11 on G04</option><option value="3">DHT22 on G04</option><option value="4">DS18B20 on G04</option></select></span>
+    <label class="lbl" for="alm">Sound Alarm:</label>
+    <span class="sel w160"><select id="alm"><option value="0">Disabled</option><option value="1">5 seconds</option><option value="2">10 seconds</option></select></span>
+    <label class="cb full"><input type="checkbox" id="aoo"><span class="btn c">Do not alarm when opening</span></label>
+    <span class="lbl"><label for="lsz">Log Size:</label><button type="button" class="btn c icon" id="btn_lsz_info" aria-label="Important note about log size"><span class="ic ic-info"></span></button></span>
+    <span class="sel w160"><select id="lsz"><option value="20">20</option><option value="50">50</option><option value="100">100</option><option value="200">200</option><option value="400">400</option></select></span>
+  </div>
+
+  <!-- Integration -->
+  <div id="div_cloud" class="mini" hidden>
+    <div class="rows">
+      <label class="cb full"><input type="checkbox" id="cld"><span class="btn c">Enable OTC Cloud Connection</span></label>
+      <p class="full" id="cloud_retired" hidden>Blynk support has been retired. Configure an OTC token to enable cloud access.</p>
+      <label class="lbl cld" for="auth">Cloud Token:</label>
+      <span class="cld"><span class="inp"><input type="password" id="auth" maxlength="64" placeholder="(unchanged if left blank)"></span>
+        <label class="cb"><input type="checkbox" id="clear_auth"><span class="btn c">Clear saved token</span></label></span>
+      <label class="lbl cld" for="bdmn">Cloud Server:</label><span class="inp cld"><input type="text" id="bdmn" maxlength="64"></span>
+      <label class="lbl cld" for="bprt">Cloud Port:</label><span class="inp cld"><input type="text" inputmode="numeric" id="bprt" maxlength="5"></span>
+      <hr class="full cld">
+      <label class="cb full"><input type="checkbox" id="mqen"><span class="btn c">Enable MQTT</span></label>
+      <label class="lbl mqt" for="mqtt">MQTT Server:</label><span class="inp mqt"><input type="text" id="mqtt" maxlength="64"></span>
+      <label class="lbl mqt" for="mqpt">MQTT Port:</label><span class="inp mqt"><input type="text" inputmode="numeric" id="mqpt" maxlength="5"></span>
+      <label class="lbl mqt" for="mqur">MQTT Username:</label><span class="inp mqt"><input type="text" id="mqur" maxlength="64" placeholder="(optional)"></span>
+      <label class="lbl mqt" for="mqpw">MQTT Password:</label>
+      <span class="mqt"><span class="inp"><input type="password" id="mqpw" maxlength="64" placeholder="(unchanged if left blank)"></span>
+        <label class="cb"><input type="checkbox" id="clear_mqpw"><span class="btn c">Clear saved password</span></label></span>
+      <label class="lbl mqt" for="mqtp">MQTT Topic:</label><span class="inp mqt"><input type="text" id="mqtp" maxlength="64" placeholder="(optional)"></span>
+      <hr class="full mqt">
+      <label class="cb full"><input type="checkbox" id="emen"><span class="btn c">Enable Email Notifications</span></label>
+      <label class="lbl email" for="smtp">SMTP Server:</label><span class="inp email"><input type="text" id="smtp" maxlength="64"></span>
+      <label class="lbl email" for="sprt">SMTP Port:</label><span class="inp email"><input type="text" inputmode="numeric" id="sprt" maxlength="5"></span>
+      <label class="lbl email" for="send">Sender Email:</label><span class="inp email"><input type="email" id="send" maxlength="64"></span>
+      <label class="lbl email" for="apwd">App Password:</label>
+      <span class="email"><span class="inp"><input type="password" id="apwd" maxlength="64" placeholder="(unchanged if left blank)"></span>
+        <label class="cb"><input type="checkbox" id="clear_apwd"><span class="btn c">Clear saved password</span></label></span>
+      <label class="lbl email" for="recp">Recipient Email:</label><span class="inp email"><input type="email" id="recp" maxlength="64"></span>
+      <span class="lbl full" style="margin-top:.6em">Choose Notification Events:</span>
+      <div class="cg seg full" role="group" aria-label="Notification events">
+        <label><input type="checkbox" id="noto0"><span class="btn c">Door Opened</span></label>
+        <label><input type="checkbox" id="noto1"><span class="btn c">Door Closed</span></label>
+        <label><input type="checkbox" id="noto2"><span class="btn c">Door Stopped</span></label>
+      </div>
+      <label class="lbl" for="iftt">IFTTT Key:</label>
+      <span><span class="inp"><input type="password" id="iftt" maxlength="64" placeholder="(unchanged if left blank)"></span>
+        <label class="cb"><input type="checkbox" id="clear_iftt"><span class="btn c">Clear saved key</span></label></span>
+    </div>
+    <hr>
+    <div class="section-title" style="margin-top:0">Automation:</div>
+    <div>If open for longer than:</div>
+    <div class="auto-row"><span class="inp num"><input type="text" inputmode="numeric" id="ati" maxlength="3" aria-label="Minutes open"></span><span class="u">minutes:</span>
+      <label class="cb inline"><input type="checkbox" id="ato0"><span class="btn c">Notify me</span></label>
+      <label class="cb inline"><input type="checkbox" id="ato1"><span class="btn c">Auto-close</span></label></div>
+    <div>If open after time: <small>(Use UTC 24hr format)</small>:</div>
+    <div class="auto-row"><span class="inp num"><input type="text" inputmode="numeric" id="atib" maxlength="3" aria-label="Hour (UTC)"></span><span class="u">UTC:</span>
+      <label class="cb inline"><input type="checkbox" id="atob0"><span class="btn c">Notify me</span></label>
+      <label class="cb inline"><input type="checkbox" id="atob1"><span class="btn c">Auto-close</span></label></div>
+  </div>
+
+  <!-- Advanced -->
+  <div id="div_other" class="rows mini" hidden>
+    <label class="lbl" for="dri">Read Intv. (ms):<small>read sensor every</small></label><span class="inp"><input type="text" inputmode="numeric" id="dri" maxlength="5"></span>
+    <span class="lbl">Sensor Filter:<small>noise filter method</small></span>
+    <div class="cg seg mini" role="radiogroup" aria-label="Sensor filter">
+      <label><input type="radio" name="rd_sf" id="sf_med" value="0"><span class="btn c">Median</span></label>
+      <label><input type="radio" name="rd_sf" id="sf_con" value="1"><span class="btn c">Consensus</span></label>
+    </div>
+    <label class="lbl" for="cmr" data-row="cmr">Margin (cm):</label><span class="inp" data-row="cmr"><input type="text" inputmode="numeric" id="cmr" maxlength="5"></span>
+    <span class="lbl">Dist. Timeout:<small>timeout handling</small></span>
+    <div class="cg seg mini" role="radiogroup" aria-label="Distance timeout">
+      <label><input type="radio" name="rd_to" id="to_ignore" value="0"><span class="btn c">Ignore</span></label>
+      <label><input type="radio" name="rd_to" id="to_cap" value="1"><span class="btn c">Cap</span></label>
+    </div>
+    <label class="lbl" for="bas">Stop Blink After:<small>set to 0 to disable</small></label><span class="inp"><input type="text" inputmode="numeric" id="bas" maxlength="2"></span>
+    <label class="lbl" for="htp">HTTP Port:</label><span class="inp"><input type="text" inputmode="numeric" id="htp" maxlength="5"></span>
+    <label class="lbl" for="host">Host Name:</label><span class="inp"><input type="text" id="host" maxlength="32" placeholder="(optional)"></span>
+    <label class="lbl" for="ntp1">NTP Server:</label><span class="inp"><input type="text" id="ntp1" maxlength="64" placeholder="(optional)"></span>
+    <label class="lbl" for="wfr">WiFi AP Selection:</label>
+    <span class="sel w160"><select id="wfr"><option value="1">Automatic</option><option value="0">Off</option></select></span>
+    <label class="cb full"><input type="checkbox" id="usi"><span class="btn c">Use Static IP</span></label>
+    <label class="lbl si" for="dvip">Device IP:</label><span class="inp si"><input type="text" id="dvip" maxlength="15"></span>
+    <label class="lbl si" for="gwip">Gateway IP:</label><span class="inp si"><input type="text" id="gwip" maxlength="15"></span>
+    <label class="lbl si" for="subn">Subnet:</label><span class="inp si"><input type="text" id="subn" maxlength="15"></span>
+    <label class="lbl si" for="dns1">DNS1:</label><span class="inp si"><input type="text" id="dns1" maxlength="64"></span>
+    <label class="cb full"><input type="checkbox" id="cb_key"><span class="btn c">Change Device Key</span></label>
+    <label class="lbl ckey" for="nkey">New Key:</label><span class="inp ckey"><input type="password" id="nkey" maxlength="64" autocomplete="new-password"></span>
+    <label class="lbl ckey" for="ckey">Confirm:</label><span class="inp ckey"><input type="password" id="ckey" maxlength="64" autocomplete="new-password"></span>
+  </div>
+
+  <br>
+  <div class="rows mini" style="grid-template-columns:max-content minmax(0,225px)">
+    <label class="lbl" for="o_dkey">Device Key:</label>
+    <span class="inp clear key"><input type="password" id="o_dkey" maxlength="64" autocomplete="current-password"><button type="button" class="x" aria-label="Clear device key"><span class="ic ic-del"></span></button></span>
+  </div>
+  <p class="msg" id="o_msg" role="status"></p>
+  <div class="cg"><button type="button" class="btn b" id="btn_submit">Submit</button></div>
+</main>
+<main class="content" id="v_log" hidden>
+  <table class="kv">
+    <tr><td>Current Time:</td><td><strong id="lbl_time"></strong></td></tr>
+    <tr><td>Start Time:</td><td><strong id="lbl_start_time"></strong></td></tr>
+    <tr><td>Up Time:</td><td><strong id="lbl_up_time"></strong></td></tr>
+  </table>
+  <p>Below are the most recent&nbsp;<strong id="lbl_nr"></strong>&nbsp;records</p>
+  <section id="chart_sec" aria-label="Door activity chart" hidden>
+    <div class="chart-bar">
+      <div class="cg seg mini" role="radiogroup" aria-label="Chart range">
+        <label><input type="radio" name="rng" value="0"><span class="btn c">All</span></label>
+        <label><input type="radio" name="rng" value="604800"><span class="btn c">Week</span></label>
+        <label><input type="radio" name="rng" value="86400" checked><span class="btn c">Day</span></label>
+        <label><input type="radio" name="rng" value="3600"><span class="btn c">Hour</span></label>
+      </div>
+      <span class="chart-hint" id="chart_hint">Drag across the chart to zoom</span>
+    </div>
+    <div class="chart" id="chart">
+      <svg id="chart_svg" role="img" aria-label="Door state and distance over time"></svg>
+      <div class="ctip" id="chart_tip" hidden></div>
+    </div>
+  </section>
+  <p class="info" id="chart_none" hidden></p>
+  <div style="margin-top:1.2em">
+    <table class="log" id="tab_log">
+      <thead><tr><th>Event</th><th>DateTime</th><th>Dist.</th><th id="col_sn2" title="Switch sensor" hidden>Sw.</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</main>
+<footer class="ftr" id="footer">
+  <p>OpenGarage Firmware v<span id="fwv">-</span></p>
+  <div class="cg mini"><a class="btn c mini" href="update" target="_top">Firmware Update</a><a class="btn c mini" href="https://opengarage.github.io/OpenGarage-Firmware/manual/" target="_blank" rel="noopener">User Manual</a></div>
+</footer>
+</div>
+
+<dialog class="popup" id="detectPopup" aria-labelledby="popupStatusText">
+  <header class="hdr"><h1>Auto-Detect</h1></header>
+  <div class="body">
+    <h3 id="popupStatusText">Detecting Security+ Version ....</h3>
+    <p id="popupMessageText">This will take up to 15 seconds. Please do not close or refresh the page.</p>
+    <button type="button" class="btn c" id="popupOkButton" hidden>OK</button>
+  </div>
+</dialog>
+<dialog class="popup note" id="lszInfo"><div class="body">If you change log size, please Clear Log for the new size to take effect.</div></dialog>
+
+<script>
+<!--#include _og.js-->
+<!--#include _door_images.js-->
+<!--#include _log_icons.js-->
+</script>
+<script>
+/* ===== Home ===== */
+const msg = $('msg'), dkey = $('dkey');
+let si;
+function home_row(name, show) { $$('[data-row="' + name + '"]', $('v_home')).forEach(e => { e.hidden = !show; }); }
+function home_clear() {
+  showMsg(msg, '');
+  if (switchState.light.pending || switchState.lock.pending) render_switch_message();
+}
+function home_msg(text, ms, cls) { showMsg(msg, text, cls); if (ms > 0) setTimeout(home_clear, ms); }
+function key_param() { return 'dkey=' + encodeURIComponent(saveDeviceKey(dkey)); }
+wireDeviceKey(dkey, () => home_msg('Cleared saved key.', 1500, 'ok'));
+
+/* Device commands: 'cc?...' and 'clearlog?...' with the device key, as before. */
+function do_action_command(comm, complete) {
+  getJSON('cc?' + comm + '&' + key_param())
+    .then(jd => {
+      if (jd.result != 1) home_msg('Check device key and try again.', 2000, 'err');
+      else home_clear();
+      if (complete) complete(jd.result == 1);
+    })
+    .catch(err => {
+      showMsg(msg, 'Request Failed: ' + (err.name === 'AbortError' ? 'timeout' : err.message), 'err');
+      if (complete) complete(false);
+    });
+}
+function confirmed_command(question, url, done) {
+  if (!confirm(question)) return;
+  home_clear();
+  getJSON(url).then(jd => {
+    if (jd.result != 1) home_msg('Check device key and try again.', 2000, 'err');
+    else done();
+  }).catch(err => showMsg(msg, 'Request Failed: ' + err.message, 'err'));
+}
+$('btn_click').addEventListener('click', () => do_action_command('click=1'));
+$('btn_cll').addEventListener('click', () => confirmed_command('Clear log data?', 'clearlog?' + key_param(),
+  () => home_msg('Log data cleared', 2000, 'ok')));
+$('btn_rbt').addEventListener('click', () => confirmed_command('Reboot the device now?', 'cc?reboot=1&' + key_param(), () => {
+  home_msg('Rebooting. Please wait...', 0, 'ok');
+  clearInterval(si);
+  setTimeout(() => location.reload(), 10000);
+}));
+$('btn_rap').addEventListener('click', () => confirmed_command('Reset the device to AP mode?', 'cc?apmode=1&' + key_param(), () => {
+  clearInterval(si);
+  showMsg(msg, '', 'ok');
+  msg.innerHTML = 'Device is now in AP mode. Log on<br>to SSID OG_xxxxxx, then <br> click <a href="http://192.168.4.1">http://192.168.4.1</a><br>to configure.';
+}));
+
+/* Light / lock switches. UI-only pending states: never retry a toggle and never treat
+   HTTP acceptance as physical confirmation. Polls started before a click cannot confirm it. */
+var switchPoll = 0, appliedSwitchPoll = 0, switchMessage = '';
+var switchState = {
+  light: {value: '0', valid: false, pending: null, message: ''},
+  lock: {value: '0', valid: false, pending: null, message: ''}
+};
+function render_switch_message() {
+  var messages = [];
+  ['light', 'lock'].forEach(function(name) {
+    var state = switchState[name], label = name === 'light' ? 'Light' : 'Lock';
+    if (!state.pending && state.message) messages.push(label + ': ' + state.message);
+  });
+  var message = messages.join(' ');
+  if (message) showMsg(msg, message, 'info');
+  else if (msg.textContent === switchMessage) msg.textContent = '';
+  switchMessage = message;
+}
+function render_switch(name) {
+  var state = switchState[name], box = $(name + 'flip');
+  box.checked = (state.pending ? state.pending.value : state.value) === '1';
+  box.disabled = !!state.pending || !state.valid;
+  $('flip_' + name).classList.toggle('pending', !!state.pending);
+  render_switch_message();
+}
+function finish_switch(name, pending, message) {
+  var state = switchState[name];
+  if (state.pending !== pending) return;
+  clearTimeout(pending.timer);
+  state.pending = null; state.message = message;
+  render_switch(name);
+}
+function request_switch(name) {
+  var state = switchState[name];
+  if (state.pending || !state.valid) { render_switch(name); return; }
+  var value = $(name + 'flip').checked ? '1' : '0';
+  if (value === state.value) return;
+  var pending = {value: value, afterPoll: switchPoll};
+  state.pending = pending; state.message = '';
+  pending.timer = setTimeout(function() {
+    finish_switch(name, pending, 'Not confirmed; showing last reported state.');
+  }, 4000);
+  render_switch(name);
+  do_action_command(name + '=toggle', function(ok) {
+    if (!ok) finish_switch(name, pending, 'Request not confirmed; showing last reported state.');
+  });
+}
+function observe_switches(jd, poll) {
+  if (poll < appliedSwitchPoll) return;
+  appliedSwitchPoll = poll;
+  ['light', 'lock'].forEach(function(name) {
+    var state = switchState[name], pending = state.pending;
+    if (pending && poll <= pending.afterPoll) return;
+    state.valid = jd.light_lock_valid !== 0 && (jd[name] === 0 || jd[name] === 1);
+    if (!pending && state.valid) state.message = '';
+    if (state.valid) state.value = String(jd[name]);
+    if (pending && state.valid && state.value === pending.value) finish_switch(name, pending, '');
+    render_switch(name);
+  });
+}
+['light', 'lock'].forEach(name => $(name + 'flip').addEventListener('change', () => request_switch(name)));
+
+/* Status poll: /jc every 2 seconds, same rules as before. */
+const DOOR = [['CLOSED', '#15803d', 'closed', ''], ['OPENED', '#c62828', 'open', ''], ['STOPPED', '#e67e22', 'partial', ''],
+  ['CLOSING', '#2980b9', 'partial', 'arrow_down'], ['OPENING', '#7b1fa2', 'partial', 'arrow_up']];
+/* Door button color by state (0 closed, 1 open, 2 stopped, 3 closing, 4 opening); -1 = unknown/offline. */
+function set_door_color(door) {
+  const b = $('btn_click');
+  for (let i = 0; i < 5; i++) b.classList.toggle('s' + i, i === door);
+}
+function set_img(id, key) { const img = $(id); if (key) img.src = OG_SVG[key]; else img.removeAttribute('src'); }
+function show() {
+  var poll = ++switchPoll;
+  getJSON('jc', 5000).then(function(jd) {
+    if (poll < appliedSwitchPoll) return;
+    $('fwv').textContent = fwLabel(jd.fwv);
+    $('lbl_dist').textContent = jd.dist + ' (cm)';
+    $('lbl_dist').style.color = jd.dist == 450 ? 'red' : '';
+    const D = DOOR[jd.door] || ['UNKNOWN', '#396b9e', '', ''];
+    $('lbl_status').textContent = D[0]; $('lbl_status').style.color = D[1];
+    if (DOOR[jd.door]) { set_img('door_pic', D[2]); set_img('arrow_pic', D[3]); }
+    $('lightlock').hidden = jd.light === undefined || jd.lock === undefined;
+    observe_switches(jd, poll);
+    home_row('llunk', jd.light_lock_valid === 0);
+    if (jd.vehicle >= 2) {
+      $('lbl_vstatus1').style.visibility = 'hidden';
+      $('lbl_vstatus').textContent = '';
+    } else {
+      $('lbl_vstatus1').style.visibility = '';
+      $('lbl_vstatus').textContent = jd.vehicle == 1 ? 'Present' : (jd.vehicle == 0 ? 'Absent' : 'Unavailable');
+    }
+    const car = $('car_pic');
+    if (jd.vehicle < 3 && jd.vehicle > 0) { car.src = OG_SVG.car; car.style.filter = jd.vehicle == 1 ? 'brightness(0)' : ''; }
+    else car.removeAttribute('src');
+    home_row('sn2', jd.sn2 !== undefined);
+    if (jd.sn2 !== undefined) $('lbl_sn2').textContent = jd.sn2 ? 'High' : 'Low';
+    $('lbl_beat').textContent = jd.rcnt; $('lbl_beat').className = 'wide v';
+    $('lbl_rssi').textContent = (jd.rssi > -71 ? 'Good' : (jd.rssi > -81 ? 'Weak' : 'Poor')) + ' (' + jd.rssi + ' dBm)';
+    $('lbl_cld').textContent = jd.cld == 0 ? 'None' : jd.cld == 1 ? 'Blynk retired — configure OTC in Edit Options'
+      : 'OTC ' + ['(not enabled)', '(connecting...)', '(disconnected)', '(connected)'][jd.clds];
+    dev_name = jd.name; set_title();
+    if (jd.ui && jd.ui !== UI_ID) ui_changed(jd.ui);
+    $('lbl_click').textContent = jd.door >= 2 ? 'Toggle Door' : (jd.door ? 'Close Door' : 'Open Door');
+    set_door_color(DOOR[jd.door] ? jd.door : -1);
+    home_row('th', jd.temp !== undefined);
+    if (jd.temp !== undefined)
+      $('lbl_th').textContent = jd.temp.toFixed(1) + '°C / ' + (jd.temp * 1.8 + 32).toFixed(1) + '°F (H:' + jd.humid.toFixed(1) + '%)';
+    home_row('pemu', jd.pemu !== undefined);
+    if (jd.pemu !== undefined) {
+      const P = jd.pemu === 2 ? ['Detecting Wall Panel...', 'violet'] : jd.pemu === 1 ? ['Active', 'green'] : ['Inactive', ''];
+      $('lbl_pemu').textContent = P[0]; $('lbl_pemu').style.color = P[1];
+    }
+    if (jd.panel_status !== undefined) { $('lbl_pemu').textContent = jd.panel_status; $('lbl_pemu').style.color = ''; }
+    home_row('fault', jd.control_fault === 1);
+    home_row('obstruct', jd.obstruct !== undefined);
+    if (jd.obstruct !== undefined) {
+      $('lbl_obstruct').textContent = jd.obstruct_valid === 0 ? 'Unknown' : (jd.obstruct ? 'YES' : 'no');
+      $('lbl_obstruct').style.color = jd.obstruct_valid !== 0 && jd.obstruct ? 'red' : '';
+    }
+  }).catch(function() {
+    if (poll < appliedSwitchPoll) return;
+    appliedSwitchPoll = poll;
+    ['light', 'lock'].forEach(function(name) { switchState[name].valid = false; render_switch(name); });
+    $('lbl_beat').textContent = '(offline)'; $('lbl_beat').className = 'wide err';
+    $('lbl_cld').textContent = 'disconnected';
+    set_door_color(-1);
+  });
+}
+function home_active(on) {
+  clearInterval(si);
+  if (on) { show(); si = setInterval(show, 2000); }
+}
+
+/* ===== Options ===== */
+const omsg = $('o_msg'), okey = $('o_dkey');
+var saved_otc_token = false;
+let saved_secplus2 = false;
+let security_capable = false;
+function checked_val(name) { const e = document.querySelector('input[name="' + name + '"]:checked'); return e ? e.value : undefined; }
+function show_row(name, show) { $$('[data-row="' + name + '"]', $('v_opts')).forEach(e => { e.hidden = !show; }); }
+function eval_cb(id) { return $(id).checked ? 1 : 0; }
+function update_security_details() {
+  var version = security_capable ? checked_val('secv') : '0';
+  show_row('pem', version === '1');
+  show_row('cid', version === '2');
+  $('btn_regenerate_id').disabled = !saved_secplus2;
+}
+function clear_msg() { showMsg(omsg, ''); }
+function show_msg(text, cls) { showMsg(omsg, text, cls || 'err', 2000); }
+function update_sno() {
+  const off = !(parseInt($('sn2').value) > 0);
+  $('sno').disabled = off; $('sel_sno').classList.toggle('dis', off);
+}
+function update_secv() {
+  update_security_details();
+  const relay = !(parseInt(checked_val('secv')) > 0);
+  show_row('dth', relay); show_row('sn2', relay); show_row('sno', relay);
+  if (relay) update_sno();
+}
+function update_cld() { toggleAll('.cld', eval_cb('cld')); }
+function update_mqtt() { toggleAll('.mqt', eval_cb('mqen')); }
+function update_email() { toggleAll('.email', eval_cb('emen')); }
+function update_sfi() { show_row('cmr', eval_cb('sf_con')); }
+function update_ckey() { toggleAll('.ckey', eval_cb('cb_key')); }
+function update_usi() { toggleAll('.si', eval_cb('usi')); }
+function toggle_opt() {
+  $('div_basic').hidden = !eval_cb('basic');
+  $('div_cloud').hidden = !eval_cb('cloud');
+  $('div_other').hidden = !eval_cb('other');
+}
+function goback() { if (view === 'opts') { opts_dirty = false; go('home'); } }
+$$('input[name="opt_group"]').forEach(r => r.addEventListener('change', toggle_opt));
+$$('input[name="secv"]').forEach(r => r.addEventListener('change', update_secv));
+$('sn2').addEventListener('change', update_sno);
+$('cld').addEventListener('change', update_cld);
+$('mqen').addEventListener('change', update_mqtt);
+$('emen').addEventListener('change', update_email);
+$('sf_med').addEventListener('change', update_sfi);
+$('sf_con').addEventListener('change', update_sfi);
+$('cb_key').addEventListener('change', update_ckey);
+$('usi').addEventListener('change', update_usi);
+$('btn_lsz_info').addEventListener('click', () => $('lszInfo').showModal());
+$('lszInfo').addEventListener('click', e => { if (e.target === $('lszInfo')) $('lszInfo').close(); });
+$('popupOkButton').addEventListener('click', () => $('detectPopup').close());
+wireDeviceKey(okey, () => show_msg('Cleared saved key.', 'ok'));
+
+$('btn_regenerate_id').addEventListener('click', function(e) {
+  e.preventDefault();
+  var key = okey.value;
+  if (!key) { show_msg('Enter the Device Key below first.', 'err'); return; }
+  if (!confirm('Generate a new Security+ 2.0 client ID and restart OpenGarage? WiFi and other saved settings will be preserved. Unsaved edits on this page will not be saved. Use this only for troubleshooting.')) return;
+  var button = this;
+  button.disabled = true;
+  fetch('s2id_gen', {method: 'POST', headers: {'Content-Type': 'text/plain;charset=UTF-8'}, body: key})
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      show_msg(data.message || (data.result === 2 ? 'Incorrect Device Key.' : 'Request rejected.'), data.result === 1 ? 'ok' : 'err');
+      if (data.result !== 1) button.disabled = false;
+    })
+    .catch(function() { show_msg('Result not confirmed. Reconnect and check /db?verbose=1 before retrying.', 'err'); });
+});
+
+var comm;
+function bc(n, e = 0) {
+  comm += '&' + n + '=';
+  if (e) comm += encodeURIComponent($(n).value);
+  else comm += $(n).value;
+}
+function cloud_endpoint(jd) {
+  const legacy = jd.cld === 1 || (jd.cld !== 2 && (!jd.bdmn || jd.bdmn === 'blynk.openthings.io'));
+  return {host: legacy ? 'ws.cloud.openthings.io' : jd.bdmn, port: legacy ? 80 : jd.bprt};
+}
+function secret_edit_error(values, clear, otc_enabled) {
+  for (const field of ['auth', 'iftt', 'apwd', 'mqpw']) {
+    if (clear[field] && values[field]) return 'Choose either a replacement or Clear for each secret, not both.';
+  }
+  if (otc_enabled && clear.auth) return 'Turn off OTC before clearing its saved token.';
+  return '';
+}
+$('btn_submit').addEventListener('click', function(e) {
+  e.preventDefault();
+  const values = {}, clear = {};
+  for (const field of ['auth', 'iftt', 'apwd', 'mqpw']) {
+    values[field] = $(field).value; clear[field] = $('clear_' + field).checked;
+  }
+  const secret_error = secret_edit_error(values, clear, !!eval_cb('cld'));
+  if (secret_error) { show_msg(secret_error); return; }
+  if (!confirm('Submit changes?')) return;
+  comm = 'co?dkey=' + encodeURIComponent(saveDeviceKey(okey));
+  bc('sn1'); bc('sn2'); bc('sno'); bc('dth'); bc('vth'); bc('riv'); bc('bas'); bc('alm');
+  bc('wfr'); bc('lsz'); bc('tsn'); bc('htp'); bc('cdt'); bc('dri'); bc('ati'); bc('atib');
+  comm += '&aoo=' + eval_cb('aoo');
+  if (security_capable) {
+    comm += '&secv=' + checked_val('secv');
+    if (checked_val('secv') === '1') comm += '&pem=' + checked_val('pem');
+  }
+  comm += '&sto=' + eval_cb('to_cap');
+  comm += '&sfi=' + eval_cb('sf_con');
+  if (eval_cb('sf_con')) bc('cmr');
+  var ato = 0;
+  for (var i = 1; i >= 0; i--) { ato = (ato << 1) + eval_cb('ato' + i); }
+  comm += '&ato=' + ato;
+  var atob = 0;
+  for (var i = 1; i >= 0; i--) { atob = (atob << 1) + eval_cb('atob' + i); }
+  comm += '&atob=' + atob;
+  var noto = 0;
+  for (var i = 2; i >= 0; i--) { noto = (noto << 1) + eval_cb('noto' + i); }
+  comm += '&noto=' + noto;
+  if (eval_cb('cld')) {
+    comm += '&cld=2';
+    if (($('auth').value.length && $('auth').value.length < 32) || (!$('auth').value.length && !saved_otc_token)) { show_msg('Cloud token is too short!'); return; }
+  } else comm += '&cld=0';
+  bc('name', 1); bc('bdmn', 1);
+  for (const field of ['auth', 'iftt', 'apwd', 'mqpw']) {
+    if ($('clear_' + field).checked) comm += '&clear_' + field + '=1';
+    else if ($(field).value.length) bc(field, 1);
+  }
+  bc('mqtt', 1); bc('mqur', 1); bc('mqtp', 1); bc('mqpt');
+  comm += '&mqen=' + eval_cb('mqen');
+  bc('smtp', 1); bc('send', 1); bc('recp', 1); bc('sprt');
+  comm += '&emen=' + eval_cb('emen');
+  bc('bprt'); bc('ntp1', 1); bc('host', 1);
+  if ($('cb_key').checked) {
+    if (!$('nkey').value && !confirm('New device key is empty. Are you sure?')) return;
+    bc('nkey', 1); bc('ckey', 1);
+  }
+  if ($('usi').checked) {
+    comm += '&usi=1';
+    bc('dvip'); bc('gwip'); bc('subn'); bc('dns1');
+  } else comm += '&usi=0';
+  getJSON(comm).then(function(jd) {
+    if (jd.result != 1) {
+      if (jd.result == 2) show_msg('Check device key and try again.');
+      else show_msg('Error code: ' + jd.result + ', item: ' + jd.item);
+    } else {
+      showMsg(omsg, '', 'ok'); opts_dirty = false; thresholds = false;
+      omsg.innerHTML = 'Options are saved. Many options may need<br>a reboot to take effect. If you changed log<br>size, please Clear Log for it to take effect.';
+      setTimeout(goback, 4000);
+    }
+  }).catch(function(err) { show_msg('Request failed: ' + err.message); });
+});
+
+$('btn_autodetect').addEventListener('click', function(e) {
+  e.preventDefault();
+  if (!confirm('Auto-detecting Security+ version may take up to 15 seconds, and the door may move during this process. Continue?')) return;
+  $('popupStatusText').textContent = 'Detecting Security+ Version';
+  $('popupMessageText').textContent = 'This will take up to 15 seconds. Please do not close or refresh the page.';
+  $('popupOkButton').hidden = true;
+  $('detectPopup').showModal();
+  let dotCount = 0;
+  const dotAnimation = setInterval(function() {
+    dotCount = (dotCount + 1) % 5;
+    $('popupStatusText').textContent = 'Detecting Security+ Version ' + '.'.repeat(dotCount);
+  }, 500);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
+  fetch('ad', {signal: controller.signal})
+    .then(response => response.json())
+    .then(data => {
+      const resultText = data.version > 0 ? 'Found Security+ v' + data.version + '.' : 'No supported protocol was found.';
+      $('popupStatusText').textContent = 'Detection Complete!';
+      $('popupMessageText').textContent = resultText;
+      $('popupMessageText').append(document.createElement('br'), 'This version has been selected for you.');
+      const radio = $('secv' + data.version);
+      if (radio) radio.checked = true;
+      update_secv();
+    })
+    .catch(error => {
+      $('popupStatusText').textContent = 'Error';
+      $('popupMessageText').textContent = error.name === 'AbortError' ? 'Detection timed out after 20 seconds.' : 'An error occurred during detection.';
+      console.error('Detection error:', error);
+    })
+    .finally(() => {
+      clearTimeout(timeoutId);
+      clearInterval(dotAnimation);
+      $('popupOkButton').hidden = false;
+    });
+});
+
+/* Load the saved options (/jo), every time the view opens, so the form is always current. */
+function cbt(id, v = true) { $(id).checked = v; }
+function opts_load() {
+clear_msg();
+$$('input[type=checkbox]', $('v_opts')).forEach(c => { c.checked = false; });
+['auth', 'iftt', 'apwd', 'mqpw', 'nkey', 'ckey'].forEach(id => { $(id).value = ''; });
+getJSON('jo').then(function(jd) {
+  saved_secplus2 = !!jd.has_swrx && jd.secv === 2;
+  security_capable = !!jd.has_swrx;
+  $('secplus2_client_id').textContent = jd.s2id || 'Unavailable';
+  $('fwv').textContent = fwLabel(jd.fwv);
+  $('alm').value = jd.alm;
+  if (jd.aoo > 0) cbt('aoo');
+  $('lsz').value = jd.lsz;
+  $('tsn').value = jd.tsn;
+  $('sn1').value = jd.sn1;
+  $('sn2').value = jd.sn2;
+  $('sno').value = jd.sno;
+  update_sno();
+  $('dth').value = jd.dth;
+  $('vth').value = jd.vth;
+  $('riv').value = jd.riv;
+  $('wfr').value = jd.wfr === 0 ? 0 : 1;
+  $('bas').value = jd.bas;
+  $('htp').value = jd.htp;
+  $('cdt').value = jd.cdt;
+  $('dri').value = jd.dri;
+  cbt('pem' + (jd.pem === 1 ? 1 : 0));
+  show_row('secv', security_capable);
+  cbt('secv' + (security_capable ? (jd.secv || 0) : 0));
+  update_secv();
+  cbt(jd.sto ? 'to_cap' : 'to_ignore');
+  cbt(jd.sfi ? 'sf_con' : 'sf_med');
+  if (jd.cmr) $('cmr').value = jd.cmr;
+  update_sfi();
+  $('ati').value = jd.ati;
+  $('atib').value = jd.atib;
+  for (var i = 0; i <= 1; i++) { if (jd.ato & (1 << i)) cbt('ato' + i); }
+  for (var i = 0; i <= 1; i++) { if (jd.atob & (1 << i)) cbt('atob' + i); }
+  for (var i = 0; i <= 2; i++) { if (jd.noto & (1 << i)) cbt('noto' + i); }
+  $('name').value = jd.name;
+  saved_otc_token = jd.cld === 2 && !!jd.auth_set;
+  if (jd.cld === 2) cbt('cld');
+  $('cloud_retired').hidden = jd.cld !== 1;
+  update_cld();
+  $('auth').value = '';
+  const endpoint = cloud_endpoint(jd);
+  $('bdmn').value = endpoint.host;
+  $('bprt').value = endpoint.port;
+  $('iftt').value = '';
+  if (jd.mqen > 0) cbt('mqen');
+  $('mqtt').value = jd.mqtt;
+  if (jd.mqur) $('mqur').value = jd.mqur;
+  if (jd.mqtp) $('mqtp').value = jd.mqtp;
+  if (jd.mqpt) $('mqpt').value = jd.mqpt;
+  update_mqtt();
+  if (jd.emen > 0) cbt('emen');
+  $('smtp').value = jd.smtp;
+  $('sprt').value = jd.sprt;
+  $('send').value = jd.send;
+  $('apwd').value = '';
+  $('recp').value = jd.recp;
+  update_email();
+  $('dvip').value = jd.dvip;
+  $('gwip').value = jd.gwip;
+  $('subn').value = jd.subn;
+  $('dns1').value = jd.dns1;
+  if (jd.usi > 0) cbt('usi');
+  update_usi();
+  if (jd.ntp1) $('ntp1').value = jd.ntp1;
+  if (jd.host) $('host').value = jd.host;
+  update_cld(); update_mqtt(); update_email(); update_usi(); update_ckey(); update_sfi(); update_secv();
+  opts_dirty = false;
+}).catch(function(err) { showMsg(omsg, 'Could not load options: ' + err.message, 'err'); });
+}
+update_cld(); update_mqtt(); update_email(); update_usi(); update_ckey(); update_sfi(); update_secv();
+
+/* ===== Log ===== */
+const VALID = 1577836800; // times before 2020 mean "clock not set"
+let curr = 0, uptime = null;
+function dhms(s) {
+  const d = Math.floor(s / 86400), h = Math.floor(s / 3600) % 24, m = Math.floor(s / 60) % 60, x = s % 60;
+  return d + ':' + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(x).padStart(2, '0');
+}
+function tick() {
+  if (curr >= VALID) { curr++; $('lbl_time').textContent = new Date(curr * 1000).toLocaleString(); }
+  else $('lbl_time').textContent = 'Time unknown';
+  if (uptime !== null) { uptime++; $('lbl_up_time').textContent = dhms(uptime); } else $('lbl_up_time').textContent = 'Unknown';
+}
+/* Log table and chart from /jl, refreshed every 10 seconds as before. A failed load is
+   retried after 2 s; the options (/jo) are requested only after the log arrives, so the
+   device never gets both requests at once. */
+let loaded = false, thresholds = false;
+function show_log() {
+  getJSON('jl').then(jd => {
+    loaded = true;
+    dev_name = jd.name; set_title();
+    curr = jd.time; uptime = typeof jd.uptime === 'number' ? jd.uptime : null;
+    const logs = jd.logs, sw = jd.ncols !== undefined && jd.ncols > 3;
+    logs.sort((a, b) => b[0] - a[0]);
+    $('lbl_nr').textContent = logs.length;
+    $('lbl_start_time').textContent = jd.starttime < VALID ? 'Time unknown' : new Date(jd.starttime * 1000).toLocaleString();
+    const body = $('tab_log').tBodies[0]; body.textContent = '';
+    logs.forEach(r => {
+      const st = Math.min(r[1], 2), tr = body.insertRow();
+      const c0 = tr.insertCell(), img = document.createElement('img');
+      img.src = OG_LOG_ICONS[st]; img.alt = ''; c0.append(img, OG_LOG_TEXT[st]);
+      tr.insertCell().textContent = r[0] < VALID ? 'Time unknown' : new Date(r[0] * 1000).toLocaleString();
+      const c2 = tr.insertCell(); c2.className = 'num'; c2.textContent = r[2] + ' cm';
+      if (sw) tr.insertCell().textContent = r[3] == 255 ? '-' : (r[3] ? 'High' : 'Low');
+    });
+    $('col_sn2').hidden = !sw; $('tab_log').classList.toggle('sw', sw);
+    tick();
+    chartData(logs, jd.time);
+    if (!thresholds) load_thresholds();
+  }).catch(() => {}).finally(() => { clearTimeout(logT); if (view === 'log') logT = setTimeout(show_log, loaded ? 10000 : 2000); });
+}
+/* Threshold lines: the door threshold only applies without Security+ (the opener reports the door). */
+function load_thresholds() {
+  thresholds = true;
+  getJSON('jo').then(jo => {
+    CH.dth = jo.secv > 0 ? 0 : jo.dth; CH.vth = jo.vth;
+    drawChart();
+  }).catch(() => { thresholds = false; });
+}
+
+/* ---------- Door activity chart: plain SVG, no library ----------
+   Top lane: door state as a step line (Open high, Stopped middle, Closed low).
+   Bottom lane: distance reported with each event, held until the next event, with the door/car
+   thresholds dashed. Drag to zoom; tap or hover for details; double-click or "All" to reset. */
+const CH = {logs: [], now: 0, dth: 0, vth: 0, v: null, g: null, sig: undefined};
+const SC = ['#00a000', '#e00000', '#d08000'], SN = ['C', 'O', 'S'];   // Closed / Open / Stopped
+function chartData(logs, now) {
+  const lg = logs.filter(e => e[0] >= VALID).sort((a, b) => a[0] - b[0]);
+  const sig = lg.length + ':' + (lg.length ? lg[lg.length - 1][0] : 0);
+  const first = CH.sig === undefined, changed = sig !== CH.sig;
+  CH.logs = lg; CH.now = now; CH.sig = sig;
+  const ok = lg.length >= 2;
+  $('chart_sec').hidden = !ok;
+  $('chart_none').hidden = ok || !logs.length;
+  $('chart_none').textContent = logs.some(e => e[0] < VALID)
+    ? 'The chart needs the device clock to be set.' : 'The chart appears once there are at least two records.';
+  if (first) setRange(86400);
+  else if (changed) { const r = $$('input[name=rng]').find(i => i.checked); if (r) setRange(+r.value); else drawChart(); }
+}
+function setRange(span) {
+  $$('input[name=rng]').forEach(i => { i.checked = +i.value === span; });
+  CH.v = span ? [Math.max(CH.now - span, CH.logs.length ? CH.logs[0][0] : 0), CH.now] : null;
+  drawChart();
+}
+function fmtTime(t, withDate) {
+  const d = new Date(t * 1000);
+  return (withDate ? (d.getMonth() + 1) + '/' + d.getDate() + ' ' : '') + d.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
+}
+function fmtDur(s) {
+  s = Math.round(s);
+  return s < 60 ? s + ' s' : s < 3600 ? Math.floor(s / 60) + ' min' : s < 86400 ? Math.floor(s / 3600) + ' h ' + Math.floor(s / 60) % 60 + ' min'
+    : Math.floor(s / 86400) + ' d ' + Math.floor(s / 3600) % 24 + ' h';
+}
+function drawChart() {
+  const svg = $('chart_svg'), lg = CH.logs;
+  if (view !== 'log' || $('chart_sec').hidden || lg.length < 2) return;
+  const W = $('chart').clientWidth || 340, L = 18, R = 28, T = 6, DH = 64, G = 12, PH = 100, B0 = T + DH + G, AX = B0 + PH;
+  const [v0, v1] = CH.v || [lg[0][0], CH.now], pw = W - L - R;
+  const X = t => L + (t - v0) / (v1 - v0) * pw;
+  const ly = [T + DH - 9, T + 22, T + (DH + 13) / 2];   // Closed, Open, Stopped; room on top for the label
+  const dmax = Math.max(250, Math.ceil((Math.max(...lg.map(e => e[2])) + 30) / 50) * 50);   // headroom for the label
+  const dy = d => B0 + PH - Math.min(d, dmax) / dmax * PH;
+  const f = n => n.toFixed(1);
+  let s = `<defs><clipPath id="ch_cp"><rect x="${L}" y="0" width="${pw}" height="${AX}"/></clipPath></defs>`;
+  s += `<rect class="fr" x="${L}" y="${T}" width="${pw}" height="${DH}"/><rect class="fr" x="${L}" y="${B0}" width="${pw}" height="${PH}"/>`;
+  // time grid
+  const steps = [60, 300, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400, 172800, 604800];
+  const step = steps.find(x => (v1 - v0) / x * 72 <= pw) || 604800;
+  const off = -new Date(v0 * 1000).getTimezoneOffset() * 60;
+  for (let t = Math.ceil((v0 + off) / step) * step - off; t <= v1; t += step) {
+    const x = f(X(t)), d = new Date(t * 1000), midnight = d.getHours() === 0 && d.getMinutes() === 0;
+    const lab = step >= 86400 || midnight ? (d.getMonth() + 1) + '/' + d.getDate() : fmtTime(t);
+    s += `<line class="gl" x1="${x}" x2="${x}" y1="${T}" y2="${T + DH}"/><line class="gl" x1="${x}" x2="${x}" y1="${B0}" y2="${AX}"/>`;
+    s += `<text class="xl" x="${x}" y="${AX + 14}"${midnight && step < 86400 ? ' font-weight="bold"' : ''}>${lab}</text>`;
+  }
+  // distance grid and thresholds
+  const dstep = dmax > 300 ? 100 : 50;
+  for (let d = 0; d <= dmax; d += dstep) {
+    s += `<line class="gl" x1="${L}" x2="${L + pw}" y1="${f(dy(d))}" y2="${f(dy(d))}"/><text class="yl" x="${L + pw + 4}" y="${f(dy(d) + 4)}">${d}</text>`;
+  }
+  [[CH.dth, 'door'], [CH.vth, 'car']].forEach(([v, n]) => {
+    if (v > 0 && v < dmax) s += `<line class="th" x1="${L}" x2="${L + pw}" y1="${f(dy(v))}" y2="${f(dy(v))}"/><text class="tl" x="${L + 3}" y="${f(dy(v) - 3)}">${n} ${v}</text>`;
+  });
+  SN.forEach((n, i) => { s += `<text class="yl" x="${L - 5}" y="${ly[i] + 4}" text-anchor="end"><title>${OG_LOG_TEXT[i]}</title>${n}</text>`; });
+  s += `<text class="tl" x="${L + 3}" y="${T + 11}">status</text><text class="tl" x="${L + 3}" y="${B0 + 11}">distance (cm)</text>`;
+  // data, clipped to the plot
+  let g = '', top = '', path = '', dots = '';
+  const dense = lg.filter(e => e[0] >= v0 && e[0] <= v1).length > pw / 4;
+  lg.forEach((a, i) => {
+    const t1 = i + 1 < lg.length ? lg[i + 1][0] : CH.now, st = Math.min(a[1], 2);
+    path += i ? `H${f(X(a[0]))}V${f(dy(a[2]))}` : `M${f(X(a[0]))} ${f(dy(a[2]))}`;
+    if (t1 < v0 || a[0] > v1) return;
+    const x0 = X(a[0]), x1 = Math.max(X(t1), st ? x0 + 3 : x0);   // short open/stopped spells stay visible
+    const line = `<line x1="${f(x0)}" x2="${f(x1)}" y1="${ly[st]}" y2="${ly[st]}" stroke="${SC[st]}" stroke-width="3" stroke-linecap="square"/>`;
+    if (st) top += line; else g += line;
+    if (i + 1 < lg.length) g += `<line class="vc" x1="${f(x1)}" x2="${f(x1)}" y1="${ly[st]}" y2="${ly[Math.min(lg[i + 1][1], 2)]}"/>`;
+    if (!dense) dots += `<circle cx="${f(x0)}" cy="${f(dy(a[2]))}" r="3" fill="${SC[st]}" stroke="#fff"/>`;
+  });
+  path += `H${f(X(CH.now))}`;
+  s += `<g clip-path="url(#ch_cp)">${g}${top}<path class="dl" d="${path}"/>${dots}</g>`;
+  s += `<line id="ch_cur" y1="${T}" y2="${AX}" visibility="hidden"/><circle id="ch_dot" r="5" fill="none" stroke="#333" stroke-width="1.5" visibility="hidden"/>`;
+  s += `<rect id="ch_sel" y="${T}" height="${AX - T}" width="0" visibility="hidden"/>`;
+  svg.setAttribute('viewBox', `0 0 ${W} ${AX + 20}`);
+  svg.style.height = (AX + 20) + 'px';
+  svg.innerHTML = s;
+  CH.g = {L, pw, v0, v1, X, dy};
+  $('chart_hint').textContent = CH.v && !$$('input[name=rng]').some(i => i.checked) ? 'Zoomed: double-click to reset' : 'Drag across the chart to zoom';
+  $('chart_tip').hidden = true;
+}
+function chartAt(x) {                         // segment under x: the event that started it
+  const g = CH.g, t = g.v0 + (x - g.L) / g.pw * (g.v1 - g.v0), lg = CH.logs;
+  let i = lg.length - 1;
+  while (i > 0 && lg[i][0] > t) i--;
+  return lg[0][0] > t ? -1 : i;
+}
+function showTip(x) {
+  const g = CH.g, i = chartAt(x), tip = $('chart_tip'), cur = $('ch_cur'), dot = $('ch_dot');
+  if (i < 0 || x < g.L || x > g.L + g.pw) { tip.hidden = true; cur.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); return; }
+  const e = CH.logs[i], st = Math.min(e[1], 2), end = i + 1 < CH.logs.length ? CH.logs[i + 1][0] : CH.now;
+  cur.setAttribute('x1', x); cur.setAttribute('x2', x); cur.setAttribute('visibility', 'visible');
+  dot.setAttribute('cx', g.X(e[0])); dot.setAttribute('cy', g.dy(e[2])); dot.setAttribute('visibility', 'visible');
+  tip.innerHTML = `<b style="color:${['#7f7', '#f88', '#fc6'][st]}">${OG_LOG_TEXT[st]}</b> ${fmtTime(e[0], true)}<br>${e[2]} cm · ` +
+    (i + 1 < CH.logs.length ? 'lasted ' : 'for ') + fmtDur(end - e[0]);
+  tip.hidden = false;
+  const w = tip.offsetWidth, W = $('chart').clientWidth;
+  tip.style.left = Math.max(0, Math.min(W - w, x + 10 > W - w ? x - w - 10 : x + 10)) + 'px';
+}
+(function wireChart() {
+  const svg = $('chart_svg');
+  let drag = null;
+  const px = e => e.clientX - svg.getBoundingClientRect().left;
+  svg.addEventListener('pointerdown', e => {
+    const g = CH.g, x = px(e);
+    if (!g || x < g.L || x > g.L + g.pw) return;
+    drag = {x0: x, x1: x, touch: e.pointerType !== 'mouse'};
+    svg.setPointerCapture(e.pointerId);
+  });
+  svg.addEventListener('pointermove', e => {
+    const g = CH.g, x = px(e);
+    if (!g) return;
+    if (!drag) { if (e.pointerType === 'mouse') showTip(x); return; }
+    drag.x1 = Math.max(g.L, Math.min(g.L + g.pw, x));
+    const sel = $('ch_sel');
+    sel.setAttribute('x', Math.min(drag.x0, drag.x1)); sel.setAttribute('width', Math.abs(drag.x1 - drag.x0));
+    sel.setAttribute('visibility', 'visible');
+    $('chart_tip').hidden = true;
+  });
+  svg.addEventListener('pointerup', e => {
+    if (!drag) return;
+    const g = CH.g, a = Math.min(drag.x0, drag.x1), b = Math.max(drag.x0, drag.x1);
+    $('ch_sel').setAttribute('visibility', 'hidden');
+    if (b - a > 6) {
+      const T = x => g.v0 + (x - g.L) / g.pw * (g.v1 - g.v0);
+      let t0 = T(a), t1 = T(b);
+      if (t1 - t0 < 60) { const m = (t0 + t1) / 2; t0 = m - 30; t1 = m + 30; }   // closest zoom: one minute
+      CH.v = [t0, t1];
+      $$('input[name=rng]').forEach(i => { i.checked = false; });
+      drawChart();
+    } else showTip(drag.x1);
+    drag = null;
+  });
+  svg.addEventListener('pointercancel', () => { drag = null; $('ch_sel').setAttribute('visibility', 'hidden'); });
+  svg.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && !drag) showTip(-1); });
+  svg.addEventListener('dblclick', () => setRange(86400));
+  $$('input[name=rng]').forEach(i => i.addEventListener('change', () => setRange(+i.value)));
+  let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawChart, 100); });
+})();
+let logT;
+function log_active(on) {
+  clearTimeout(logT);
+  if (on) { drawChart(); show_log(); }
+}
+setInterval(tick, 1000);
+
+/* ---------- Views: Home, Options and Log share one page ----------
+   The address follows the view ('./', 'vo', 'vl', relative so OTC forwarding keeps working),
+   so Back, reload and bookmarks behave as before. Only device data is fetched on navigation. */
+const UI_ID = '__OG_PAGE_ID__';   // this page's content ID (its ETag); /jc reports the device's current one
+const PATHS = {home: './', opts: 'vo', log: 'vl'};
+let view = null, dev_name = 'OG', opts_dirty = false;
+function view_from_path() { const seg = location.pathname.split('/').pop(); return seg === 'vo' ? 'opts' : seg === 'vl' ? 'log' : 'home'; }
+function set_title() { $('title').textContent = view === 'opts' ? 'Edit Options' : view === 'log' ? dev_name + ' Log' : dev_name; }
+function saved_key() { try { return localStorage.getItem('og_dkey') || ''; } catch (e) { return ''; } }
+function enter(v) {   // show a view; false if the user keeps unsaved option edits
+  if (view === v) return true;
+  if (view === 'opts' && opts_dirty && !confirm('Discard your unsaved option changes?')) return false;
+  view = v;
+  ['home', 'opts', 'log'].forEach(n => { $('v_' + n).hidden = n !== v; });
+  $('btn_opts').hidden = $('btn_log').hidden = v !== 'home';
+  $('btn_back').hidden = v === 'home';
+  $('hdr').classList.toggle('wide', v === 'home');
+  $('footer').hidden = v === 'log';
+  set_title();
+  const k = saved_key();
+  if (k) { if (v === 'home') dkey.value = k; if (v === 'opts') okey.value = k; }
+  home_active(v === 'home');
+  log_active(v === 'log');
+  if (v === 'opts') opts_load();
+  window.scrollTo(0, 0);
+  return true;
+}
+function go(v) { if (view !== v && enter(v)) history.pushState({og: 1}, '', PATHS[v]); }
+function nav(id, v) { $(id).addEventListener('click', e => { if (e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); go(v); }); }
+nav('btn_opts', 'opts'); nav('btn_log', 'log');
+$('btn_back').addEventListener('click', e => {
+  if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+  e.preventDefault();
+  if (history.state && history.state.og === 1) history.back(); else go('home');
+});
+addEventListener('popstate', () => { const v = view_from_path(); if (!enter(v)) history.pushState({og: 1}, '', PATHS[view]); });
+['input', 'change'].forEach(t => $('v_opts').addEventListener(t, e => {
+  if (e.target.name !== 'opt_group' && e.target.id !== 'o_dkey') opts_dirty = true;
+}));
+/* After a firmware update the device reports a different UI ID: reload once to get the new page. */
+function ui_changed(id) {
+  try { if (sessionStorage.getItem('og_ui_reload') === id) return; sessionStorage.setItem('og_ui_reload', id); } catch (e) { return; }
+  location.reload();
+}
+history.replaceState({og: 0}, '', location.href);
+enter(view_from_path());
+</script>
+</body></html>
