@@ -143,8 +143,11 @@ continued local/established-cloud serving, completion and cancellation.
 
 RAM batch 1: `python3 tests/test_lazy_mqtt.py` checks deferred MQTT buffer growth, allocation failure/retry and reuse. `test_update_security.py` also checks request-scope preparation-buffer cleanup after completed and interrupted requests.
 
-`python3 tests/test_log_reader.py` compiles the real log-reader opener and checks short headers, invalid indices, failed opens and replacement of an existing reader.
+`python3 tests/test_log_reader.py
+python3 tests/test_log_stream.py` compiles the real log-reader opener and checks short headers, invalid indices, failed opens and replacement of an existing reader.
 
 `python3 tests/test_smtp_build_policy.py` checks the actual bounded-only SMTP admission guard, including rejection of multiple recipients, CC/BCC, unauthenticated, SASL/CRAM and HTML modes before network work. The ESP8266 firmware build additionally verifies the selected compile-time path.
 
 Updater header reset: test_update_header_reset.py compiles the real request reset loop against ESP8266-style length-only clear semantics and the production key comparator. Covers sequential valid, missing and wrong credentials, plus clearing upload-token and release headers. Hardware overlap checks supplement this host test.
+
+The log-stream test compiles the production /jl handler with real OTF local/cloud streaming at the configured buffer size. It checks empty/1/400 records, both column layouts, zero slots, truncated reads, all control-byte escapes, maximum numeric fields, response-allocation refusal, failed network writes, and reader cleanup. Bodies retain the API format; HTTP uses Connection: close instead of precomputing Content-Length.

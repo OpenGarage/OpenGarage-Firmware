@@ -599,49 +599,54 @@ void on_sta_debug(const OTF::Request &req, OTF::Response &res) {
 	send_debug_json(res, json);
 }
 
-void sta_logs_fill_json(String& json, OTF::Response &res) {
-	json = "";
-	json.reserve(2048); // reserve capacity to reduce the overhead of String's +=
-	json += F("{\"name\":\"");
-	append_json_escaped(json, og.options[OPTION_NAME].sval);
-	json += F("\",\"starttime\":");
-	json += start_utc_time;
-	json += F(",\"time\":");
-	json += curr_utc_time;
-	json += F(",\"uptime\":"); json += uint32_t(local_clock.uptime_ms / 1000);
-	json += F(",\"ncols\":");
-	json += og.options[OPTION_SN2].ival>OG_SN2_NONE ? 4 : 3;
-	json += F(",\"logs\":[");
-	if(!og.read_log_start()) {
-		json += F("]}");
-		return;
-	}
-	LogStruct l;
-	for(uint i=0;i<og.options[OPTION_LSZ].ival;i++) {
-		if(!og.read_log_next(l)) break;
-		if(!l.tstamp) continue;
-		json += F("[");
-		json += l.tstamp;
-		json += F(",");
-		json += l.status;
-		json += F(",");
-		json += l.dist;
-		if(og.options[OPTION_SN2].ival>OG_SN2_NONE) {
-		  json += F(",");
-		  json += l.sn2;
-		}
-		json += F("],");
-	}
-	og.read_log_end();
-	json.remove(json.length()-1); // remove the extra ,
-	json += F("]}");
-}
-
 void on_sta_logs(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_AP) return;
-	String json;
-	sta_logs_fill_json(json, res);
-	otf_send_json(res, json);
+	res.writeStatus(200, F("OK"));
+	res.writeHeader(F("Content-Type"), F("application/json"));
+	res.writeHeader(F("Access-Control-Allow-Origin"), F("*"));
+	// One pass over the log: local HTTP ends at connection close; OTC ends at
+	// its response-stream terminator. No full JSON String or counting pass.
+	res.writeHeader(F("Connection"), F("close"));
+	if (!res.isValid()) return;
+
+	struct EscapedOutput {
+		OTF::Response &response;
+		void operator+=(const char *s) { response.writeBodyData(s, strlen(s)); }
+		void operator+=(char c) { response.writeBodyData(&c, 1); }
+	} escaped{res};
+	res.writeBodyData(F("{\"name\":\""), 9);
+	append_json_escaped(escaped, og.options[OPTION_NAME].sval);
+	const bool extra_column = og.options[OPTION_SN2].ival > OG_SN2_NONE;
+	const uint count = og.options[OPTION_LSZ].ival;
+	// Worst-case metadata is 81 bytes with three UINT32_MAX timestamps.
+	// Reuse this fixed buffer for each row, including corrupt maximum fields.
+	char chunk[112];
+	snprintf_P(chunk, sizeof(chunk), PSTR("\",\"starttime\":%lu,\"time\":%lu,\"uptime\":%lu,\"ncols\":%u,\"logs\":["),
+		(unsigned long)start_utc_time, (unsigned long)curr_utc_time,
+		(unsigned long)uint32_t(local_clock.uptime_ms / 1000), extra_column ? 4U : 3U);
+	res.writeBodyData(chunk, strlen(chunk));
+
+	struct LogReader {
+		bool opened;
+		~LogReader() { if (opened) og.read_log_end(); }
+	} reader{og.read_log_start()};
+	bool first = true;
+	LogStruct l;
+	if (reader.opened) {
+		for (uint i=0; i<count && res.isValid(); ++i) {
+			if (!og.read_log_next(l)) break;
+			if (!l.tstamp) continue;
+			if (extra_column)
+				snprintf_P(chunk, sizeof(chunk), PSTR("%s[%lu,%u,%u,%u]"), first ? "" : ",",
+					(unsigned long)l.tstamp, l.status, l.dist, (unsigned)l.sn2);
+			else
+				snprintf_P(chunk, sizeof(chunk), PSTR("%s[%lu,%u,%u]"), first ? "" : ",",
+					(unsigned long)l.tstamp, l.status, l.dist);
+			res.writeBodyData(chunk, strlen(chunk));
+			first = false;
+		}
+	}
+	res.writeBodyData(F("]}"), 2);
 }
 
 // The device key is required on every path, OTC included. (Before 1.2.7 an OTC request was
