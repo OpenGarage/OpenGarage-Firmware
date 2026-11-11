@@ -28,6 +28,8 @@ og_wifi::Recovery station_recovery;
 uint8_t station_disconnect_reason = 0;
 static WiFiEventHandler station_disconnect_handler;
 
+// Latched at network startup; option changes take effect after reboot.
+static WiFiPhyMode_t station_phy = WIFI_PHY_MODE_11N;
 og_wifi::Selection station_selection;
 static og_wifi::Selection::Scan station_scan = og_wifi::Selection::Scan::NONE;
 static uint32_t station_scan_ms = 0;
@@ -71,6 +73,7 @@ void service_station_network(const char *ssid, const char *pass, bool critical_b
 			// cannot cancel a scan in the pinned core. No MCU reboot/flash write.
 			const auto hostname = WiFi.hostname();
 			WiFi.mode(WIFI_OFF); WiFi.mode(WIFI_STA);
+			WiFi.setPhyMode(station_phy);
 			WiFi.hostname(hostname.c_str());
 			WiFi.setAutoReconnect(false);
 			WiFi.setSleep(false);
@@ -197,6 +200,8 @@ void start_network_sta(const char *ssid, const char *pass, const char *hostname,
 		if(WiFi.getMode() != WIFI_AP_STA) WiFi.mode(WIFI_AP_STA);
 		DEBUG_PRINTLN(F("Setting to AP+STA mode"));
 	}
+	station_phy = OpenGarage::options[OPTION_WFG].ival == 1 ? WIFI_PHY_MODE_11G : WIFI_PHY_MODE_11N;
+	WiFi.setPhyMode(station_phy);
 	if(hostname != NULL) {
 		WiFi.hostname(hostname);
 	}

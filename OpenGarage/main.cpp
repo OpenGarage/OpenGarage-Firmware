@@ -548,6 +548,7 @@ static void append_debug_details(const OTF::Request &req, DebugJson &json) {
 	json += F(",\"wifi_roams\":"); json += station_selection.roams();
 	json += F(",\"wifi_smoothed_rssi\":"); json += station_selection.smoothed();
 	json += F(",\"wifi_channel\":"); json += WiFi.channel();
+	json += F(",\"wifi_phy\":"); json += int(WiFi.getPhyMode());
 	const char *crash = req.getQueryParameter("crash");
 	og_crash::append_json(json, crash ? (unsigned)atoi(crash) : 0);
 }

@@ -151,3 +151,9 @@ python3 tests/test_log_stream.py` compiles the real log-reader opener and checks
 Updater header reset: test_update_header_reset.py compiles the real request reset loop against ESP8266-style length-only clear semantics and the production key comparator. Covers sequential valid, missing and wrong credentials, plus clearing upload-token and release headers. Hardware overlap checks supplement this host test.
 
 The log-stream test compiles the production /jl handler with real OTF local/cloud streaming at the configured buffer size. It checks empty/1/400 records, both column layouts, zero slots, truncated reads, all control-byte escapes, maximum numeric fields, response-allocation refusal, failed network writes, and reader cleanup. Bodies retain the API format; HTTP uses Connection: close instead of precomputing Content-Length.
+
+
+WiFi compatibility: `python3 tests/test_wifi_adapter.py` executes the adapter
+with both normal (11n enabled) and 11g compatibility settings, checking PHY mode
+at every connection including recovery after the radio resets. Options security
+tests also cover setting/omitting/clearing `wfg` and its JSON representation.

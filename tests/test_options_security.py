@@ -78,6 +78,11 @@ struct Cloud {int getCloudStatus(){return 1;}} cloud,*otf=&cloud;
 code += 'int main(){\n' + setup + r'''
  og.options[OPTION_NAME].sval="name\"\\\n\t\x01";
  String out;sta_options_fill_json(out);std::cout<<out<<"\n";
+ og.options[OPTION_WFG].max=1;og.options[OPTION_WFG].ival=0;
+ Request wifiOn;wifiOn.values["wfg"]="1";save(wifiOn);assert(og.options[OPTION_WFG].ival==1);
+ String wifiJson;sta_options_fill_json(wifiJson);assert(wifiJson.find("\"wfg\":1")!=std::string::npos);
+ Request wifiOmitted;save(wifiOmitted);assert(og.options[OPTION_WFG].ival==1);
+ Request wifiOff;wifiOff.values["wfg"]="0";save(wifiOff);assert(og.options[OPTION_WFG].ival==0);
  for(byte field:{byte(OPTION_AUTH),byte(OPTION_APWD),byte(OPTION_IFTT),byte(OPTION_MQPW)}){
   auto before=og.options[field].sval;
   Request empty;save(empty);assert(og.options[field].sval==before);

@@ -191,6 +191,8 @@
     <label class="lbl" for="ntp1">NTP Server:</label><span class="inp"><input type="text" id="ntp1" maxlength="64" placeholder="(optional)"></span>
     <label class="lbl" for="wfr">WiFi AP Selection:</label>
     <span class="sel w160"><select id="wfr"><option value="1">Automatic</option><option value="0">Off</option></select></span>
+    <label class="cb full"><input type="checkbox" id="wfg"><span class="btn c">WiFi compatibility mode (802.11g)</span></label>
+    <p class="full"><small>May improve stability with some routers. Leave off unless troubleshooting WiFi-related resets. Requires a reboot. Routers allowing only 802.11n may not connect.</small></p>
     <label class="cb full"><input type="checkbox" id="usi"><span class="btn c">Use Static IP</span></label>
     <label class="lbl si" for="dvip">Device IP:</label><span class="inp si"><input type="text" id="dvip" maxlength="15"></span>
     <label class="lbl si" for="gwip">Gateway IP:</label><span class="inp si"><input type="text" id="gwip" maxlength="15"></span>
@@ -536,6 +538,7 @@ $('btn_submit').addEventListener('click', function(e) {
   // POST on the local network: no request-line limit, and secrets stay out of URLs. GET /co still works.
   comm = 'dkey=' + encodeURIComponent(saveDeviceKey(okey));
   bc('sn1'); bc('sn2'); bc('sno'); bc('dth'); bc('vth'); bc('riv'); bc('bas'); bc('alm');
+  comm += '&wfg=' + eval_cb('wfg');
   bc('wfr'); bc('lsz'); bc('tsn'); bc('htp'); bc('cdt'); bc('dri'); bc('ati'); bc('atib');
   comm += '&aoo=' + eval_cb('aoo');
   if (security_capable) {
@@ -662,6 +665,7 @@ getJSON('jo').then(function(jd) {
   $('vth').value = jd.vth;
   $('riv').value = jd.riv;
   $('wfr').value = jd.wfr === 0 ? 0 : 1;
+  $('wfg').checked = jd.wfg === 1;
   $('bas').value = jd.bas;
   $('htp').value = jd.htp;
   $('cdt').value = jd.cdt;

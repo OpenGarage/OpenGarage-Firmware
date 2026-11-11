@@ -5,7 +5,7 @@ source=Path('OpenGarage/espconnect.cpp').read_text()
 def function(signature):
  start=source.index(signature);end=source.index('\n}',start)+2
  return source[start:end]
-functions=source[source.index('og_wifi::Selection station_selection;'):source.index('\n\nString scan_network')]+'\n'+function('void start_network_sta(const char *ssid, const char *pass, const char *hostname, bool staonly)')
+functions=source[source.index('static WiFiPhyMode_t station_phy'):source.index('\n\nString scan_network')]+'\n'+function('void start_network_sta(const char *ssid, const char *pass, const char *hostname, bool staonly)')
 stub=r'''
 #include "OpenGarage/wifi_manager.h"
 #include "OpenGarage/wifi_selection.h"
@@ -15,9 +15,11 @@ stub=r'''
 #include <cstdio>
 #define DEBUG_PRINTLN(x) ((void)0)
 #define F(x) x
+using WiFiPhyMode_t=int; constexpr int WIFI_PHY_MODE_11G=2,WIFI_PHY_MODE_11N=3,OPTION_WFG=0;
 constexpr int WIFI_OFF=0,WIFI_STA=1,WIFI_AP_STA=3,WL_CONNECTED=3;
 constexpr int WIFI_SCAN_RUNNING=-1,WIFI_SCAN_FAILED=-2;
 constexpr int ENC_TYPE_NONE=7,ENC_TYPE_CCMP=4,ENC_TYPE_TKIP=2,ENC_TYPE_AUTO=8;
+int expected_phy=WIFI_PHY_MODE_11N;
 uint32_t now=0;
 uint32_t millis(){return now;}
 struct WiFiEventStationModeDisconnected { uint8_t reason; };
@@ -28,6 +30,7 @@ WiFiEventHandler station_disconnect_handler;
 struct FakeWiFi {
  bool reconnect=true,connected=false,ip=false,sleep=true;
  bool static_config=false,require_restored=false;double power=0;
+ int phy=WIFI_PHY_MODE_11N; bool setPhyMode(int p){phy=p;return true;}
  int current_mode=0,disconnects=0,begins=0,scans=0,scan_result=-2;
  int target_channel=0;bool targeted=false;uint8_t actual[6]={1,2,3,4,5,6};
  struct AP {std::string ssid;og_wifi::AccessPoint ap;uint8_t enc;};
@@ -42,7 +45,7 @@ struct FakeWiFi {
  uint8_t *BSSID(int i=-1){return i<0 ? actual : aps[i].ap.bssid;}
  int channel(int i=-1){return i<0 ? 1 : aps[i].ap.channel;}
  std::string ssid,pass,host;
- int getMode(){return current_mode;} void mode(int m){current_mode=m;if(m==WIFI_OFF){static_config=false;power=0;host.clear();sleep=true;reconnect=true;}}
+ int getMode(){return current_mode;} void mode(int m){current_mode=m;if(m==WIFI_OFF){phy=WIFI_PHY_MODE_11N;static_config=false;power=0;host.clear();sleep=true;reconnect=true;}}
  void hostname(const char *h){host=h;} std::string hostname(){return host;}
  void setAutoReconnect(bool b){reconnect=b;}
  void disconnect(bool off,bool erase){assert(!off && !erase);connected=ip=false;++disconnects;}
@@ -51,14 +54,18 @@ struct FakeWiFi {
  template<class C> WiFiEventHandler onStationModeDisconnected(C cb){cb({201});return 1;}
  void begin(const char *s,const char *p,int channel=0,const uint8_t *bssid=nullptr){
   if(require_restored) assert(static_config && power==20.5 && host=="host" && !sleep && !reconnect);
+  assert(phy==expected_phy);
   targeted=bssid!=nullptr;target_channel=channel;ssid=s;pass=p;++begins;
  }
 } WiFi;
-struct OpenGarage { static void config_ip(){WiFi.static_config=true;} };
+struct Option {unsigned ival;};
+struct OpenGarage {static Option options[1]; static void config_ip(){WiFi.static_config=true;} };
+Option OpenGarage::options[1]={{0}};
 void service_station_network(const char*,const char*,bool,bool,bool=false,bool=false);
 '''
 main=r'''
-int main(){
+int main(int argc,char**){
+ OpenGarage::options[OPTION_WFG].ival=argc>1;expected_phy=argc>1?WIFI_PHY_MODE_11G:WIFI_PHY_MODE_11N;
  start_network_sta("saved","password","host",true);
  assert(!WiFi.reconnect && WiFi.begins==0 && !WiFi.sleep && WiFi.host=="host");
  assert(station_disconnect_reason==201);
@@ -148,6 +155,7 @@ with tempfile.TemporaryDirectory() as d:
  p=Path(d);(p/'test.cpp').write_text(stub+functions+main)
  subprocess.run(['g++','-std=c++11','-Wall','-Wextra','-Werror','-I.',str(p/'test.cpp'),'-o',str(p/'test')],check=True)
  subprocess.run([str(p/'test')],check=True)
+ subprocess.run([str(p/'test'),'compatibility'],check=True)
 main_src=Path('OpenGarage/main.cpp').read_text()
 loop=main_src[main_src.index('void do_loop() {'):]
 assert loop.index('check_status();')<loop.index('service_station_network(')<loop.index('switch(og.state)')
@@ -155,3 +163,12 @@ assert 'ReconnectBackoff' not in main_src
 assert 'WiFi.persistent(false)' in main_src
 # Static IP config runs before the first attempt on the next loop.
 assert loop.index('start_network_sta(')<loop.index('og.config_ip();')<loop.index('og.state = OG_STATE_CONNECTING;')
+
+# Named persisted option: existing configs omit it and retain the default off.
+options=Path('OpenGarage/OpenGarage.cpp').read_text()
+assert '{"wfg", 0, 1, ""}' in options
+html=Path('OpenGarage/html/sta_ui.html').read_text()
+assert html.index('id="div_other"') < html.index('id="wfg"') < html.index('id="usi"')
+assert "comm += '&wfg=' + eval_cb('wfg')" in html
+assert "$('wfg').checked = jd.wfg === 1" in html
+assert 'Requires a reboot.' in html
