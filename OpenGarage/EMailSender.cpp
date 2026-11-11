@@ -547,7 +547,8 @@ EMailSender::Response EMailSender::send(const char* to[], byte sizeOfTo,  byte s
 				  if (mfln) {
 					  client.setBufferSizes(512, 512);
 				  } else {
-					  client.setBufferSizes(2048, 2048);
+					  // Outgoing records can be smaller without MFLN; keep the existing RX fallback.
+					  client.setBufferSizes(2048, 512);
 				  }
 			  }
 			#endif
