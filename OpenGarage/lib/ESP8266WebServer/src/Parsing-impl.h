@@ -50,7 +50,9 @@ typename ESP8266WebServerTemplate<ServerType>::ClientFuture ESP8266WebServerTemp
   _ogReadLine(client, '\n');
   //reset header value
   for (int i = 0; i < _headerKeysCount; ++i) {
-    _currentHeaders[i].value.clear();
+    // ESP8266 String::clear() only resets length, leaving c_str() stale.
+    // Assignment also writes the NUL needed by credential/token consumers.
+    _currentHeaders[i].value = "";
    }
 
   // First line of HTTP request looks like "GET /path HTTP/1.1"

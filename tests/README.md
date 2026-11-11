@@ -28,6 +28,7 @@ python3 tests/test_debug_response.py
 python3 tests/test_cached_page.py
 python3 tests/test_update_security.py
 python3 tests/test_update_parser.py
+python3 tests/test_update_header_reset.py
 python3 tests/test_firmware_release.py
 python3 tests/test_firmware_service.py
 node tests/test_updater_page.cjs
@@ -145,3 +146,5 @@ RAM batch 1: `python3 tests/test_lazy_mqtt.py` checks deferred MQTT buffer growt
 `python3 tests/test_log_reader.py` compiles the real log-reader opener and checks short headers, invalid indices, failed opens and replacement of an existing reader.
 
 `python3 tests/test_smtp_build_policy.py` checks the actual bounded-only SMTP admission guard, including rejection of multiple recipients, CC/BCC, unauthenticated, SASL/CRAM and HTML modes before network work. The ESP8266 firmware build additionally verifies the selected compile-time path.
+
+Updater header reset: test_update_header_reset.py compiles the real request reset loop against ESP8266-style length-only clear semantics and the production key comparator. Covers sequential valid, missing and wrong credentials, plus clearing upload-token and release headers. Hardware overlap checks supplement this host test.
