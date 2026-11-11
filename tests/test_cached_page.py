@@ -8,6 +8,8 @@ root = Path(__file__).resolve().parents[1]
 og = root / 'OpenGarage'
 source = (og / 'main.cpp').read_text()
 ini = (og / 'platformio.ini').read_text()
+buffer_flag = re.search(r'-DOTF_RESPONSE_BUFFER_SIZE=(\d+)', ini)
+buffer_flags = ['-DOTF_RESPONSE_BUFFER_SIZE=' + buffer_flag.group(1)] if buffer_flag else []
 
 # Use the OTF the build uses: a temporary local checkout, or the pinned copy PlatformIO fetched.
 local = re.search(r'^\s*symlink://(\S+)', ini, re.M)
@@ -96,7 +98,7 @@ with tempfile.TemporaryDirectory(prefix='og-cached-page-') as tmp:
     subprocess.run(['g++', '-std=c++14', '-Wall', '-Wextra', '-Werror', '-Wno-unused-parameter',
                     '-fsanitize=address,undefined', '-fno-omit-frame-pointer',
                     '-I', str(otf), '-I', str(otf / 'test/fakes'), '-I', str(root),
-                    '-DARDUINO=10800', '-DESP8266', '-include', str(otf / 'test/fakes/cloud_transport.h'),
+                    *buffer_flags, '-DARDUINO=10800', '-DESP8266', '-include', str(otf / 'test/fakes/cloud_transport.h'),
                     str(cpp), *sources, '-o', str(binary)], check=True)
     out = subprocess.run([str(binary)], capture_output=True, text=True, env={'ASAN_OPTIONS': 'detect_leaks=1'})
     assert out.returncode == 0 and out.stdout.strip() == 'ok', out.stdout + out.stderr
