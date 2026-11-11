@@ -358,12 +358,15 @@ void restart_in(uint32_t ms) {
 
 // Both the provisioning poll and the normal loop can notice association first.
 // Persist once, play the complete success tune, then restart to enter STA mode.
-void complete_ap_setup() {
-	if (setup_reboot_pending || og.options[OPTION_MOD].ival==OG_MOD_STA) return;
+static bool setup_save_failed=false;
+bool complete_ap_setup() {
+	if(setup_save_failed)return false;
+	if (setup_reboot_pending || og.options[OPTION_MOD].ival==OG_MOD_STA) return true;
 	og.options[OPTION_MOD].ival=OG_MOD_STA;
-	og.options_save();
+	if(!og.options_save()) {og.options[OPTION_MOD].ival=OG_MOD_AP;setup_save_failed=true;return false;}
 	setup_reboot_pending=true;
 	start_tune(og_audio::Tune::SETUP_SUCCESS);
+	return true;
 }
 
 static void send_sta_ui(const OTF::Request &req, OTF::Response &res) {
@@ -549,6 +552,8 @@ static void append_debug_details(const OTF::Request &req, DebugJson &json) {
 	json += F(",\"wifi_smoothed_rssi\":"); json += station_selection.smoothed();
 	json += F(",\"wifi_channel\":"); json += WiFi.channel();
 	json += F(",\"wifi_phy\":"); json += int(WiFi.getPhyMode());
+	json += F(",\"config_status\":"); json += og.config_status;
+	json += F(",\"config_locked\":"); json += og.config_locked?1:0;
 	const char *crash = req.getQueryParameter("crash");
 	og_crash::append_json(json, crash ? (unsigned)atoi(crash) : 0);
 }
@@ -654,7 +659,7 @@ void on_sta_logs(const OTF::Request &req, OTF::Response &res) {
 // trusted without it, following Blynk's token-only model; the OTC token alone no longer
 // authorizes changes, matching OpenSprinkler.)
 static bool device_key_matches(const char *dkey) {
-	return dkey != NULL && strcmp(dkey, og.options[OPTION_DKEY].sval.c_str()) == 0;
+	return !og.config_locked && dkey != NULL && strcmp(dkey, og.options[OPTION_DKEY].sval.c_str()) == 0;
 }
 
 bool verify_device_key(const OTF::Request &req) {
@@ -667,13 +672,14 @@ void on_reset_all(const OTF::Request &req, OTF::Response &res){
 		return;
 	}
 
+	if(!og.options_reset()){otf_send_result(res, HTML_UPLOAD_FAILED, "save");return;}
 	og.state = OG_STATE_RESET;
 	otf_send_result(res, HTML_SUCCESS, nullptr);
 }
 
 // POST only. Keep credentials out of URLs; the key is required over OTC too, as everywhere.
 void on_regenerate_secplus2_id(const OTF::Request &req, OTF::Response &res) {
-	if (!body_device_key_matches(req.getBody(), req.getBodyLength(), og.options[OPTION_DKEY].sval.c_str())) {
+	if (og.config_locked || !body_device_key_matches(req.getBody(), req.getBodyLength(), og.options[OPTION_DKEY].sval.c_str())) {
 		otf_send_result(res, HTML_UNAUTHORIZED, nullptr);
 		return;
 	}
@@ -795,7 +801,7 @@ static bool auto_detect_busy();
 // Outside setup (AP) mode the device key is required: Security+ 2.0 probing can move a Security+
 // 1.0 door. Setup mode stays keyless for first-time detection (that flow is temporary; plan 4a).
 void on_auto_detect(const OTF::Request &req, OTF::Response &res) {
-	if (curr_mode != OG_MOD_AP && !verify_device_key(req)) {
+	if (og.config_locked || (curr_mode != OG_MOD_AP && !verify_device_key(req))) {
 		otf_send_result(res, HTML_UNAUTHORIZED, nullptr);
 		return;
 	}
@@ -829,6 +835,7 @@ static bool auto_detect_busy() {
 }
 
 void performDoorAction(uint8_t action, bool force_alarm_off = false) {
+	if(og.config_locked)return;
 	if (firmware_update.busy() || firmware_update.phase()==FirmwareUpdatePhase::Success) return;
 	if (identity_restart_pending) return;
 	// Check if the requested action is valid based on the current door state
@@ -880,6 +887,7 @@ void performDoorAction(uint8_t action, bool force_alarm_off = false) {
 }
 
 void performLightAction(uint8_t action) {
+	if(og.config_locked)return;
 	if (firmware_update.busy() || firmware_update.phase()==FirmwareUpdatePhase::Success) return;
 	hold_network_delivery();
 	switch(action) {
@@ -902,6 +910,7 @@ void performLightAction(uint8_t action) {
 }
 
 void performLockAction(uint8_t action) {
+	if(og.config_locked)return;
 	if (firmware_update.busy() || firmware_update.phase()==FirmwareUpdatePhase::Success) return;
 	hold_network_delivery();
 	switch(action) {
@@ -964,8 +973,10 @@ void sta_change_controller_main(const OTF::Request &req, OTF::Response &res) {
 		otf_send_result(res, HTML_SUCCESS, nullptr);
 		restart_in(1000);
 	} else if(req.getQueryParameter("apmode") != NULL) {
+		og.options[OPTION_MOD].ival=OG_MOD_AP;
+		if(!og.options_save()){otf_send_result(res, HTML_UPLOAD_FAILED, "save");return;}
 		otf_send_result(res, HTML_SUCCESS, nullptr);
-		og.reset_to_ap();
+		restart_in(1000);
 	} else {
 		otf_send_result(res, HTML_NOT_PERMITTED, nullptr);
 	}
@@ -1190,7 +1201,9 @@ void sta_change_options_main(const OptionParams &req, OTF::Response &res) {
 			og.options[OPTION_DKEY].sval = nkey;
 	}
 
-	og.options_save();
+	if(!og.options_save()) {
+		otf_send_result(res, HTML_UPLOAD_FAILED, "save"); return;
+	}
 
 	uint new_secv = og.options[OPTION_SECV].ival;
 	secplus1_garage.set_panel_emulation_disabled(og.options[OPTION_PEM].ival != 0);
@@ -1308,6 +1321,7 @@ void on_ap_scan(const OTF::Request &req, OTF::Response &res) {
 
 void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_STA) return;
+	if(og.config_locked) {otf_send_result(res, HTML_NOT_PERMITTED, "config");return;}
 	const char *cloud = req.getQueryParameter("cld");
 	if (cloud && strcmp(cloud, "otc") != 0 && strcmp(cloud, "none") != 0) {
 		otf_send_result(res, HTML_DATA_OUTOFBOUND, "cld: Blynk support retired"); return;
@@ -1328,7 +1342,6 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 					og.options[OPTION_BPRT].ival=(bprt==NULL||strlen(bprt)==0)?DEFAULT_OTC_PRT:String(bprt).toInt();
 					og.options[OPTION_CLD].ival = CLOUD_OTC;
 				og.options[OPTION_AUTH].sval = auth;
-				og.options_save();
 				DEBUG_PRINTLN(og.options[OPTION_CLD].ival);
 
 				DEBUG_PRINTLN(og.options[OPTION_BDMN].sval);
@@ -1345,7 +1358,9 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 			if(v>2) v=2;
 			og.options[OPTION_SECV].ival=v;
 		}
+		if(!og.options_save()){otf_send_result(res, HTML_UPLOAD_FAILED, "save");return;}
 		otf_send_result(res, HTML_SUCCESS, nullptr);
+		setup_save_failed=false;
 		og.state = OG_STATE_TRY_CONNECT;
 	} else {
 		otf_send_result(res, HTML_DATA_MISSING, "ssid");
@@ -1354,15 +1369,13 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 
 void on_ap_try_connect(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_STA) return;
+	if(og.config_locked) {otf_send_result(res, HTML_NOT_PERMITTED, "config");return;}
+	if(WiFi.status()==WL_CONNECTED && WiFi.localIP() && !complete_ap_setup()) {otf_send_result(res, HTML_UPLOAD_FAILED, "save");return;}
 	String json = "{";
 	json += F("\"ip\":");
 	json += (WiFi.status() == WL_CONNECTED) ? (uint32_t)WiFi.localIP() : 0;
 	json += F("}");
 	otf_send_json(res, json);
-	if(WiFi.status() == WL_CONNECTED && WiFi.localIP()) {
-		DEBUG_PRINTLN(F("IP received by client, restart."));
-		complete_ap_setup();
-	}
 }
 
 void on_ap_debug(const OTF::Request &req, OTF::Response &res) {
@@ -1570,7 +1583,7 @@ static bool updater_busy() {
    firmware_update.phase() == FirmwareUpdatePhase::Success;
 }
 static bool updater_key_ok() {
- return update_key_matches(updateServer->header("X-OG-Device-Key").c_str(),
+ return !og.config_locked && update_key_matches(updateServer->header("X-OG-Device-Key").c_str(),
                            og.options[OPTION_DKEY].sval.c_str());
 }
 // Header-stage admission never consumes a token or changes updater state.
@@ -1580,7 +1593,7 @@ static bool updater_body_authorized() {
  bool authorized;
  if (path == "/update" || path == "/update/prepare") authorized=updater_key_ok();
  else if (path == "/update/upload")
-  authorized=firmware_update.token_valid(updateServer->header("X-OG-Upload-Token").c_str());
+  authorized=!og.config_locked && firmware_update.token_valid(updateServer->header("X-OG-Upload-Token").c_str());
  else return false;
  if (!authorized || updater_busy()) {
   // Explicit pre-body refusal: this request has not written or installed anything.
@@ -2369,7 +2382,7 @@ void do_loop() {
 
 	case OG_STATE_RESET:
 		og.state = OG_STATE_INITIAL;
-		og.options_reset();
+		if(!og.options_reset()) {og.state=OG_STATE_CONNECTED;break;}
 		og.log_reset();
 		og.restart();
 		break;

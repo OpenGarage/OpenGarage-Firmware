@@ -32,6 +32,10 @@ python3 tests/test_update_header_reset.py
 python3 tests/test_firmware_release.py
 python3 tests/test_firmware_service.py
 node tests/test_updater_page.cjs
+g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -I. tests/test_config_store.cpp -o /tmp/og-test-config
+/tmp/og-test-config
+python3 tests/test_config_options.py
+python3 tests/test_config_setup.py
 python3 tests/test_options_security.py
 python3 tests/test_options_post.py
 python3 tests/test_device_key.py
@@ -157,3 +161,12 @@ WiFi compatibility: `python3 tests/test_wifi_adapter.py` executes the adapter
 with both normal (11n enabled) and 11g compatibility settings, checking PHY mode
 at every connection including recovery after the radio resets. Options security
 tests also cover setting/omitting/clearing `wfg` and its JSON representation.
+
+Settings persistence tests execute the file transaction with interrupted writes,
+short writes, invalid CRC/length, rename/remove/open failures and reset interruption.
+The real options code is exercised against the same fake filesystem for released-layout
+migration, rollback, reserved string storage, and corrupt-file lockout.
+`fixtures/README.md` records the release sources for independent migration fixtures;
+production has no per-version field list. Tests also cover unknown versions, malformed
+legacy lines and torn non-key tails, invalid numbers, missing/duplicate/truncated keys and a future payload in the frozen v1 envelope. Setup completion and updater refusal are checked separately.
+These model file API behavior, not SPIFFS flash-page corruption or physical power cuts.

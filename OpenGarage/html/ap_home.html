@@ -290,6 +290,10 @@ function tryConnect(){
   xhr.onreadystatechange=function() {
     if(xhr.readyState==4 && xhr.status==200) {
     var jd=JSON.parse(xhr.responseText);
+    if(jd.result && jd.result!==1) {
+      clearInterval(tci);id('butt').disabled=false;id('butt').innerHTML='Submit';
+      show_msg(jd.item==='config'?'Settings are damaged. A physical factory reset is required.':'Could not save settings. Please retry.','red');return;
+    }
     if(jd.ip==0) return;
     var ip=''+(jd.ip%256)+'.'+((jd.ip/256>>0)%256)+'.'+(((jd.ip/256>>0)/256>>0)%256)+'.'+(((jd.ip/256>>0)/256>>0)/256>>0);
     show_msg('<b>Connected! Device IP: '+ip+'</b><br>Device is rebooting. Switch back to your<br>regular WiFi and click the button to connect.', 'green');
@@ -309,7 +313,7 @@ function sf(){
     if(xhr.readyState==4 && xhr.status==200) {
       var jd=JSON.parse(xhr.responseText);
       if(jd.result==1) { id('butt').innerHTML='Connecting...'; show_msg('Connecting, please wait...','gray'); tci=setInterval(tryConnect, 2000); return;}
-      show_msg('Error code: '+jd.result+', item: '+jd.item,'red');
+      show_msg(jd.item==='save'?'Could not save settings. Please retry.':jd.item==='config'?'Settings are damaged. A physical factory reset is required.':'Error code: '+jd.result+', item: '+jd.item,'red');
       id('butt').innerHTML='Submit';
       dis_config(false);
     }

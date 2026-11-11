@@ -58,9 +58,11 @@ public:
 	static byte has_swrx;
 	static void begin();
 	static void options_setup();
-	static void options_load();
-	static void options_save();
-	static void options_reset();
+	static bool options_load();
+	static bool options_save();
+	static bool options_reset();
+	static uint8_t config_status;
+	static bool config_locked;
 	static void restart() { ESP.restart();}
 	static uint read_distance(); // centimeter
 	static void init_sensors(); // initialize all sensor
@@ -92,8 +94,7 @@ public:
 	static void reset_alarm() { alarm = 0; alarm_action = 0; }
 	static void reset_to_ap() {
 		options[OPTION_MOD].ival = OG_MOD_AP;
-		options_save();
-		restart();
+		if(options_save()) restart();
 	}
 	static void config_ip();
 	private:

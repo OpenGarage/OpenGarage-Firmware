@@ -22,6 +22,7 @@
 
 #include "OpenGarage.h"
 #include "distance_consensus.h"
+#include "config_store.h"
 
 byte  OpenGarage::state = OG_STATE_INITIAL;
 File  OpenGarage::log_file;
@@ -32,7 +33,8 @@ byte  OpenGarage::led_reverse = 0;
 byte  OpenGarage::has_swrx = 0;
 Ticker ud_ticker;
 
-static const char* config_fname = CONFIG_FNAME;
+uint8_t OpenGarage::config_status = uint8_t(og_config::Status::NORMAL);
+bool OpenGarage::config_locked = false;
 static const char* log_fname = LOG_FNAME;
 
 DallasTemperature* OpenGarage::ds18b20 = NULL;
@@ -214,32 +216,78 @@ void OpenGarage::begin() {
 	}
 }
 
+// Consume one physical line, including malformed legacy lines. Allocation/read
+// failure is fatal; malformed lines can be skipped without interpreting fragments.
+enum class ConfigRecord { VALID, SKIP, INCOMPLETE, ERROR };
+static ConfigRecord config_record(File &file, String &name, String &value) {
+	name=""; value="";
+	bool colon=false, malformed=false;
+	while(file.available()) {
+		int c=file.read();
+		if(c<0)return ConfigRecord::ERROR;
+		if(c=='\n') {
+			value.trim();
+			return colon && name.length() && !malformed ? ConfigRecord::VALID : ConfigRecord::SKIP;
+		}
+		if(malformed)continue;
+		if(c==0){malformed=true;continue;}
+		if(!colon) {
+			if(c==':'){colon=true;continue;}
+			if(c=='\r'||name.length()>=16){malformed=true;continue;}
+			if(!name.concat(char(c)))return ConfigRecord::ERROR;
+		} else {
+			if(value.length()>=2049){malformed=true;continue;}
+			if(!value.concat(char(c)))return ConfigRecord::ERROR;
+		}
+	}
+	return ConfigRecord::INCOMPLETE; // EOF, distinct from a read/allocation failure.
+}
+static bool config_number(const String &value, unsigned maximum, unsigned long &number) {
+	char *end=nullptr;
+	number=strtoul(value.c_str(),&end,10);
+	return value.length() && value[0]!='-' && end && !*end && number<=maximum;
+}
+static bool valid_legacy_config(File &file) {
+	if(file.size()>16384)return false;
+	bool first=true, key_seen=false;
+	String name,value;
+	while(file.available()) {
+		auto record=config_record(file,name,value);
+		if(record==ConfigRecord::ERROR)return false;
+		if(first && (record!=ConfigRecord::VALID || name!="fwv"))return false;
+		first=false;
+		// A damaged/newer envelope must never downgrade to legacy validation.
+		if(name=="ogcfg" || name=="ogcrc")return false;
+		if(name=="dkey") {
+			if(key_seen || record!=ConfigRecord::VALID || !value.length())return false;
+			key_seen=true;
+		}
+	}
+	// FWV did not change for every schema change. Recover the credential rather
+	// than requiring a version-specific option list. Missing fields use defaults.
+	// A torn non-key tail is ignored; a torn key was rejected above.
+	return !first && key_seen;
+}
+static_assert(NUM_OPTIONS<64,"Expand config validation presence mask");
+
 void OpenGarage::options_setup() {
-	if(!FILESYS.exists(config_fname)) { // if config file does not exist
-		DEBUG_PRINTLN(F("create config file"));
-		options_save(); // save default option values
-		return;
-	}
-	DEBUG_PRINTLN(F("load options"));
-	options_load();
-	DEBUG_PRINTLN(F("done"));
-	if(options[OPTION_FWV].ival != OG_FWV)  {
-		// if firmware version has changed
-		// re-save options, thus preserving
-		// shared options with previous firmwares
-		options[OPTION_FWV].ival = OG_FWV;
-		options_save();
-		return;
-	}
+ auto r=og_config::recover(FILESYS,valid_legacy_config);
+ config_status=uint8_t(r.status);
+ if(r.status==og_config::Status::FRESH) { options_save(); return; }
+ if(!r.path || !options_load()) {
+  config_locked=true;config_status=uint8_t(og_config::Status::CORRUPT);
+  options[OPTION_MOD].ival=OG_MOD_AP;return;
+ }
+ config_status=uint8_t(r.status);
+ if(r.kind==og_config::Kind::LEGACY || options[OPTION_FWV].ival!=OG_FWV) {
+  options[OPTION_FWV].ival=OG_FWV;
+  if(options_save() && r.kind==og_config::Kind::LEGACY) config_status=uint8_t(og_config::Status::MIGRATED);
+ }
 }
 
-void OpenGarage::options_reset() {
-	DEBUG_PRINT(F("reset to factory default..."));
-	if(!FILESYS.remove(config_fname)) {
-		DEBUG_PRINTLN(F("failed to remove config file"));
-		return;
-	}else{DEBUG_PRINTLN(F("Removed config file"));}
-	DEBUG_PRINTLN(F("ok"));
+bool OpenGarage::options_reset() {
+ if(!og_config::reset(FILESYS)){config_status=uint8_t(og_config::Status::SAVE_FAILED);return false;}
+ config_locked=false;return true;
 }
 
 void OpenGarage::log_reset() {
@@ -259,51 +307,91 @@ int OpenGarage::find_option(String name) {
 	return -1;
 }
 
-void OpenGarage::options_load() {
-	File file = FILESYS.open(config_fname, "r");
-	DEBUG_PRINT(F("loading config file..."));
-	if(!file) {
-		DEBUG_PRINTLN(F("failed"));
-		return;
-	}
-	byte nopts = 0;
-	while(file.available()) {
-		String name = file.readStringUntil(':');
-		String sval = file.readStringUntil('\n');
-		sval.trim();
-		DEBUG_PRINT(name);
-		DEBUG_PRINTLN(F(": loaded")); // Never dump configuration credentials.
-		nopts++;
-		if(nopts>NUM_OPTIONS+1) break;
-		int idx = find_option(name);
-		if(idx<0) continue;
-		if(options[idx].max) {  // this is an integer option
-		  options[idx].ival = sval.toInt();
-		} else {  // this is a string option
-		  options[idx].sval = sval;
+// Flash-resident defaults for missing/invalid old fields. Tests compare both
+// tables with options[]. Strings reuse the literals already used by options[].
+static const uint16_t config_int_defaults[] PROGMEM = {
+	OG_FWV, OG_SN1_CEILING, OG_SN2_NONE, OG_SNO_1ONLY, 0, 50, 150, 1,
+	OG_ALM_5, 0, DEFAULT_LOG_SIZE, OG_TSN_NONE, 80, 1000, 500, OG_SFI_CONSENSUS,
+	10, 0, OG_MOD_AP, 30, OG_AUTO_NONE, 3, OG_AUTO_NONE, OG_NOTIFY_DO|OG_NOTIFY_DC,
+	OG_LIGHT_BLINK_FOREVER, 0, 0, 0, 0, 0, 0, DEFAULT_OTC_PRT,
+	0, 0, 0, 0, 0, 1883, 0, 0,
+	0, 0, 0, DEFAULT_SMTP_PORT, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 1, 0
+};
+static const char *const config_string_defaults[] PROGMEM = {
+	"", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", DEFAULT_OTC_DMN, "",
+	DEFAULT_DKEY, DEFAULT_NAME, "", "", "", "", "", "",
+	"", "", DEFAULT_SMTP_SERVER, "", "", "", "", "",
+	"", "255.255.255.0", "8.8.8.8", "", "", "", "", ""
+};
+static_assert(sizeof(config_int_defaults)/sizeof(config_int_defaults[0])==NUM_OPTIONS,"Update config defaults");
+static_assert(sizeof(config_string_defaults)/sizeof(config_string_defaults[0])==NUM_OPTIONS,"Update config defaults");
+static bool config_defaults_missing(uint64_t seen,bool apply) {
+	for(unsigned i=0;i<NUM_OPTIONS;++i) {
+		if(seen&(uint64_t(1)<<i))continue;
+		auto &o=OpenGarage::options[i];
+		if(o.max) {
+			if(apply)o.ival=pgm_read_word(&config_int_defaults[i]);
+		} else {
+			const char *value=reinterpret_cast<const char *>(pgm_read_ptr(&config_string_defaults[i]));
+			if(!o.sval.reserve(strlen(value)))return false;
+			if(apply)o.sval=value;
 		}
 	}
-	file.close();
+	return true;
 }
 
-void OpenGarage::options_save() {
-	File file = FILESYS.open(config_fname, "w");
-	DEBUG_PRINTLN(F("saving config file..."));
-	if(!file) {
-		DEBUG_PRINTLN(F("failed"));
-		return;
-	}
-	OptionStruct *o = options;
-	for(byte i=0;i<NUM_OPTIONS;i++,o++) {
-		file.print(o->name);
-		file.print(':');
-		if(o->max)
-		  file.println(o->ival);
-		else
-		  file.println(o->sval);
-	}
-	DEBUG_PRINTLN(F("ok"));
-	file.close();
+bool OpenGarage::options_load() {
+ auto r=og_config::recover(FILESYS,valid_legacy_config);
+ if(!r.path)return false;
+ uint64_t seen=0;
+ // Reserve before changing values, so low-memory reload cannot partly replace keys.
+ for(unsigned pass=0;pass<2;++pass) {
+  File f=FILESYS.open(r.path,"r");if(!f)return false;
+  String name,value;
+  if(pass && !config_defaults_missing(seen,true)){f.close();return false;}
+  while(f.available()) {
+   auto record=config_record(f,name,value);
+   if(record==ConfigRecord::ERROR || (record!=ConfigRecord::VALID && r.kind!=og_config::Kind::LEGACY)){f.close();return false;}
+   if(record!=ConfigRecord::VALID)continue;
+   int idx=find_option(name);if(idx<0)continue;
+   unsigned long number=0;
+   if(options[idx].max && !config_number(value,options[idx].max,number))continue;
+   if(!pass)seen|=uint64_t(1)<<idx;
+   if(!options[idx].max && !options[idx].sval.reserve(value.length())){f.close();return false;}
+   if(pass) {
+    if(options[idx].max)options[idx].ival=number;
+    else options[idx].sval=value;
+   }
+  }
+  f.close();
+  if(!pass && !config_defaults_missing(seen,false))return false;
+ }
+ return true;
+}
+
+bool OpenGarage::options_save() {
+ if(config_locked)return false;
+ bool ok=og_config::save(FILESYS,valid_legacy_config,[](auto &out) {
+  for(byte i=0;i<NUM_OPTIONS;++i) {
+   const auto &o=options[i];
+   // The legacy-readable record format cannot represent embedded line endings.
+   if(!o.max && (o.sval.indexOf('\r')>=0 || o.sval.indexOf('\n')>=0 || o.sval.length()>2048 || strlen(o.sval.c_str())!=o.sval.length()))return false;
+   if(!out.text(o.name)||!out.text(":")||!(o.max?out.number(o.ival):out.write(o.sval.c_str(),o.sval.length()))||!out.text("\r\n"))return false;
+  }
+  return true;
+ });
+ if(!ok) {
+  config_status=uint8_t(og_config::Status::SAVE_FAILED);
+  // Reload the authoritative durable values before replying. Usually these
+  // are the old settings; recovery may select a verified pending replacement.
+  if(!options_load()) {DEBUG_PRINTLN(F("Settings reload failed; configuration locked"));config_locked=true;options[OPTION_MOD].ival=OG_MOD_AP;options[OPTION_ATO].ival=0;options[OPTION_ATOB].ival=0;reset_alarm();}
+ }
+ if(ok && config_status==uint8_t(og_config::Status::SAVE_FAILED))config_status=uint8_t(og_config::Status::NORMAL);
+ return ok;
 }
 
 uint OpenGarage::read_distance() {

@@ -22,7 +22,7 @@ code = r'''
 #include <map>
 #include "OpenGarage/form_params.h"
 struct String : std::string { using std::string::string; const char *c_str() const { return std::string::c_str(); } };
-struct { struct { String sval; } options[1]; } og;
+struct { bool config_locked=false; struct { String sval; } options[1]; } og;
 enum { OPTION_DKEY = 0 };
 namespace OTF { struct Request {
   bool cloud; std::map<std::string, std::string> q;
@@ -52,6 +52,7 @@ int main() {
     assert(!verify_device_key(OptionParams{right, &body_none}));
     assert(verify_device_key(OptionParams{right, nullptr}) && !verify_device_key(OptionParams{wrong, nullptr}));
   }
+  og.config_locked=true;assert(!device_key_matches("s3cret"));og.config_locked=false;
   // An empty stored key never matches a missing one.
   og.options[OPTION_DKEY].sval = "";
   OTF::Request none{true, {}};
@@ -78,7 +79,7 @@ struct String : std::string { using std::string::string; String(int v) : std::st
 String operator+(const char *a, const String &b) { String r(a); r.append(b); return r; }
 String operator+(const String &a, const char *b) { String r = a; r.append(b); return r; }
 struct Opt { String sval; int ival = 0; };
-struct { Opt options[2]; } og;
+struct { bool config_locked=false; Opt options[2]; } og;
 enum { OPTION_DKEY = 0, OPTION_SECV = 1 };
 enum { OG_MOD_AP = 0xA9, OG_MOD_STA = 0x2A };
 enum { HTML_UNAUTHORIZED = 2, DOOR_STATUS_UNKNOWN = 3, PIN_RELAY = 15, LOW = 0, OUTPUT = 1 };
@@ -118,6 +119,10 @@ static std::string run(int mode, int secv, const char *key) {
 }
 int main() {
   og.options[OPTION_DKEY].sval = "s3cret";
+  og.config_locked=true;
+  assert(run(OG_MOD_AP,2,nullptr).empty() && result==HTML_UNAUTHORIZED);
+  assert(run(OG_MOD_STA,2,"s3cret").empty() && result==HTML_UNAUTHORIZED);
+  og.config_locked=false;
   // Station mode: no probing without the key.
   for (const char *key : {(const char *)nullptr, "", "nope"}) {
     assert(run(OG_MOD_STA, 2, key).empty() && result == HTML_UNAUTHORIZED && json.empty());

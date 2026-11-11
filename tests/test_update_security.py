@@ -27,7 +27,7 @@ struct Server { void handleClient() {} int verb=HTTP_POST;int method(){return ve
 String header(const char*k){return headers[k];}String uri(){return path;}HTTPUpload&upload(){return ::upload;}
 WiFiClient&client(){return ::client;}void sendHeader(const char*,const char*){}void send(int status,const char*,const String&){http_status=status;}
 } server,*updateServer=&server;
-struct Option {String sval="test";int ival=1;};struct {Option options[8];int state=0;} og;
+struct Option {String sval="test";int ival=1;};struct {Option options[8];int state=0;bool config_locked=false;} og;
 struct Garage {void finish_release(){++disruptions;}}secplus1_garage,secplus2_garage;
 struct {void disconnect(){++disruptions;}}mqttclient;
 struct WiFiUDP {static void stopAll(){++disruptions;}};
@@ -64,6 +64,10 @@ server.path="/other";assert(!updater_body_authorized());
 server.path="/update/upload";assert(!updater_body_authorized());
 firmware_update.state=FirmwareUpdatePhase::Prepared;server.headers["X-OG-Upload-Token"]="token";
 assert(updater_body_authorized() && firmware_update.state==FirmwareUpdatePhase::Prepared);
+og.config_locked=true;assert(!updater_body_authorized() && http_status==401);
+server.path="/update";assert(!updater_body_authorized() && http_status==401);
+server.path="/update/prepare";assert(!updater_body_authorized() && http_status==401);
+og.config_locked=false;
 server.verb=HTTP_GET;assert(!updater_body_authorized());
 
 for(const char*k:{"","test","hex:77726f6e67"}){reset();start(k);assert(closed==1 && firmware_update.begins==0 && disruptions==0);aborted();}
