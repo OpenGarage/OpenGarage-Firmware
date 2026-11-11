@@ -22,6 +22,10 @@ stub=r'''
 #include <openssl/obj_mac.h>
 #include <openssl/ecdsa.h>
 #include <ArduinoJson.h>
+class __FlashStringHelper;
+#define F(s) reinterpret_cast<const __FlashStringHelper *>(s)
+unsigned flash_copies=0;
+char *strncpy_P(char *dst,const char *src,size_t n) {++flash_copies;return strncpy(dst,src,n);}
 #define ARDUINO 1
 #define ESP8266 1
 #define OG_FWV 126
@@ -85,6 +89,12 @@ assert(!firmware_update.begin_manual_file("fw.bin"));
 // New boot: authenticated legacy-format manual uploads share the byte hold.
 firmware_update=FirmwareUpdateService();assert(firmware_update.begin_manual_file("fw.bin"));
 assert(firmware_update.write_manual(image.data(),image.size()));assert(Update.data.size()==image.size()-1);assert(firmware_update.finish_manual());assert(Update.commits==2);
+assert(flash_copies>0);
+firmware_update=FirmwareUpdateService();
+assert(!firmware_update.begin_manual_file("bad.txt"));
+assert(std::string(firmware_update.message())=="Firmware filename has the wrong extension");
+firmware_update.reject("RAM rejection");assert(std::string(firmware_update.message())=="RAM rejection");
+std::string long_reason(200,'x');firmware_update.reject(long_reason.c_str());assert(strlen(firmware_update.message())==95);
 puts("Firmware service: signatures, low heap, tokens, rollover, corruption, abort, manual and finalization PASS");
 }
 '''

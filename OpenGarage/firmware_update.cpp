@@ -137,17 +137,17 @@ bool FirmwareUpdateService::prepare_verified(const uint8_t *descriptor, size_t d
 	if (busy() || _phase == FirmwareUpdatePhase::Success) return false;
 	reset_transfer();
 	if (!configured()) {
-		fail("Online updates are not configured");
+		fail(F("Online updates are not configured"));
 		return false;
 	}
 	if (!descriptor || !descriptor_length || descriptor_length > FIRMWARE_UPDATE_DESCRIPTOR_LIMIT ||
 		!release_id || !release_id[0]) {
-		fail("Signed release request is invalid");
+		fail(F("Signed release request is invalid"));
 		return false;
 	}
 
 	if (!stack_thunk_get_refcnt() && ESP.getMaxFreeBlockSize() < 8192) {
-		fail("Not enough contiguous memory to verify release; retry later"); return false;
+		fail(F("Not enough contiguous memory to verify release; retry later")); return false;
 	}
 	uint8_t signature[72];
 	size_t signature_length = 0;
@@ -155,7 +155,7 @@ bool FirmwareUpdateService::prepare_verified(const uint8_t *descriptor, size_t d
 	sha256_buffer(descriptor, descriptor_length, digest);
 	if (!hex_to_bytes(signature_hex, signature, sizeof(signature), signature_length) ||
 		signature_length < 64 || !verify_release_signature(digest, signature, signature_length)) {
-		fail("Release signature is invalid");
+		fail(F("Release signature is invalid"));
 		return false;
 	}
 
@@ -164,19 +164,19 @@ bool FirmwareUpdateService::prepare_verified(const uint8_t *descriptor, size_t d
 		ArduinoJson::deserializeJson(doc, descriptor, descriptor_length);
 	if (error || doc["schema"].as<uint8_t>() != 1 ||
         strcmp(doc["product"] | "", "opengarage-stock") != 0) {
-		fail("Release descriptor format is invalid");
+		fail(F("Release descriptor format is invalid"));
 		return false;
 	}
 	const char *descriptor_id = doc["id"];
 	if (!descriptor_id || strcmp(descriptor_id, release_id) != 0) {
-		fail("Signed release does not match the requested release");
+		fail(F("Signed release does not match the requested release"));
 		return false;
 	}
 
 	uint32_t version = doc["version"] | 0;
 	bool newer = version > OG_FWV;
 	if ((version < 126 || version > 255) || (!newer && !allow_downgrade)) {
-		fail("Selected firmware is not newer than this build");
+		fail(F("Selected firmware is not newer than this build"));
 		return false;
 	}
 
@@ -191,7 +191,7 @@ bool FirmwareUpdateService::prepare_verified(const uint8_t *descriptor, size_t d
 		strcmp(path + path_length - extension_length, file_extension()) != 0 ||
 		!parse_sha256(artifact["sha256"], _expected_sha256) || size < 1024 ||
 		size > ESP.getFreeSketchSpace() || (min_flash != 4194304 || ESP.getFlashChipRealSize() < min_flash)) {
-		fail("Signed release contains an incompatible entry");
+		fail(F("Signed release contains an incompatible entry"));
 		return false;
 	}
 
@@ -201,7 +201,7 @@ bool FirmwareUpdateService::prepare_verified(const uint8_t *descriptor, size_t d
 	strcpy(upload_token_out, _upload_token);
 	_upload_token_expires = millis() + FIRMWARE_UPDATE_TOKEN_TTL;
 	_phase = FirmwareUpdatePhase::Prepared;
-	strcpy(_message, "Ready to receive verified firmware");
+	set_message(F("Ready to receive verified firmware"));
 	return true;
 }
 
@@ -215,11 +215,11 @@ bool FirmwareUpdateService::valid_image_header(const uint8_t header[16]) const {
 
 bool FirmwareUpdateService::begin_image(const uint8_t header[16], uint32_t size) {
 	if (!valid_image_header(header)) {
-		fail("Firmware file is for a different hardware target");
+		fail(F("Firmware file is for a different hardware target"));
 		return false;
 	}
 	if (!Update.begin(size)) {
-		fail("Not enough OTA space for this firmware");
+		fail(F("Not enough OTA space for this firmware"));
 		return false;
 	}
 	_update_started = true;
@@ -230,7 +230,7 @@ bool FirmwareUpdateService::begin_upload(const char *filename, bool verified, ui
 	bool unsized_manual) {
 	const char *dot = filename ? strrchr(filename, '.') : nullptr;
 	if (!dot || strcmp(dot, file_extension()) != 0) {
-		fail("Firmware filename has the wrong extension");
+		fail(F("Firmware filename has the wrong extension"));
 		return false;
 	}
 	_bytes_done = 0;
@@ -243,7 +243,7 @@ bool FirmwareUpdateService::begin_upload(const char *filename, bool verified, ui
 	if (!verified) _bytes_total = size;
 	sha256_begin();
 	_phase = FirmwareUpdatePhase::Uploading;
-	strcpy(_message, verified ? "Uploading verified firmware" : "Receiving firmware upload");
+	set_message(verified ? F("Uploading verified firmware") : F("Receiving firmware upload"));
 	return true;
 }
 
@@ -255,7 +255,7 @@ bool FirmwareUpdateService::begin_verified(const char *filename, const char *upl
 	_upload_token[0] = 0;
 	_upload_token_expires = 0;
 	if (!authorized) {
-		fail("Verified firmware upload is not authorized");
+		fail(F("Verified firmware upload is not authorized"));
 		return false;
 	}
 	return begin_upload(filename, true);
@@ -265,7 +265,7 @@ bool FirmwareUpdateService::begin_manual(const char *filename, uint32_t size, co
 	if (busy() || _phase == FirmwareUpdatePhase::Success) return false;
 	reset_transfer();
 	if (!size || !parse_sha256(sha256_hex, _expected_sha256)) {
-		fail("Firmware upload size or checksum is invalid");
+		fail(F("Firmware upload size or checksum is invalid"));
 		return false;
 	}
 	return begin_upload(filename, false, size);
@@ -282,10 +282,10 @@ bool FirmwareUpdateService::write_upload(const uint8_t *data, size_t length, boo
 	const uint32_t free_space = ESP.getFreeSketchSpace();
 	const uint32_t capacity = free_space > 0x1000 ? (free_space-0x1000)&0xFFFFF000 : 0;
 	if (_unsized_manual && (_bytes_done > capacity || length > capacity-_bytes_done)) {
-		fail("Firmware exceeds OTA space"); return false;
+		fail(F("Firmware exceeds OTA space")); return false;
 	}
 	if (_bytes_total && (_bytes_done > _bytes_total || length > _bytes_total - _bytes_done)) {
-		fail(verified ? "Firmware upload exceeds signed size" : "Firmware upload exceeds declared size");
+		fail(verified ? F("Firmware upload exceeds signed size") : F("Firmware upload exceeds declared size"));
 		return false;
 	}
 	sha256_add(data, length);
@@ -302,14 +302,14 @@ bool FirmwareUpdateService::write_upload(const uint8_t *data, size_t length, boo
 			if (!update_size) {
 				uint32_t free_space = ESP.getFreeSketchSpace();
 				if (free_space <= 0x1000UL) {
-					fail("Not enough OTA space for this firmware");
+					fail(F("Not enough OTA space for this firmware"));
 					return false;
 				}
 				update_size = (free_space - 0x1000UL) & 0xFFFFF000UL;
 			}
 			if (!begin_image(_image_header, update_size)) return false;
 			if (Update.write(_image_header, sizeof(_image_header)) != sizeof(_image_header)) {
-				fail("Unable to write firmware upload");
+				fail(F("Unable to write firmware upload"));
 				return false;
 			}
 		}
@@ -318,7 +318,7 @@ bool FirmwareUpdateService::write_upload(const uint8_t *data, size_t length, boo
 	size_t write_length = length - offset;
 	if (_unsized_manual && write_length) {
 		if (_tail_pending && Update.write(&_tail_byte, 1) != 1) {
-			fail("Unable to write firmware upload");
+			fail(F("Unable to write firmware upload"));
 			return false;
 		}
 		_tail_byte = data[offset + write_length - 1];
@@ -330,7 +330,7 @@ bool FirmwareUpdateService::write_upload(const uint8_t *data, size_t length, boo
 		write_length--;
 	}
 	if (write_length && Update.write(const_cast<uint8_t *>(data + offset), write_length) != write_length) {
-		fail("Unable to write firmware upload");
+		fail(F("Unable to write firmware upload"));
 		return false;
 	}
 	_bytes_done += length;
@@ -348,33 +348,32 @@ bool FirmwareUpdateService::write_manual(const uint8_t *data, size_t length) {
 bool FirmwareUpdateService::finish_upload(bool verified) {
 	if (_phase != FirmwareUpdatePhase::Uploading || _manual == verified) return false;
 	if (!_update_started) {
-		fail("Firmware upload is incomplete");
+		fail(F("Firmware upload is incomplete"));
 		return false;
 	}
 	_phase = FirmwareUpdatePhase::Verifying;
-	strcpy(_message, verified ? "Verifying firmware" : "Finalizing firmware upload");
+	set_message(verified ? F("Verifying firmware") : F("Finalizing firmware upload"));
 	if ((!_unsized_manual && _bytes_done != _bytes_total) || !_tail_pending ||
 		(_unsized_manual && _bytes_done < 1024)) {
-		fail(verified ? "Firmware upload size does not match signed release" :
-			"Firmware upload size does not match declared size");
+		fail(verified ? F("Firmware upload size does not match signed release") : F("Firmware upload size does not match declared size"));
 		return false;
 	}
 	uint8_t actual_sha256[32];
 	sha256_finish(actual_sha256);
 	if (!_unsized_manual &&
 		memcmp(actual_sha256, _expected_sha256, sizeof(actual_sha256)) != 0) {
-		fail("Firmware checksum verification failed");
+		fail(F("Firmware checksum verification failed"));
 		return false;
 	}
 	if (Update.write(&_tail_byte, 1) != 1 || !Update.end(_unsized_manual) || Update.hasError()) {
-		fail("Firmware installation failed");
+		fail(F("Firmware installation failed"));
 		return false;
 	}
 	_update_started = false;
 	_manual = false;
 	_unsized_manual = false;
 	_phase = FirmwareUpdatePhase::Success;
-	strcpy(_message, "Update complete; rebooting");
+	set_message(F("Update complete; rebooting"));
 	_reboot_at = millis() + 1500UL;
 	return true;
 }
@@ -389,14 +388,14 @@ bool FirmwareUpdateService::finish_manual() {
 
 void FirmwareUpdateService::abort_upload() {
 	if (_phase == FirmwareUpdatePhase::Uploading || _phase == FirmwareUpdatePhase::Prepared)
-		fail("Firmware upload was aborted");
+		fail(F("Firmware upload was aborted"));
 }
 
 void FirmwareUpdateService::loop() {
 	uint32_t now = millis();
 	if (_phase == FirmwareUpdatePhase::Prepared && _upload_token[0] &&
 		(int32_t)(now - _upload_token_expires) >= 0) {
-		fail("Prepared firmware upload expired");
+		fail(F("Prepared firmware upload expired"));
 	}
 	if (_phase == FirmwareUpdatePhase::Success && _reboot_at &&
 		(int32_t)(now - _reboot_at) >= 0) { _reboot_at = 0; restart_in(1); }
@@ -416,7 +415,7 @@ void FirmwareUpdateService::reset_transfer() {
 	_reboot_at = 0;
 }
 
-void FirmwareUpdateService::fail(const char *message) {
+void FirmwareUpdateService::begin_failure() {
 	sha256_cancel();
 	_upload_token[0] = 0;
 	_upload_token_expires = 0;
@@ -427,6 +426,20 @@ void FirmwareUpdateService::fail(const char *message) {
 	_manual = false;
 	_unsized_manual = false;
 	_phase = FirmwareUpdatePhase::Error;
+}
+
+void FirmwareUpdateService::set_message(const __FlashStringHelper *message) {
+	strncpy_P(_message, reinterpret_cast<const char *>(message), sizeof(_message) - 1);
+	_message[sizeof(_message) - 1] = 0;
+}
+
+void FirmwareUpdateService::fail(const __FlashStringHelper *message) {
+	begin_failure();
+	set_message(message);
+}
+
+void FirmwareUpdateService::fail(const char *message) {
+	begin_failure();
 	strncpy(_message, message, sizeof(_message) - 1);
 	_message[sizeof(_message) - 1] = 0;
 }

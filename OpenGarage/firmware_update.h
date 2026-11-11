@@ -55,6 +55,9 @@ private:
 	bool write_upload(const uint8_t *data, size_t length, bool verified);
 	bool finish_upload(bool verified);
 	void fail(const char *message);
+	void fail(const __FlashStringHelper *message);
+	void begin_failure();
+	void set_message(const __FlashStringHelper *message);
 	void reset_transfer();
 	void make_token(char token_out[17]);
 
