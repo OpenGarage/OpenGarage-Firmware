@@ -34,7 +34,7 @@ small{font-size:13px;font-weight:normal}
 .hbtn.icon svg{width:22px;height:22px;stroke-width:2}
 /* Home: one large door action, then a compact row of maintenance actions */
 .btn svg.i{width:1.15em;height:1.15em;margin-right:.35em;vertical-align:-.2em;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.btn.door{display:flex;align-items:center;justify-content:center;max-width:325px;margin:8px 0 6px;padding:.6em 20px;font-size:18px;border-radius:.8em}
+.btn.door{display:flex;align-items:center;justify-content:center;max-width:325px;margin:8px 0 6px;padding:.87em 20px;font-size:18px;border-radius:.8em}
 .btn.door svg.i{width:24px;height:24px;margin-right:9px;vertical-align:0}
 .cg.fill{width:100%;max-width:325px;margin:0}
 .cg.fill>.btn{flex:1 1 auto;padding-left:6px;padding-right:6px;white-space:nowrap}
