@@ -12,6 +12,8 @@ stub=r'''
 #include <string>
 #include <cassert>
 #include <cstdio>
+#define PSTR(x) x
+#define snprintf_P snprintf
 using String=std::string;
 uint32_t now=0;uint32_t millis(){return now;}
 const int WL_CONNECTED=3;

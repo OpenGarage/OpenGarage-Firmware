@@ -29,7 +29,8 @@ og_local::Clock local_clock;
 uint32_t curr_utc_time=0, curr_utc_hour=0, now_ms=0;
 unsigned notifications=0;
 uint32_t millis() { return now_ms; }
-void perform_notify(String) { ++notifications; }
+String last_notification;
+void perform_notify(String s) { ++notifications; last_notification=s; }
 void reset() {
  og=OG(); open_duration={}; daily_rule={}; local_clock={};
  curr_utc_time=curr_utc_hour=now_ms=notifications=0;
@@ -67,7 +68,22 @@ int main() {
  process_dynamics(DOOR_EVENT_REMAIN_OPEN); now_ms=59000;
  process_dynamics(UNKNOWN); now_ms=60000;
  process_dynamics(DOOR_EVENT_REMAIN_OPEN); assert(og.alarms==0);
- puts("production offline automation: PASS");
+ reset(); og.options[OPTION_NAME].sval="Garage"; og.options[OPTION_NOTO].ival=7;
+ process_dynamics(DOOR_EVENT_JUST_OPENED); assert(last_notification=="Garage just OPENED!");
+ process_dynamics(DOOR_EVENT_JUST_CLOSED); assert(last_notification=="Garage just CLOSED!");
+ process_dynamics(DOOR_EVENT_JUST_STOPPED); assert(last_notification=="Garage just STOPPED!");
+ for(unsigned mode=1;mode<=3;mode+=2){
+  reset();og.options[OPTION_NAME].sval="Garage";og.options[OPTION_ATO].ival=mode;og.options[OPTION_ATI].ival=10;
+  process_dynamics(DOOR_EVENT_REMAIN_OPEN);now_ms=600000;process_dynamics(DOOR_EVENT_REMAIN_OPEN);
+  assert(last_notification==std::string("Garage is left open for more than 10 minutes.")+
+    (mode==3?" Auto-close has been requested":" This is a reminder for you."));
+  reset();og.options[OPTION_NAME].sval="Garage";og.options[OPTION_ATOB].ival=mode;og.options[OPTION_ATIB].ival=12;
+  local_clock.valid=true;curr_utc_time=20000*86400U+12*3600;curr_utc_hour=12;
+  process_dynamics(DOOR_EVENT_REMAIN_OPEN);
+  assert(last_notification==std::string("Garage is open after 12 UTC. Current hour:12")+
+    (mode==3?" Auto-close has been requested":" This is a reminder for you."));
+ }
+ puts("production offline automation and exact notification text: PASS");
 }
 '''
 with tempfile.TemporaryDirectory() as d:

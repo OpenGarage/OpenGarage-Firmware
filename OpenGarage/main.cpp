@@ -1809,7 +1809,7 @@ static void __attribute__((noinline)) prepare_email_headers(EMailSender::EMailMe
         email_message.date=date;
     }
     static const uint32_t mailBoot=ESP.random();static uint32_t mailSequence=0;
-    char id[80];snprintf(id,sizeof(id),"%06lx.%08lx.%lu@opengarage.local",
+    char id[80];snprintf_P(id,sizeof(id),PSTR("%06lx.%08lx.%lu@opengarage.local"),
         (unsigned long)ESP.getChipId(),(unsigned long)mailBoot,(unsigned long)++mailSequence);
     email_message.messageId=id;
 
@@ -1818,7 +1818,7 @@ static void __attribute__((noinline)) prepare_email_headers(EMailSender::EMailMe
 static og_smtp::Delivery record_email_result(og_smtp::Delivery result, const char *stage, const char *code) {
     if (result != og_smtp::Delivery::SENT) ++email_failures;
     // Only local stage descriptions and numeric codes, never server text/credentials.
-    snprintf(email_last,sizeof(email_last),"%s: %s (%s)",
+    snprintf_P(email_last,sizeof(email_last),PSTR("%s: %s (%s)"),
         result==og_smtp::Delivery::SENT ? "Sent" : result==og_smtp::Delivery::REFUSED ? "Refused" : "Failed",stage,code);
     return result;
 }
@@ -1905,7 +1905,7 @@ void process_dynamics(byte event) {
 	}
 	if(event == DOOR_EVENT_JUST_OPENED) {
 		open_duration.start(now); // record time stamp
-		if (noto & OG_NOTIFY_DO) { perform_notify(og.options[OPTION_NAME].sval + " just OPENED!");}
+		if (noto & OG_NOTIFY_DO) { perform_notify(og.options[OPTION_NAME].sval + F(" just OPENED!"));}
 
 		// If the door is set to auto close at a certain hour, ensure if manually opened it doesn't autoshut
 		if( daily_rule.eligible(local_clock.valid, curr_utc_time, og.options[OPTION_ATIB].ival) ){
@@ -1915,11 +1915,11 @@ void process_dynamics(byte event) {
 
 	} else if (event == DOOR_EVENT_JUST_CLOSED) {
 		open_duration.reset(); // reset time stamp
-		if (noto & OG_NOTIFY_DC) { perform_notify(og.options[OPTION_NAME].sval + " just CLOSED!");}
+		if (noto & OG_NOTIFY_DC) { perform_notify(og.options[OPTION_NAME].sval + F(" just CLOSED!"));}
 
 	} else if (event == DOOR_EVENT_JUST_STOPPED) {
 		open_duration.reset(); // reset time stamp
-		if (noto & OG_NOTIFY_DS) { perform_notify(og.options[OPTION_NAME].sval + " just STOPPED!");}
+		if (noto & OG_NOTIFY_DS) { perform_notify(og.options[OPTION_NAME].sval + F(" just STOPPED!"));}
 
 	}	else if (event == DOOR_EVENT_REMAIN_OPEN) {
 		{
@@ -1927,13 +1927,13 @@ void process_dynamics(byte event) {
 				// reached timeout, perform action
 				if(ato & OG_AUTO_NOTIFY) {
 					// send notification
-					String s = og.options[OPTION_NAME].sval+" is left open for more than ";
+					String s = og.options[OPTION_NAME].sval+F(" is left open for more than ");
 					s+= og.options[OPTION_ATI].ival;
-					s+= " minutes.";
+					s+= F(" minutes.");
 					if(ato & OG_AUTO_CLOSE) {
-						s+= " Auto-close has been requested";
+						s+= F(" Auto-close has been requested");
 					} else {
-						s+= " This is a reminder for you.";
+						s+= F(" This is a reminder for you.");
 					}
 					perform_notify(s);
 				}
@@ -1952,14 +1952,14 @@ void process_dynamics(byte event) {
 				daily_rule.mark(curr_utc_time);
 				if(atob & OG_AUTO_NOTIFY) {
 					// send notification
-					String s = og.options[OPTION_NAME].sval+" is open after ";
+					String s = og.options[OPTION_NAME].sval+F(" is open after ");
 					s+= og.options[OPTION_ATIB].ival;
-					s+= " UTC. Current hour:";
+					s+= F(" UTC. Current hour:");
 					s+= curr_utc_hour;
 					if(atob & OG_AUTO_CLOSE) {
-						s+= " Auto-close has been requested";
+						s+= F(" Auto-close has been requested");
 					} else {
-						s+= " This is a reminder for you.";
+						s+= F(" This is a reminder for you.");
 					}
 					perform_notify(s);
 				}
