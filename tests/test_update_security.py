@@ -103,3 +103,48 @@ for page in ('sta_update.html','ap_update.html'):
  assert "fd.append('dkey'" not in text and 'xhr.upload.onprogress' in text
  script=re.search(r'<script>(.*?)</script>',text,re.S).group(1)
  subprocess.run(['node','-e','new Function(require("fs").readFileSync(0,"utf8"))'],input=script,text=True,check=True)
+
+# Exercise the real result writer with distinct RAM/flash types (F is not an identity).
+writer=source[source.index('template<typename Message>'):source.index('// this is simplified')]
+writer_stub=r"""
+#include <cassert>
+#include <string>
+#include <cstdint>
+#include <cstring>
+using byte=uint8_t;
+struct __FlashStringHelper {};
+#define F(s) reinterpret_cast<const __FlashStringHelper*>(s)
+int flash_appends=0;
+struct String {
+ std::string value;
+ String(const __FlashStringHelper*p):value(reinterpret_cast<const char*>(p)){}
+ String& operator+=(byte n){value+=std::to_string(n);return *this;}
+ String& operator+=(const char*p){value+=p;return *this;}
+ String& operator+=(const __FlashStringHelper*p){++flash_appends;value+=reinterpret_cast<const char*>(p);return *this;}
+};
+struct Server {
+ std::string body;
+ void sendHeader(const __FlashStringHelper*k,const __FlashStringHelper*v){
+  assert(!strcmp(reinterpret_cast<const char*>(k),"Access-Control-Allow-Origin"));
+  assert(!strcmp(reinterpret_cast<const char*>(v),"*"));
+ }
+ void send(int status,const char*type,const String&s){assert(status==200);assert(!strcmp(type,"application/json"));body=s.value;}
+} server,*updateServer=&server;
+"""
+writer_runner=r"""
+int main(){
+ updateserver_send_result(1);
+ assert(server.body=="{\"result\":1,\"item\":\"\"}");
+ updateserver_send_result(3,"Runtime failure");
+ assert(server.body=="{\"result\":3,\"item\":\"Runtime failure\"}");
+ int before=flash_appends;
+ updateserver_send_result(3,F("Flash failure"));
+ assert(server.body=="{\"result\":3,\"item\":\"Flash failure\"}");
+ assert(flash_appends==before+3);
+}
+"""
+with tempfile.TemporaryDirectory() as t:
+ p=Path(t)/'writer'
+ subprocess.run(['g++','-std=c++11','-Wall','-Wextra','-Werror','-x','c++','-','-o',str(p)],input=writer_stub+writer+writer_runner,text=True,check=True)
+ subprocess.run([str(p)],check=True)
+print('Updater result writer: RAM, flash and empty messages preserve exact JSON PASS')

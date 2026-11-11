@@ -220,16 +220,22 @@ void otf_send_result(OTF::Response &res, byte code, const char *item = NULL) {
 	otf_send_json(res, json);
 }
 
-void updateserver_send_result(byte code, const char* item = NULL) {
+template<typename Message>
+static void updateserver_send_result_impl(byte code, Message item) {
 	String json = F("{\"result\":");
 	json += code;
-	if (!item) item = "";
 	json += F(",\"item\":\"");
-	json += item;
-	json += F("\"");
-	json += F("}");
-	updateServer->sendHeader("Access-Control-Allow-Origin", "*"); // from esp8266 2.4 this has to be sent explicitly
+	if (item) json += item;
+	json += F("\"}");
+	updateServer->sendHeader(F("Access-Control-Allow-Origin"), F("*"));
 	updateServer->send(200, "application/json", json);
+}
+
+void updateserver_send_result(byte code, const char* item = NULL) {
+	updateserver_send_result_impl(code, item);
+}
+void updateserver_send_result(byte code, const __FlashStringHelper* item) {
+	updateserver_send_result_impl(code, item);
 }
 
 // this is simplified version to check if MQTT / NTP server is valid domain name
@@ -1572,12 +1578,12 @@ static bool updater_body_authorized() {
  else return false;
  if (!authorized || updater_busy()) {
   // Explicit pre-body refusal: this request has not written or installed anything.
-  updateServer->sendHeader("Access-Control-Allow-Origin", "*");
-  updateServer->sendHeader("Cache-Control", "no-store");
-  updateServer->sendHeader("Connection", "close");
+  updateServer->sendHeader(F("Access-Control-Allow-Origin"), F("*"));
+  updateServer->sendHeader(F("Cache-Control"), F("no-store"));
+  updateServer->sendHeader(F("Connection"), F("close"));
   updateServer->send(authorized ? 409 : 401, "application/json",
-    authorized ? "{\"result\":64,\"item\":\"Device busy; wait a few seconds and try again\"}" :
-                 "{\"result\":2,\"item\":\"Check the device key or prepare a new upload token\"}");
+    authorized ? F("{\"result\":64,\"item\":\"Device busy; wait a few seconds and try again\"}") :
+                 F("{\"result\":2,\"item\":\"Check the device key or prepare a new upload token\"}"));
   return false;
  }
  return true;
@@ -1609,16 +1615,16 @@ void on_firmware_upload_fin() {
  if (!ok) cancel_firmware_upload();
  update_file_seen = update_started = update_authorized = false;
  upload_credential = "";
- updateserver_send_result(ok ? HTML_SUCCESS : authenticated ? HTML_UPLOAD_FAILED : HTML_UNAUTHORIZED,
-                          ok ? "Update complete; rebooting" : firmware_update.message());
+ if (ok) updateserver_send_result(HTML_SUCCESS, F("Update complete; rebooting"));
+ else updateserver_send_result(authenticated ? HTML_UPLOAD_FAILED : HTML_UNAUTHORIZED, firmware_update.message());
  // Service schedules the reboot; no second independent timer.
 }
 
 void on_update_options() {
- updateServer->sendHeader("Access-Control-Allow-Origin", "*");
- updateServer->sendHeader("Access-Control-Max-Age", "10000");
- updateServer->sendHeader("Access-Control-Allow-Methods", "POST,GET,OPTIONS");
- updateServer->sendHeader("Access-Control-Allow-Headers", "Content-Type, X-OG-Device-Key, X-OG-Upload-Token, X-OG-Release-Id, X-OG-Signature, X-OG-Allow-Downgrade");
+ updateServer->sendHeader(F("Access-Control-Allow-Origin"), F("*"));
+ updateServer->sendHeader(F("Access-Control-Max-Age"), F("10000"));
+ updateServer->sendHeader(F("Access-Control-Allow-Methods"), F("POST,GET,OPTIONS"));
+ updateServer->sendHeader(F("Access-Control-Allow-Headers"), F("Content-Type, X-OG-Device-Key, X-OG-Upload-Token, X-OG-Release-Id, X-OG-Signature, X-OG-Allow-Downgrade"));
  updateServer->send(200, "text/plain", "");
 }
 
@@ -1674,7 +1680,7 @@ static void on_prepare_upload() {
 static void on_prepare_fin() {
  if (prepare_seen && !prepare_body && updater_key_ok() && !updater_busy()) {
   prepare_seen=prepare_ok=false;prepare_length=0;
-  updateserver_send_result(HTML_UPLOAD_FAILED, "Not enough contiguous memory to verify release; retry later");return;
+  updateserver_send_result(HTML_UPLOAD_FAILED, F("Not enough contiguous memory to verify release; retry later"));return;
  }
  bool ok=prepare_seen && prepare_ok && prepare_length && updater_key_ok() && !updater_busy();
  prepare_seen=prepare_ok=false;
@@ -1686,10 +1692,14 @@ static void on_prepare_fin() {
  if (ok) ok=firmware_update.prepare_verified(reinterpret_cast<uint8_t*>(prepare_body.get()),prepare_length,
      sig.c_str(),id.c_str(),updateServer->header("X-OG-Allow-Downgrade")=="1",token);
  prepare_length=0;
- if (!ok) {updateserver_send_result(HTML_UPLOAD_FAILED, attempted ? firmware_update.message() : "Preparation rejected; check key, release and device status");return;}
+ if (!ok) {
+  if (attempted) updateserver_send_result(HTML_UPLOAD_FAILED, firmware_update.message());
+  else updateserver_send_result(HTML_UPLOAD_FAILED, F("Preparation rejected; check key, release and device status"));
+  return;
+ }
  String json=F("{\"result\":1,\"upload_token\":\"");json+=token;json+=F("\"}");
- updateServer->sendHeader("Access-Control-Allow-Origin","*");
- updateServer->sendHeader("Cache-Control","no-store");
+ updateServer->sendHeader(F("Access-Control-Allow-Origin"), F("*"));
+ updateServer->sendHeader(F("Cache-Control"), F("no-store"));
  updateServer->send(200,"application/json",json);
 }
 // The vendored parser completes or aborts multipart parsing within handleClient().
@@ -1703,7 +1713,7 @@ static void on_update_info() {
  String json=F("{\"product\":\"opengarage-stock\",\"target\":\"");json+=firmware_update.target();
  json+=F("\",\"version\":");json+=OG_FWV;
  json+=F(",\"base_url\":\"https://firmware.opengarage.io\",\"file_extension\":\".bin\",\"configured\":true}");
- updateServer->sendHeader("Access-Control-Allow-Origin","*");updateServer->sendHeader("Cache-Control","no-store");
+ updateServer->sendHeader(F("Access-Control-Allow-Origin"), F("*"));updateServer->sendHeader(F("Cache-Control"), F("no-store"));
  updateServer->send(200,"application/json",json);
 }
 static void on_update_status() {
@@ -1711,7 +1721,7 @@ static void on_update_status() {
  json+=F("\",\"message\":\"");append_json_escaped(json,String(firmware_update.message()));
  json+=F("\",\"bytes_done\":");json+=firmware_update.bytes_done();
  json+=F(",\"bytes_total\":");json+=firmware_update.bytes_total();json+='}';
- updateServer->sendHeader("Access-Control-Allow-Origin","*");updateServer->sendHeader("Cache-Control","no-store");
+ updateServer->sendHeader(F("Access-Control-Allow-Origin"), F("*"));updateServer->sendHeader(F("Cache-Control"), F("no-store"));
  updateServer->send(200,"application/json",json);
 }
 static void register_update_routes() {
