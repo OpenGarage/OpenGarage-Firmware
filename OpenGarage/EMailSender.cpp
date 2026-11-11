@@ -38,6 +38,9 @@
 #include "smtp_probe.h"
 #endif
 #include <stdio.h>
+#if defined(OG_SMTP_BOUNDED_ONLY) && (!defined(ESP8266) || defined(ENABLE_ATTACHMENTS))
+#error "OG bounded SMTP requires ESP8266 without attachments"
+#endif
 #if defined(ESP32)
 #include <mbedtls/base64.h>
 #endif
@@ -481,6 +484,13 @@ EMailSender::Response EMailSender::send(const char* to[], byte sizeOfTo,  byte s
 EMailSender::Response EMailSender::send(const char* to[], byte sizeOfTo,  byte sizeOfCc,byte sizeOfCCn, EMailMessage &email, Attachments attachments)
 {
   network_attempted_=false;
+#ifdef OG_SMTP_BOUNDED_ONLY
+  // Refuse unsupported library modes before allocating TLS or contacting a server.
+  if(sizeOfTo!=1 || sizeOfCc || sizeOfCCn || !useAuth || isSASLLogin ||
+     isCramMD5Login || email.mime!=F("text/plain")) {
+      Response failed;failed.code="2";failed.desc="Invalid email settings";return failed;
+  }
+#endif
   const uint32_t smtpStarted=millis();
   bool smtpSmallFragments=false;
 #if defined(ESP8266)
@@ -599,6 +609,7 @@ EMailSender::Response EMailSender::send(const char* to[], byte sizeOfTo,  byte s
   return response;
   }
 #endif
+#ifndef OG_SMTP_BOUNDED_ONLY
   EMAIL_DEBUG_PRINTLN("Connected");
 
   response = awaitSMTPResponse(client, "220", "Connection Error");
@@ -1186,5 +1197,9 @@ EMailSender::Response EMailSender::send(const char* to[], byte sizeOfTo,  byte s
   client.stop();
 
   return response;
+#else
+  // Defensive fallback; the preflight above permits only the bounded path.
+  client.stop();response.code="2";response.desc="Invalid email settings";return response;
+#endif
 }
 
