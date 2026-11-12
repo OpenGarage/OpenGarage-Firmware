@@ -347,7 +347,7 @@ async function refreshSetupTime(){
 }
 function tickSetupTime(){
   if(setupSeconds===null)return;
-  id('setup_time').textContent=setupSeconds>0?'Setup WiFi closes in '+Math.floor(setupSeconds/60)+':'+String(setupSeconds%60).padStart(2,'0')+'. Activity does not extend this window.':'Setup window ended. Reconnect to your home WiFi, or hold the device button for about 5 seconds to reopen setup.';
+  id('setup_time').textContent=setupSeconds>0?'Setup WiFi closes in '+Math.floor(setupSeconds/60)+':'+String(setupSeconds%60).padStart(2,'0')+'. Activity does not extend this window.':'Setup window ended. WiFi is off. Hold the device button for about 5 seconds to reopen setup.';
   if(setupSeconds>0)--setupSeconds;
 }
 setTimeout(refreshSetupTime,500);setInterval(refreshSetupTime,15000);setInterval(tickSetupTime,1000);

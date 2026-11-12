@@ -12,6 +12,7 @@ struct {Option options[NUM_OPTIONS];bool saves=true;unsigned calls=0;
  bool options_save(){++calls;return saves;}
 } og;
 bool setup_reboot_pending=false,setup_expired=false;
+bool setup_room(unsigned){return !setup_expired;}
 namespace og_audio {enum class Tune {SETUP_SUCCESS};}
 unsigned tunes=0;
 void start_tune(og_audio::Tune){++tunes;}

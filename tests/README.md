@@ -199,7 +199,7 @@ and proves the floor rejects the former despite allow-downgrade. Established
 units retain floor126. Updater-page tests cover deliberate retry after HTTP403.
 
 `python3 tests/test_setup_window.py` executes the setup deadline policy, timer
-radio action and deferred cleanup with fakes, including millis rollover,
-admission cutoffs, saved-network return, no-key offline state and save failure.
-Hardware must still verify real timer scheduling/radio shutdown, interrupted
+loop shutdown and cleanup with fakes, including millis rollover,
+admission cutoffs and preserved setup mode/settings for all credential states.
+Hardware must still verify real loop-delay/radio shutdown, interrupted
 upload bootability, button recovery and one actual 30-minute expiry.

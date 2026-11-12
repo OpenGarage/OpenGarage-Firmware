@@ -51,9 +51,8 @@ DNSServer *dns = NULL;
 static Ticker aux_ticker;
 static Ticker ip_ticker;
 static Ticker restart_ticker;
-static Ticker setup_expiry_ticker;
 static uint32_t setup_started_ms=0;
-static volatile bool setup_expired=false;
+static bool setup_expired=false;
 
 
 static WiFiClient wificlient;
@@ -370,7 +369,7 @@ void restart_in(uint32_t ms) {
 // Persist once, play the complete success tune, then restart to enter STA mode.
 static bool setup_save_failed=false;
 bool complete_ap_setup() {
-	if(setup_expired || !og.options[OPTION_KSET].ival)return false;
+	if(!setup_room(0) || !og.options[OPTION_KSET].ival)return false;
 	if(setup_save_failed)return false;
 	if (setup_reboot_pending || og.options[OPTION_MOD].ival==OG_MOD_STA) return true;
 	og.options[OPTION_MOD].ival=OG_MOD_STA;
@@ -1690,7 +1689,7 @@ static void quiesce_for_update() {
 }
 
 void on_firmware_upload_fin() {
- const bool authenticated = !setup_expired && update_authorized &&
+ const bool authenticated = setup_room(0) && update_authorized &&
   (upload_signed ? upload_credential == updateServer->header("X-OG-Upload-Token") : (og.options[OPTION_KSET].ival && updater_key_ok()));
  bool ok = false;
  if (authenticated && !update_failed && update_file_seen)
@@ -1713,7 +1712,7 @@ void on_update_options() {
 
 void on_firmware_upload() {
  HTTPUpload& upload = updateServer->upload();
- if(setup_expired) {cancel_firmware_upload();update_failed=true;updateServer->client().stop();return;}
+ if(!setup_room(0)) {cancel_firmware_upload();update_failed=true;updateServer->client().stop();return;}
  if (upload.status == UPLOAD_FILE_START) {
   if (update_file_seen) {
    firmware_update.reject("Only one firmware file is allowed"); update_failed=true;
@@ -2340,14 +2339,11 @@ void do_loop() {
 			(wifi_door_event_seen && uint32_t(millis()-wifi_door_event_ms)<30000));
 
 	}
+	if(curr_mode==OG_MOD_AP && !setup_expired && og_setup::remaining(millis(),setup_started_ms)==0)setup_expired=true;
 	if(curr_mode==OG_MOD_AP && setup_expired && og.state!=OG_STATE_AP_EXPIRED && og.state!=OG_STATE_RESET && og.state!=OG_STATE_WAIT_RESTART) {
 		WiFi.mode(WIFI_OFF);dns->stop();updateServer->stop();
 		firmware_update.abort_upload();
 		og.state=OG_STATE_AP_EXPIRED;led_blink_ms=2000;
-		if(!og.config_locked && og.options[OPTION_KSET].ival && og.options[OPTION_SSID].sval.length()) {
-			og.options[OPTION_MOD].ival=OG_MOD_STA;
-			if(og.options_save())restart_in(1);
-		}
 	}
 	og_crash::mark(og_crash::STAGE_STATE);
 	switch(og.state) {
@@ -2363,12 +2359,6 @@ void do_loop() {
 			scanned_ssids += F("}");
 			String ap_ssid = get_ap_ssid();
 			setup_started_ms=millis();setup_expired=false;
-			setup_expiry_ticker.once_ms(og_setup::WINDOW_MS, [](){
-				setup_expired=true;
-				// Core 3.1.2 mode() supports SYS context: request asynchronous radio
-				// shutdown without yielding. Socket/service cleanup stays in loop().
-				WiFi.mode(WIFI_OFF);
-			});
 			start_network_ap(ap_ssid.c_str(), NULL);
 			delay(500);
 			dns->setErrorReplyCode(DNSReplyCode::NoError);
