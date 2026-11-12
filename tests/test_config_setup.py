@@ -11,13 +11,14 @@ struct Option {unsigned ival=0;};
 struct {Option options[NUM_OPTIONS];bool saves=true;unsigned calls=0;
  bool options_save(){++calls;return saves;}
 } og;
-bool setup_reboot_pending=false;
+bool setup_reboot_pending=false,setup_expired=false;
 namespace og_audio {enum class Tune {SETUP_SUCCESS};}
 unsigned tunes=0;
 void start_tune(og_audio::Tune){++tunes;}
 '''+body+r'''
 int main(){
  assert(!complete_ap_setup()&&og.calls==0&&!setup_reboot_pending);
+ setup_expired=true;og.options[OPTION_KSET].ival=1;assert(!complete_ap_setup()&&og.calls==0);setup_expired=false;
  og.options[OPTION_KSET].ival=1;
  og.options[OPTION_MOD].ival=OG_MOD_AP;og.saves=false;
  assert(!complete_ap_setup());assert(!setup_reboot_pending&&tunes==0);

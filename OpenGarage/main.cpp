@@ -21,6 +21,7 @@
  */
 
 #include "device_key_policy.h"
+#include "setup_window.h"
 #include <memory>
 #include <new>
 #include <DNSServer.h>
@@ -50,6 +51,10 @@ DNSServer *dns = NULL;
 static Ticker aux_ticker;
 static Ticker ip_ticker;
 static Ticker restart_ticker;
+static Ticker setup_expiry_ticker;
+static uint32_t setup_started_ms=0;
+static volatile bool setup_expired=false;
+
 
 static WiFiClient wificlient;
 static WiFiClient httpclient;
@@ -349,6 +354,10 @@ void report_ip() {
 	}
 }
 
+static bool setup_room(uint32_t required) {
+ return curr_mode != OG_MOD_AP || (!setup_expired && og_setup::may_start(millis(),setup_started_ms,required));
+}
+
 void restart_in(uint32_t ms) {
 	if(og.state != OG_STATE_WAIT_RESTART) {
 		og.state = OG_STATE_WAIT_RESTART;
@@ -361,7 +370,7 @@ void restart_in(uint32_t ms) {
 // Persist once, play the complete success tune, then restart to enter STA mode.
 static bool setup_save_failed=false;
 bool complete_ap_setup() {
-	if(!og.options[OPTION_KSET].ival)return false;
+	if(setup_expired || !og.options[OPTION_KSET].ival)return false;
 	if(setup_save_failed)return false;
 	if (setup_reboot_pending || og.options[OPTION_MOD].ival==OG_MOD_STA) return true;
 	og.options[OPTION_MOD].ival=OG_MOD_STA;
@@ -807,6 +816,7 @@ void on_auto_detect(const OTF::Request &req, OTF::Response &res) {
 		otf_send_result(res, HTML_UNAUTHORIZED, nullptr);
 		return;
 	}
+	if(!setup_room(og_setup::SETUP_RUNWAY_MS)) {otf_send_result(res, HTML_NOT_PERMITTED, "setup_timeout");return;}
 	if (auto_detect_busy()) {
 		otf_send_result(res, HTML_NOT_PERMITTED, "busy");
 		return;
@@ -1325,6 +1335,7 @@ void on_sta_options(const OTF::Request &req, OTF::Response &res) {
 // lost successful response is allowed only with the exact already-saved key.
 void on_ap_set_key(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode != OG_MOD_AP || og.config_locked) {otf_send_result(res, HTML_NOT_PERMITTED, "config");return;}
+	if(!setup_room(og_setup::SETUP_RUNWAY_MS)) {otf_send_result(res, HTML_NOT_PERMITTED, "setup_timeout");return;}
 	const char *body=req.getBody();
 	const size_t length=req.getBodyLength();
 	if(og.options[OPTION_KSET].ival) {
@@ -1339,6 +1350,12 @@ void on_ap_set_key(const OTF::Request &req, OTF::Response &res) {
 	otf_send_result(res, HTML_SUCCESS, nullptr);
 }
 
+void on_ap_setup_status(const OTF::Request &, OTF::Response &res) {
+ String json=F("{\"remaining_s\":");
+ json+=setup_expired ? 0 : og_setup::remaining(millis(),setup_started_ms)/1000;
+ json+=F("}");otf_send_json(res,json);
+}
+
 void on_ap_scan(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_STA) return;
 	// key_required is the final single-digit field in this cached scan response.
@@ -1351,6 +1368,7 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 	if(og.config_locked) {otf_send_result(res, HTML_NOT_PERMITTED, "config");return;}
 	if(!og.options[OPTION_KSET].ival) {otf_send_result(res, HTML_NOT_PERMITTED, "key");return;}
 	if(og.options[OPTION_KSET].ival && !verify_device_key(req)) {otf_send_result(res, HTML_UNAUTHORIZED, nullptr);return;}
+	if(!setup_room(og_setup::SETUP_RUNWAY_MS)) {otf_send_result(res, HTML_NOT_PERMITTED, "setup_timeout");return;}
 	const char *cloud = req.getQueryParameter("cld");
 	if (cloud && strcmp(cloud, "otc") != 0 && strcmp(cloud, "none") != 0) {
 		otf_send_result(res, HTML_DATA_OUTOFBOUND, "cld: Blynk support retired"); return;
@@ -1401,6 +1419,7 @@ void on_ap_try_connect(const OTF::Request &req, OTF::Response &res) {
 	if(og.config_locked) {otf_send_result(res, HTML_NOT_PERMITTED, "config");return;}
 	if(!og.options[OPTION_KSET].ival) {otf_send_result(res, HTML_NOT_PERMITTED, "key");return;}
 	if(og.options[OPTION_KSET].ival && !verify_device_key(req)) {otf_send_result(res, HTML_UNAUTHORIZED, nullptr);return;}
+	if(!setup_room(og_setup::SETUP_RUNWAY_MS)) {otf_send_result(res, HTML_NOT_PERMITTED, "setup_timeout");return;}
 	if(WiFi.status()==WL_CONNECTED && WiFi.localIP() && !complete_ap_setup()) {otf_send_result(res, HTML_UPLOAD_FAILED, "save");return;}
 	String json = "{";
 	json += F("\"ip\":");
@@ -1610,7 +1629,7 @@ static bool upload_signed = false;
 
 static bool updater_busy() {
  // Existing five-second local-action hold covers pending Sec+1 requests/releases.
- return og.state == OG_STATE_WAIT_RESTART || network_delivery_busy() || firmware_update.busy() ||
+ return !setup_room(og_setup::UPDATE_RUNWAY_MS) || og.state == OG_STATE_WAIT_RESTART || network_delivery_busy() || firmware_update.busy() ||
    firmware_update.phase() == FirmwareUpdatePhase::Success;
 }
 static bool updater_key_ok() {
@@ -1626,6 +1645,13 @@ static bool updater_body_authorized() {
  else if (path == "/update/upload")
   authorized=!og.config_locked && firmware_update.token_valid(updateServer->header("X-OG-Upload-Token").c_str());
  else return false;
+ if (authorized && !setup_room(og_setup::UPDATE_RUNWAY_MS)) {
+  updateServer->sendHeader(F("Access-Control-Allow-Origin"), F("*"));
+  updateServer->sendHeader(F("Cache-Control"), F("no-store"));
+  updateServer->sendHeader(F("Connection"), F("close"));
+  updateServer->send(403, "application/json", F("{\"result\":48,\"item\":\"Setup window ending; reopen setup with a 5-second button hold\"}"));
+  return false;
+ }
  if (authorized && path=="/update" && !og.options[OPTION_KSET].ival) {
   updateServer->sendHeader(F("Access-Control-Allow-Origin"), F("*"));
   updateServer->sendHeader(F("Cache-Control"), F("no-store"));
@@ -1664,7 +1690,7 @@ static void quiesce_for_update() {
 }
 
 void on_firmware_upload_fin() {
- const bool authenticated = update_authorized &&
+ const bool authenticated = !setup_expired && update_authorized &&
   (upload_signed ? upload_credential == updateServer->header("X-OG-Upload-Token") : (og.options[OPTION_KSET].ival && updater_key_ok()));
  bool ok = false;
  if (authenticated && !update_failed && update_file_seen)
@@ -1687,6 +1713,7 @@ void on_update_options() {
 
 void on_firmware_upload() {
  HTTPUpload& upload = updateServer->upload();
+ if(setup_expired) {cancel_firmware_upload();update_failed=true;updateServer->client().stop();return;}
  if (upload.status == UPLOAD_FILE_START) {
   if (update_file_seen) {
    firmware_update.reject("Only one firmware file is allowed"); update_failed=true;
@@ -2313,6 +2340,15 @@ void do_loop() {
 			(wifi_door_event_seen && uint32_t(millis()-wifi_door_event_ms)<30000));
 
 	}
+	if(curr_mode==OG_MOD_AP && setup_expired && og.state!=OG_STATE_AP_EXPIRED && og.state!=OG_STATE_RESET && og.state!=OG_STATE_WAIT_RESTART) {
+		WiFi.mode(WIFI_OFF);dns->stop();updateServer->stop();
+		firmware_update.abort_upload();
+		og.state=OG_STATE_AP_EXPIRED;led_blink_ms=2000;
+		if(!og.config_locked && og.options[OPTION_KSET].ival && og.options[OPTION_SSID].sval.length()) {
+			og.options[OPTION_MOD].ival=OG_MOD_STA;
+			if(og.options_save())restart_in(1);
+		}
+	}
 	og_crash::mark(og_crash::STAGE_STATE);
 	switch(og.state) {
 	case OG_STATE_INITIAL:
@@ -2326,12 +2362,20 @@ void do_loop() {
 			scanned_ssids += og.options[OPTION_KSET].ival ? 1 : 0;
 			scanned_ssids += F("}");
 			String ap_ssid = get_ap_ssid();
+			setup_started_ms=millis();setup_expired=false;
+			setup_expiry_ticker.once_ms(og_setup::WINDOW_MS, [](){
+				setup_expired=true;
+				// Core 3.1.2 mode() supports SYS context: request asynchronous radio
+				// shutdown without yielding. Socket/service cleanup stays in loop().
+				WiFi.mode(WIFI_OFF);
+			});
 			start_network_ap(ap_ssid.c_str(), NULL);
 			delay(500);
 			dns->setErrorReplyCode(DNSReplyCode::NoError);
 			dns->start(53, "*", WiFi.softAPIP());
 			otf->on("/",   on_home);
 			otf->on("/js", on_ap_scan);
+			otf->on("/setup_status", on_ap_setup_status, OTF::HTTP_GET);
 			otf->on("/cc", on_ap_change_config);
 			otf->on("/jt", on_ap_try_connect);
 			otf->on("/setup_key", on_ap_set_key, OTF::HTTP_POST);
@@ -2378,6 +2422,10 @@ void do_loop() {
 			og.config_ip();
 			og.state = OG_STATE_CONNECTING;
 		}
+		break;
+
+	case OG_STATE_AP_EXPIRED:
+		// Radio stays off; process_ui below still handles the physical reset button.
 		break;
 
 	case OG_STATE_TRY_CONNECT:

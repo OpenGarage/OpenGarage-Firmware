@@ -17,6 +17,8 @@ def grab(pattern):
 
 code = r'''
 #include <assert.h>
+#include "OpenGarage/setup_window.h"
+bool setup_room(uint32_t){return true;}
 #include <string.h>
 #include <string>
 #include <map>
@@ -70,6 +72,8 @@ with tempfile.TemporaryDirectory(prefix='og-device-key-') as tmp:
 # serial port to whichever protocol it tried last).
 detect_code = r"""
 #include <assert.h>
+#include "OpenGarage/setup_window.h"
+bool setup_room(uint32_t){return true;}
 #include <string.h>
 #include <string>
 #include <map>

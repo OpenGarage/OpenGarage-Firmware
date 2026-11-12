@@ -197,3 +197,9 @@ callback checks with kset=0 in both AP/STA, plus the signed version floor passed
 to the service. test_firmware_service.py signs 126 and 127 fixture descriptors
 and proves the floor rejects the former despite allow-downgrade. Established
 units retain floor126. Updater-page tests cover deliberate retry after HTTP403.
+
+`python3 tests/test_setup_window.py` executes the setup deadline policy, timer
+radio action and deferred cleanup with fakes, including millis rollover,
+admission cutoffs, saved-network return, no-key offline state and save failure.
+Hardware must still verify real timer scheduling/radio shutdown, interrupted
+upload bootability, button recovery and one actual 30-minute expiry.

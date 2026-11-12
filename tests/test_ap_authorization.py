@@ -7,6 +7,8 @@ def fn(name):
     return re.search(r'(?:static )?(?:bool|void) '+name+r'\(.*?^}',s,re.M|re.S).group()
 code=r'''
 #include <cassert>
+#include "OpenGarage/setup_window.h"
+bool setup_expired=false,room=true;bool setup_room(uint32_t){return room;}
 #include <string>
 #include <map>
 #include <cstring>
@@ -64,6 +66,10 @@ int main(){
    else assert(completions==1&&r.body=="{\"ip\":123}");
   }
  }
+ room=false;og.options[OPTION_KSET].ival=1;og.calls=completions=0;
+ OTF::Request late;late.values["dkey"]=og.options[OPTION_DKEY].sval;late.values["ssid"]="late";OTF::Response denied;
+ on_ap_change_config(late,denied);assert(denied.result==HTML_NOT_PERMITTED&&og.calls==0);
+ on_ap_try_connect(late,denied);assert(denied.result==HTML_NOT_PERMITTED&&completions==0);room=true;
  // First use cannot save WiFi or complete setup until its key is established.
  og.options[OPTION_KSET].ival=0;og.calls=completions=0;
  OTF::Request req;req.values["ssid"]="first-use";OTF::Response r;

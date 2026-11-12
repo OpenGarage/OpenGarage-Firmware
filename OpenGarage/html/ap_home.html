@@ -198,6 +198,8 @@
 
 <main>
     <h1>OpenGarage WiFi Setup</h1>
+    <p id="setup_time">Setup WiFi is available for 30 minutes after startup. Page activity does not extend it.</p>
+    <p><small>To reopen setup, hold the device button for about 5 seconds and release before 10 seconds.</small></p>
 
     <div class="form-group">
         <label>Available Networks</label>
@@ -337,7 +339,20 @@ id('save_key').addEventListener('click',async function(){
   }catch(e){show_msg('Save could not be confirmed. Keep your chosen key and retry the same key.','red');}
   finally{this.disabled=false;}
 });
+let setupSeconds=null;
+async function refreshSetupTime(){
+  try{const r=await fetch('setup_status',{cache:'no-store'});const jd=await r.json();
+    if(Number.isFinite(jd.remaining_s))setupSeconds=jd.remaining_s;
+  }catch(e){}
+}
+function tickSetupTime(){
+  if(setupSeconds===null)return;
+  id('setup_time').textContent=setupSeconds>0?'Setup WiFi closes in '+Math.floor(setupSeconds/60)+':'+String(setupSeconds%60).padStart(2,'0')+'. Activity does not extend this window.':'Setup window ended. Reconnect to your home WiFi, or hold the device button for about 5 seconds to reopen setup.';
+  if(setupSeconds>0)--setupSeconds;
+}
+setTimeout(refreshSetupTime,500);setInterval(refreshSetupTime,15000);setInterval(tickSetupTime,1000);
 function setupError(jd){
+  if(jd.item==='setup_timeout')return 'Not enough setup time remains. If the device connected, it will restart on your WiFi; otherwise hold the button for about 5 seconds to reopen setup.';
   if(jd.item==='key'){showKeyState(false);return 'Choose and save a device key before configuring WiFi.';}
   if(jd.result===2){keyRequired=true;id('key_section').hidden=false;return 'Check the existing device key and try again.';}
   return jd.item==='config'?'Settings are damaged. A physical factory reset is required.':jd.item==='save'?'Could not save settings. Please retry.':'Error code: '+jd.result;

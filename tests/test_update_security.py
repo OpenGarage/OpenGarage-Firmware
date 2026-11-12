@@ -7,6 +7,8 @@ root=Path(__file__).resolve().parents[1];source=(root/'OpenGarage/main.cpp').rea
 callbacks=source[source.index('static std::unique_ptr<char[]> prepare_body'):source.index('static void on_update_info()')]
 stub=r'''
 #include <cassert>
+#include "OpenGarage/setup_window.h"
+bool setup_expired=false,room=true;bool setup_room(uint32_t){return room;}
 #include <memory>
 #include <new>
 #include <cstdint>
@@ -70,6 +72,7 @@ og.options[OPTION_KSET].ival=1;
 reset();assert(!updater_body_authorized() && http_status==401);
 server.headers["X-OG-Device-Key"]="hex:74657374";
 assert(updater_body_authorized() && firmware_update.begins==0 && disruptions==0);
+room=false;assert(!updater_body_authorized()&&http_status==403&&firmware_update.begins==0);room=true;
 server.path="/update/prepare";assert(updater_body_authorized());
 busy=true;assert(!updater_body_authorized() && http_status==409);busy=false;
 server.path="/other";assert(!updater_body_authorized());
@@ -125,6 +128,8 @@ for page in ('sta_update.html','ap_update.html'):
 writer=source[source.index('template<typename Message>'):source.index('// this is simplified')]
 writer_stub=r"""
 #include <cassert>
+#include "OpenGarage/setup_window.h"
+bool setup_expired=false,room=true;bool setup_room(uint32_t){return room;}
 #include <string>
 #include <cstdint>
 #include <cstring>
