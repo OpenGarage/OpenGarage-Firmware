@@ -338,6 +338,8 @@ void ESP8266WebServerTemplate<ServerType>::handleClient() {
     case HC_WAIT_READ:
       // Wait for data from client to become available
       if (_currentClient.available()) {
+        // Admission callbacks may reply while parsing, before _handleRequest().
+        _contentLength = CONTENT_LENGTH_NOT_SET;
         switch (_parseRequest(_currentClient))
         {
         case CLIENT_REQUEST_CAN_CONTINUE:

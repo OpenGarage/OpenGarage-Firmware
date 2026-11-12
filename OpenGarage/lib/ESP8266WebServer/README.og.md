@@ -19,3 +19,8 @@ synchronous parser: it does not promise continuous sensing during an upload.
 Keep these changes small and propose the same reliability fix for OpenSprinkler.
 When upgrading the core, rebase and rerun parser/upload tests. Do not patch the
 shared PlatformIO installation; other projects must remain unaffected.
+
+Response framing: reset _contentLength before _parseRequest, because the body
+admission callback can send an early 401/403/409. Resetting it only afterward
+made a fresh server advertise Content-Length: 0 for a nonempty refusal body.
+Verified on hardware during the first-use upload-gate check.

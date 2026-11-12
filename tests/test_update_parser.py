@@ -71,3 +71,10 @@ parse=s[s.index('::_parseRequest'):s.index('::_parseArguments')]
 assert 'readBytesWithTimeout' not in parse
 assert 'if (!_currentUpload) return false;' in s
 assert 'client.readStringUntil' not in s
+
+# Admission can send a response from _parseRequest itself. Its Content-Length
+# must not inherit the constructor's zero or a previous response's size.
+impl=Path('OpenGarage/lib/ESP8266WebServer/src/ESP8266WebServer-impl.h').read_text()
+segment=impl.split('case HC_WAIT_READ:',1)[1].split('case CLIENT_REQUEST_CAN_CONTINUE:',1)[0]
+assert segment.index('_contentLength = CONTENT_LENGTH_NOT_SET;') < segment.index('_parseRequest(_currentClient)')
+print('PASS: response length reset precedes parser-stage admission replies')
