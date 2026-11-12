@@ -219,6 +219,16 @@
         </div>
     </div>
 
+    <section id="first_key" hidden>
+        <h2>Choose your device key</h2>
+        <p>This key protects your garage controls and settings. Save it somewhere safe before continuing.</p>
+        <div class="form-group"><label for="new_key">New Device Key</label><input type="password" id="new_key" maxlength="64" autocomplete="new-password"></div>
+        <div class="form-group"><label for="confirm_key">Confirm Device Key</label><input type="password" id="confirm_key" maxlength="64" autocomplete="new-password"></div>
+        <p>Use 10–64 printable ASCII characters, without leading or trailing spaces. A passphrase is fine.</p>
+        <p><button type="button" id="generate_key">Generate a Key</button></p>
+        <p><label><input type="checkbox" id="show_key"> Show key</label></p>
+        <p><button type="button" id="save_key">Save Device Key</button></p>
+    </section>
     <div id='div_input'>
         <div id="key_section" class="form-group" hidden>
             <label for="dkey">Existing Device Key</label>
@@ -287,8 +297,48 @@ function dis_config(x){let a = document.querySelectorAll('#div_input input');for
 function show_msg(s,c){id('msg').innerHTML='<font color='+c+'>'+s+'</font>';}
 var tci;
 var keyRequired = false;
+var setupReady = false;
 var setupKey = '';
+function showKeyState(required){
+  keyRequired=required;setupReady=required;
+  id('first_key').hidden=required;id('key_section').hidden=!required;
+  id('butt').disabled=!required;
+}
+function validNewKey(key){return /^[\x20-\x7e]{10,64}$/.test(key) && key[0]!==' ' && key[key.length-1]!==' ';}
+id('show_key').addEventListener('change',function(){
+  id('new_key').type=id('confirm_key').type=this.checked?'text':'password';
+});
+id('generate_key').disabled=!(globalThis.crypto && globalThis.crypto.getRandomValues);
+id('generate_key').addEventListener('click',function(){
+  if(!globalThis.crypto || !globalThis.crypto.getRandomValues)return;
+  const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  const limit=256-(256%alphabet.length);let key='';const bytes=new Uint8Array(32);
+  while(key.length<20){globalThis.crypto.getRandomValues(bytes);for(const b of bytes){if(b<limit)key+=alphabet[b%alphabet.length];if(key.length===20)break;}}
+  id('new_key').value=id('confirm_key').value=key;
+  id('show_key').checked=true;id('new_key').type=id('confirm_key').type='text';
+  show_msg('Save this generated key somewhere safe, then select Save Device Key.','black');
+});
+id('save_key').addEventListener('click',async function(){
+  const key=id('new_key').value;
+  if(!validNewKey(key)){show_msg('Use 10–64 printable ASCII characters, without leading or trailing spaces.','red');return;}
+  if(key!==id('confirm_key').value){show_msg('The new keys do not match.','red');return;}
+  this.disabled=true;
+  try {
+    const response=await fetch('setup_key',{method:'POST',headers:{'Content-Type':'text/plain'},body:key,cache:'no-store'});
+    const jd=await response.json();
+    if(jd.result!==1){
+      if(jd.result===2){showKeyState(true);show_msg('A device key has already been set. Enter that key to continue, or hold the device button for more than 10 seconds to factory-reset.','red');}
+      else show_msg(setupError(jd),'red');
+      return;
+    }
+    id('dkey').value=key;setupKey=key;showKeyState(true);
+    id('new_key').value=id('confirm_key').value='';
+    show_msg('Device key saved. You can now configure WiFi.','green');
+  }catch(e){show_msg('Save could not be confirmed. Keep your chosen key and retry the same key.','red');}
+  finally{this.disabled=false;}
+});
 function setupError(jd){
+  if(jd.item==='key'){showKeyState(false);return 'Choose and save a device key before configuring WiFi.';}
   if(jd.result===2){keyRequired=true;id('key_section').hidden=false;return 'Check the existing device key and try again.';}
   return jd.item==='config'?'Settings are damaged. A physical factory reset is required.':jd.item==='save'?'Could not save settings. Please retry.':'Error code: '+jd.result;
 }
@@ -318,6 +368,7 @@ function tryConnect(){
 }
 function sf(){
   show_msg('','black');
+  if(!setupReady){show_msg('Choose and save a device key first.','red');return;}
   if(keyRequired && !id('dkey').value) {show_msg('Enter the existing device key first.','red');return;}
   if(!id('ssid').value) {show_msg('WiFi SSID cannot be empty!','red');return;}
   var xhr=new XMLHttpRequest();
@@ -403,8 +454,7 @@ function loadSSIDs(){
   xhr.onreadystatechange=function() {
     if(xhr.readyState==4 && xhr.status==200) {
             var jd=JSON.parse(xhr.responseText);
-            keyRequired = jd.key_required === 1;
-            id('key_section').hidden = !keyRequired;
+            showKeyState(jd.key_required === 1);
             if (jd.has_swrx && jd.has_swrx == 1) {
                 id('secv_section').hidden = false;
                 if (typeof jd.secv !== 'undefined') {
@@ -445,6 +495,7 @@ function loadSSIDs(){
   xhr.open('GET','js',true);
   xhr.send();
 }
+id('butt').disabled=true;
 setTimeout(loadSSIDs, 500);
 </script>
 

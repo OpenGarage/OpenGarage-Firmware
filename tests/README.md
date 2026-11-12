@@ -184,3 +184,10 @@ including opendoor and Unicode legacy keys. Refusals must leave options, connect
 state and completion untouched. `node tests/test_ap_page.mjs` checks the key prompt,
 URL encoding, polling snapshot and retry UI. Scanned SSIDs render as text.
 `test_update_security.py` runs its upload/prepare callback suite in both AP and STA.
+
+First-use key tests extend test_ap_authorization.py with the real POST handler:
+invalid/NUL/oversize bodies, save rollback, identical-key idempotent retry,
+established-key replacement refusal, non-AP refusal, live scan metadata and
+WiFi setup gates. test_ap_page.mjs covers generation, validation, POST save and
+retaining a chosen key after a lost response. test_config_setup.py checks that
+first-use completion cannot save station mode or schedule a reboot.

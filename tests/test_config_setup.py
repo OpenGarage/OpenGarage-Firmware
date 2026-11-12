@@ -17,6 +17,8 @@ unsigned tunes=0;
 void start_tune(og_audio::Tune){++tunes;}
 '''+body+r'''
 int main(){
+ assert(!complete_ap_setup()&&og.calls==0&&!setup_reboot_pending);
+ og.options[OPTION_KSET].ival=1;
  og.options[OPTION_MOD].ival=OG_MOD_AP;og.saves=false;
  assert(!complete_ap_setup());assert(!setup_reboot_pending&&tunes==0);
  assert(og.options[OPTION_MOD].ival==OG_MOD_AP&&og.calls==1);

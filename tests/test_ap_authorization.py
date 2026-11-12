@@ -12,6 +12,8 @@ code=r'''
 #include <cstring>
 #include <cstdint>
 #include "OpenGarage/defines.h"
+#include "OpenGarage/device_key_policy.h"
+#include "OpenGarage/body_device_key.h"
 #define F(x) x
 enum {HTML_SUCCESS=1,HTML_UNAUTHORIZED=2,HTML_DATA_MISSING=16,HTML_DATA_OUTOFBOUND=17,HTML_NOT_PERMITTED=48,HTML_UPLOAD_FAILED=63};
 struct String:std::string {
@@ -19,26 +21,31 @@ struct String:std::string {
  String& operator=(const char*p){assign(p?p:"");return *this;}
  String& operator+=(uint32_t n){append(std::to_string(n));return *this;}
  String& operator+=(const char*p){append(p);return *this;}
+ void setCharAt(size_t n,char c){if(n<size())(*this)[n]=c;}
+ bool reserve(size_t n){std::string::reserve(n);return true;}
  int toInt()const{return atoi(c_str());}
 };
 struct Option {String sval;unsigned ival=0;};
 struct {Option options[NUM_OPTIONS];bool config_locked=false,has_swrx=true;int state=0,calls=0;
- bool options_save(){++calls;return true;}
+ bool saves=true;
+ bool options_save(){++calls;if(!saves){options[OPTION_DKEY].sval="opendoor";options[OPTION_KSET].ival=0;}return saves;}
 } og;
 namespace OTF {
-struct Request {std::map<std::string,std::string> values;
+struct Request {std::string body; const char*getBody()const{return body.data();}size_t getBodyLength()const{return body.size();}
+ std::map<std::string,std::string> values;
  char* getQueryParameter(const char*k)const {auto it=values.find(k);return it==values.end()?nullptr:const_cast<char*>(it->second.c_str());}
 };
 struct Response {int result=0;String body;};
 }
 void otf_send_result(OTF::Response&r,int code,const char*){r.result=code;}
 void otf_send_json(OTF::Response&r,const String&j){r.body=j;}
+String scanned_ssids="{\"ssids\":[],\"key_required\":0}";
 int curr_mode=OG_MOD_AP,completions=0;
 bool setup_save_failed=false;
 bool complete_ap_setup(){++completions;return true;}
 constexpr int WL_CONNECTED=3;
 struct {int status(){return WL_CONNECTED;}uint32_t localIP(){return 123;}} WiFi;
-'''+ '\n'.join(fn(n) for n in ['device_key_matches','verify_device_key','on_ap_change_config','on_ap_try_connect'])+r'''
+'''+ '\n'.join(fn(n) for n in ['device_key_matches','verify_device_key','on_ap_change_config','on_ap_try_connect','on_ap_set_key','on_ap_scan'])+r'''
 int main(){
  for(const char*key:{"opendoor","old weak key","old-\xc3\xa9"}) {
   og.options[OPTION_DKEY].sval=key;og.options[OPTION_KSET].ival=1;
@@ -57,11 +64,21 @@ int main(){
    else assert(completions==1&&r.body=="{\"ip\":123}");
   }
  }
- // First use remains keyless in this foundation; later batch establishes its key.
+ // First use cannot save WiFi or complete setup until its key is established.
  og.options[OPTION_KSET].ival=0;og.calls=completions=0;
  OTF::Request req;req.values["ssid"]="first-use";OTF::Response r;
- on_ap_change_config(req,r);assert(r.result==HTML_SUCCESS&&og.calls==1);
- on_ap_try_connect(req,r);assert(completions==1);
+ on_ap_change_config(req,r);assert(r.result==HTML_NOT_PERMITTED&&og.calls==0);
+ on_ap_try_connect(req,r);assert(r.result==HTML_NOT_PERMITTED&&completions==0);
+ for(const std::string &bad:{std::string("short"),std::string(65,'a'),std::string("longkey123\0suffix",17),std::string(" space-edge")}) {
+  req.body=bad;on_ap_set_key(req,r);assert(r.result==HTML_DATA_OUTOFBOUND&&og.calls==0);
+ }
+ req.body="a valid new key";og.saves=false;on_ap_set_key(req,r);
+ assert(r.result==HTML_UPLOAD_FAILED&&og.options[OPTION_KSET].ival==0&&og.options[OPTION_DKEY].sval=="opendoor");
+ og.saves=true;on_ap_set_key(req,r);assert(r.result==HTML_SUCCESS&&og.options[OPTION_KSET].ival==1);
+ on_ap_scan(req,r);assert(r.body=="{\"ssids\":[],\"key_required\":1}");
+ int calls=og.calls;on_ap_set_key(req,r);assert(r.result==HTML_SUCCESS&&og.calls==calls);
+ req.body="a different key";on_ap_set_key(req,r);assert(r.result==HTML_UNAUTHORIZED&&og.calls==calls);
+ curr_mode=OG_MOD_STA;on_ap_set_key(req,r);assert(r.result==HTML_NOT_PERMITTED&&og.calls==calls);curr_mode=OG_MOD_AP;
  // A corrupt configuration is never first-use authorization.
  og.config_locked=true;og.calls=completions=0;r={};
  on_ap_change_config(req,r);assert(r.result==HTML_NOT_PERMITTED&&og.calls==0);
@@ -70,6 +87,7 @@ int main(){
 '''
 with tempfile.TemporaryDirectory() as d:
     p=Path(d)/'test'
-    subprocess.run(['g++','-std=c++11','-Wall','-Wextra','-Werror','-I',str(root),'-x','c++','-','-o',str(p)],input=code,text=True,check=True)
+    subprocess.run(['g++','-std=c++11','-Wall','-Wextra','-Werror','-Wno-unused-parameter','-I',str(root),'-x','c++','-','-o',str(p)],input=code,text=True,check=True)
     subprocess.run([str(p)],check=True)
-print('PASS: AP /cc and /jt reject missing/empty/wrong keys before effects; legacy keys and first-use behavior preserved')
+assert 'otf->on("/setup_key", on_ap_set_key, OTF::HTTP_POST)' in s
+print('PASS: first-use POST key save/refusal/retry, scan state, WiFi gate and established AP authorization')

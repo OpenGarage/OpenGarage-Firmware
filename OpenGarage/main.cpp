@@ -361,6 +361,7 @@ void restart_in(uint32_t ms) {
 // Persist once, play the complete success tune, then restart to enter STA mode.
 static bool setup_save_failed=false;
 bool complete_ap_setup() {
+	if(!og.options[OPTION_KSET].ival)return false;
 	if(setup_save_failed)return false;
 	if (setup_reboot_pending || og.options[OPTION_MOD].ival==OG_MOD_STA) return true;
 	og.options[OPTION_MOD].ival=OG_MOD_STA;
@@ -1320,14 +1321,35 @@ void on_sta_options(const OTF::Request &req, OTF::Response &res) {
 	otf_send_json(res, json);
 }
 
+// First-use credential establishment is independent of WiFi. A retry after a
+// lost successful response is allowed only with the exact already-saved key.
+void on_ap_set_key(const OTF::Request &req, OTF::Response &res) {
+	if(curr_mode != OG_MOD_AP || og.config_locked) {otf_send_result(res, HTML_NOT_PERMITTED, "config");return;}
+	const char *body=req.getBody();
+	const size_t length=req.getBodyLength();
+	if(og.options[OPTION_KSET].ival) {
+		otf_send_result(res, body_device_key_matches(body,length,og.options[OPTION_DKEY].sval.c_str()) ? HTML_SUCCESS : HTML_UNAUTHORIZED, nullptr);return;
+	}
+	if(!body || length<10 || length>64 || memchr(body,0,length)) {otf_send_result(res, HTML_DATA_OUTOFBOUND, "nkey");return;}
+	char key[65];memcpy(key,body,length);key[length]=0;
+	if(!og_key::valid_new(key)) {otf_send_result(res, HTML_DATA_OUTOFBOUND, "nkey");return;}
+	if(!og.options[OPTION_DKEY].sval.reserve(length)) {otf_send_result(res, HTML_UPLOAD_FAILED, "save");return;}
+	og.options[OPTION_DKEY].sval=key;og.options[OPTION_KSET].ival=1;
+	if(!og.options_save()) {otf_send_result(res, HTML_UPLOAD_FAILED, "save");return;}
+	otf_send_result(res, HTML_SUCCESS, nullptr);
+}
+
 void on_ap_scan(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_STA) return;
+	// key_required is the final single-digit field in this cached scan response.
+	scanned_ssids.setCharAt(scanned_ssids.length()-2, og.options[OPTION_KSET].ival ? '1' : '0');
 	otf_send_json(res, scanned_ssids);
 }
 
 void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_STA) return;
 	if(og.config_locked) {otf_send_result(res, HTML_NOT_PERMITTED, "config");return;}
+	if(!og.options[OPTION_KSET].ival) {otf_send_result(res, HTML_NOT_PERMITTED, "key");return;}
 	if(og.options[OPTION_KSET].ival && !verify_device_key(req)) {otf_send_result(res, HTML_UNAUTHORIZED, nullptr);return;}
 	const char *cloud = req.getQueryParameter("cld");
 	if (cloud && strcmp(cloud, "otc") != 0 && strcmp(cloud, "none") != 0) {
@@ -1377,6 +1399,7 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 void on_ap_try_connect(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_STA) return;
 	if(og.config_locked) {otf_send_result(res, HTML_NOT_PERMITTED, "config");return;}
+	if(!og.options[OPTION_KSET].ival) {otf_send_result(res, HTML_NOT_PERMITTED, "key");return;}
 	if(og.options[OPTION_KSET].ival && !verify_device_key(req)) {otf_send_result(res, HTML_UNAUTHORIZED, nullptr);return;}
 	if(WiFi.status()==WL_CONNECTED && WiFi.localIP() && !complete_ap_setup()) {otf_send_result(res, HTML_UPLOAD_FAILED, "save");return;}
 	String json = "{";
@@ -2304,6 +2327,7 @@ void do_loop() {
 			otf->on("/js", on_ap_scan);
 			otf->on("/cc", on_ap_change_config);
 			otf->on("/jt", on_ap_try_connect);
+			otf->on("/setup_key", on_ap_set_key, OTF::HTTP_POST);
 			otf->on("/db", on_ap_debug);
 			otf->on("/ad", on_auto_detect);
 			// FIXME get update ap updates working.
