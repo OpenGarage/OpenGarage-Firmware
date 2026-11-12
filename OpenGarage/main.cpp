@@ -1626,6 +1626,13 @@ static bool updater_body_authorized() {
  else if (path == "/update/upload")
   authorized=!og.config_locked && firmware_update.token_valid(updateServer->header("X-OG-Upload-Token").c_str());
  else return false;
+ if (authorized && path=="/update" && !og.options[OPTION_KSET].ival) {
+  updateServer->sendHeader(F("Access-Control-Allow-Origin"), F("*"));
+  updateServer->sendHeader(F("Cache-Control"), F("no-store"));
+  updateServer->sendHeader(F("Connection"), F("close"));
+  updateServer->send(403, "application/json", F("{\"result\":48,\"item\":\"Set a device key in setup before uploading firmware\"}"));
+  return false;
+ }
  if (!authorized || updater_busy()) {
   // Explicit pre-body refusal: this request has not written or installed anything.
   updateServer->sendHeader(F("Access-Control-Allow-Origin"), F("*"));
@@ -1658,7 +1665,7 @@ static void quiesce_for_update() {
 
 void on_firmware_upload_fin() {
  const bool authenticated = update_authorized &&
-  (upload_signed ? upload_credential == updateServer->header("X-OG-Upload-Token") : updater_key_ok());
+  (upload_signed ? upload_credential == updateServer->header("X-OG-Upload-Token") : (og.options[OPTION_KSET].ival && updater_key_ok()));
  bool ok = false;
  if (authenticated && !update_failed && update_file_seen)
   ok = upload_signed ? firmware_update.finish_verified() : firmware_update.finish_manual();
@@ -1689,7 +1696,7 @@ void on_firmware_upload() {
   upload_signed=updateServer->uri()=="/update/upload";
   upload_credential=updateServer->header("X-OG-Upload-Token");
   update_authorized=upload_signed ? firmware_update.token_valid(upload_credential.c_str()) : updater_key_ok();
-  if (!update_authorized || updater_busy()) {
+  if (!update_authorized || (!upload_signed && !og.options[OPTION_KSET].ival) || updater_busy()) {
    update_failed=true;updateServer->client().stop();return;
   }
   const bool begun=upload_signed ? firmware_update.begin_verified(upload.filename.c_str(),upload_credential.c_str()) :
@@ -1740,7 +1747,7 @@ static void on_prepare_fin() {
  if (ok && (id.length()>31 || sig.length()>144)) ok=false;
  const bool attempted=ok;
  if (ok) ok=firmware_update.prepare_verified(reinterpret_cast<uint8_t*>(prepare_body.get()),prepare_length,
-     sig.c_str(),id.c_str(),updateServer->header("X-OG-Allow-Downgrade")=="1",token);
+     sig.c_str(),id.c_str(),updateServer->header("X-OG-Allow-Downgrade")=="1",token,og.options[OPTION_KSET].ival ? 126 : 127);
  prepare_length=0;
  if (!ok) {
   if (attempted) updateserver_send_result(HTML_UPLOAD_FAILED, firmware_update.message());

@@ -191,3 +191,9 @@ established-key replacement refusal, non-AP refusal, live scan metadata and
 WiFi setup gates. test_ap_page.mjs covers generation, validation, POST save and
 retaining a chosen key after a lost response. test_config_setup.py checks that
 first-use completion cannot save station mode or schedule a reboot.
+
+First-use upload gate: test_update_security.py verifies early manual refusal and
+callback checks with kset=0 in both AP/STA, plus the signed version floor passed
+to the service. test_firmware_service.py signs 126 and 127 fixture descriptors
+and proves the floor rejects the former despite allow-downgrade. Established
+units retain floor126. Updater-page tests cover deliberate retry after HTTP403.

@@ -133,7 +133,7 @@ bool FirmwareUpdateService::token_valid(const char *token) const {
 
 bool FirmwareUpdateService::prepare_verified(const uint8_t *descriptor, size_t descriptor_length,
 	const char *signature_hex, const char *release_id, bool allow_downgrade,
-	char upload_token_out[17]) {
+	char upload_token_out[17], uint32_t minimum_version) {
 	if (busy() || _phase == FirmwareUpdatePhase::Success) return false;
 	reset_transfer();
 	if (!configured()) {
@@ -174,6 +174,10 @@ bool FirmwareUpdateService::prepare_verified(const uint8_t *descriptor, size_t d
 	}
 
 	uint32_t version = doc["version"] | 0;
+	// This floor is checked against the signed descriptor, never a request header.
+	if(version < minimum_version) {
+		fail(F("Set a device key before installing older firmware"));return false;
+	}
 	bool newer = version > OG_FWV;
 	if ((version < 126 || version > 255) || (!newer && !allow_downgrade)) {
 		fail(F("Selected firmware is not newer than this build"));

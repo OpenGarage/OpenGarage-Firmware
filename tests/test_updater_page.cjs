@@ -40,12 +40,12 @@ function harness(ap=false){
  t=harness();t.release.targets=['different'];await t.run('load_catalog()');assert.equal(t.run('releases.length'),0);assert(t.el('btn_install').disabled);
  t=harness();t.d.product='wrong';await t.run('load_catalog()');await t.run('install_release()');assert.equal(t.calls.filter(x=>x.method==='POST').length,0);
  // Explicit header-stage refusal permits correcting the key and retrying manually.
- for(const status of [401,409]){
+ for(const status of [401,403,409]){
   t=harness();t.el('file').files=[new File([t.image],'og.bin')];
-  t.ctx.refusal=async()=>{const e=Error('refused');e.status=status;throw e;};
+  t.ctx.refusal=async()=>{const e=Error('Set a device key in setup before uploading firmware');e.status=status;throw e;};
   t.run('request=refusal');await t.run('manual_update()');
   assert.equal(t.run('locked'),false);assert.equal(t.el('dkey').disabled,false);
-  assert(t.el('msg').textContent.includes(status===401?'device key':'busy'));
+  assert(t.el('msg').textContent.includes(status===401?'device key':status===403?'Set a device key':'busy'));
   t.ctx.accepted=async()=>JSON.stringify({result:1});t.run('request=accepted');
   await t.run('manual_update()');assert(t.el('msg').textContent.includes('successful'));
  }

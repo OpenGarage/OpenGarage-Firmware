@@ -58,7 +58,7 @@ function request(url,{method='GET',headers={},body=null,binary=false,limit=0,upl
   // Credentials are sent only to the local controller, never catalog/image URLs.
   xhr.upload.onprogress=function(e){if(upload&&e.lengthComputable){const p=Math.round(e.loaded/e.total*100);progress(p===100?'Upload sent; verifying firmware':'Uploading',p);}};
   xhr.onprogress=function(e){if(limit&&e.loaded>limit){xhr.abort();return;}if(label&&e.lengthComputable)progress(label,Math.round(e.loaded/e.total*100));};
-  xhr.onload=()=>{if(xhr.status!==200){const e=Error('Request rejected (HTTP '+xhr.status+').');e.status=xhr.status;return reject(e);}const r=xhr.response;if(limit&&(binary?r.byteLength:r.length)>limit)return reject(Error('Response exceeds expected size.'));resolve(r);};
+  xhr.onload=()=>{if(xhr.status!==200){let message='Request rejected (HTTP '+xhr.status+').';if(!binary&&xhr.status===403){try{const refused=JSON.parse(xhr.response);if(typeof refused.item==='string')message=refused.item;}catch(e){}}const e=Error(message);e.status=xhr.status;return reject(e);}const r=xhr.response;if(limit&&(binary?r.byteLength:r.length)>limit)return reject(Error('Response exceeds expected size.'));resolve(r);};
   const failed=()=>reject(Error(upload?'Update not confirmed. Check the device before trying again.':'Request failed. Check the device key, connection and whether the device is busy.'));
   xhr.onerror=failed;xhr.ontimeout=failed;xhr.onabort=failed;xhr.send(body);
  });
@@ -180,6 +180,7 @@ async function upload_file(file,name,token){
  catch(e){
   // Only explicit pre-body refusals prove this request did not install an image.
   // Idle status alone is ambiguous: a successful update may already have rebooted.
+  if(e.status===403){locked=false;throw e;}
   if(e.status===401||e.status===409){locked=false;throw Error(e.status===401?'Check the device key and try again.':'Device busy. Wait a few seconds and try again.');}
   throw e;
  }

@@ -17,7 +17,7 @@ stub=r'''
 #define F(x) x
 using String=std::string;
 enum {HTTP_POST,HTTP_GET};
-enum {HTML_SUCCESS=1,HTML_UNAUTHORIZED=2,HTML_UPLOAD_FAILED=3,OPTION_DKEY,OPTION_SECV};
+enum {HTML_SUCCESS=1,HTML_UNAUTHORIZED=2,HTML_UPLOAD_FAILED=3,OPTION_DKEY,OPTION_SECV,OPTION_KSET};
 enum {UPLOAD_FILE_START,UPLOAD_FILE_WRITE,UPLOAD_FILE_END,UPLOAD_FILE_ABORTED,OG_MOD_STA,OG_MOD_AP,OG_STATE_WAIT_RESTART};
 enum class FirmwareUpdatePhase {Idle,Prepared,Uploading,Success,Error};
 struct HTTPUpload {int status=UPLOAD_FILE_START;uint8_t buf[2048]={};size_t currentSize=0;String filename="fw.bin";} upload;
@@ -45,7 +45,8 @@ bool begin_manual_file(const char*){++begins;state=FirmwareUpdatePhase::Uploadin
 bool begin_verified(const char*,const char*t){if(!token_valid(t))return false;return begin_manual_file("");}
 bool write_manual(uint8_t*,size_t){++writes;return write_ok;}bool write_verified(uint8_t*p,size_t n){return write_manual(p,n);}
 bool finish_manual(){++finishes;state=FirmwareUpdatePhase::Success;return true;}bool finish_verified(){return finish_manual();}
-bool prepare_verified(uint8_t*,size_t,const char*,const char*,bool,char*t){++prepares;strcpy(t,"token");state=FirmwareUpdatePhase::Prepared;return true;}
+unsigned floor=0;
+bool prepare_verified(uint8_t*,size_t,const char*,const char*,bool,char*t,unsigned minimum){floor=minimum;++prepares;strcpy(t,"token");state=FirmwareUpdatePhase::Prepared;return true;}
 } firmware_update;
 '''
 runner=r'''
@@ -57,6 +58,15 @@ update_started=update_authorized=update_failed=update_file_seen=prepare_seen=pre
 int main(){
 for(int mode:{OG_MOD_STA,OG_MOD_AP}) {
 curr_mode=mode;
+reset();og.options[OPTION_KSET].ival=0;
+server.headers["X-OG-Device-Key"]="hex:74657374";
+assert(!updater_body_authorized() && http_status==403 && firmware_update.begins==0 && disruptions==0);
+start("hex:74657374");assert(firmware_update.begins==0);aborted();
+reset();server.path="/update/prepare";server.headers["X-OG-Device-Key"]="hex:74657374";
+assert(updater_body_authorized());upload.status=UPLOAD_FILE_START;on_prepare_upload();
+upload.status=UPLOAD_FILE_WRITE;upload.currentSize=512;on_prepare_upload();on_prepare_fin();
+assert(firmware_update.floor==127);service_update_server();
+og.options[OPTION_KSET].ival=1;
 reset();assert(!updater_body_authorized() && http_status==401);
 server.headers["X-OG-Device-Key"]="hex:74657374";
 assert(updater_body_authorized() && firmware_update.begins==0 && disruptions==0);
@@ -91,7 +101,7 @@ upload.status=UPLOAD_FILE_WRITE;upload.currentSize=1025;on_prepare_upload();on_p
 reset();server.headers["X-OG-Device-Key"]="hex:74657374";upload.status=UPLOAD_FILE_START;on_prepare_upload();
 upload.status=UPLOAD_FILE_WRITE;upload.currentSize=512;on_prepare_upload();busy=true;on_prepare_fin();assert(firmware_update.prepares==0);
 reset();server.headers["X-OG-Device-Key"]="hex:74657374";upload.status=UPLOAD_FILE_START;on_prepare_upload();
-upload.status=UPLOAD_FILE_WRITE;upload.currentSize=512;on_prepare_upload();on_prepare_fin();assert(firmware_update.prepares==1);
+upload.status=UPLOAD_FILE_WRITE;upload.currentSize=512;on_prepare_upload();on_prepare_fin();assert(firmware_update.prepares==1 && firmware_update.floor==126);
 assert(prepare_body);service_update_server();assert(!prepare_body && !prepare_seen && !prepare_ok && prepare_length==0);
 // Simulate allocation refusal: no descriptor may be dereferenced or verified.
 reset();server.headers["X-OG-Device-Key"]="hex:74657374";prepare_seen=true;prepare_ok=false;prepare_body.reset();

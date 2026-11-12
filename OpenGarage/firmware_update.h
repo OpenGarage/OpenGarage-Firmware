@@ -26,7 +26,7 @@ public:
 
 	bool prepare_verified(const uint8_t *descriptor, size_t descriptor_length,
 		const char *signature_hex, const char *release_id, bool allow_downgrade,
-		char upload_token_out[17]);
+		char upload_token_out[17], uint32_t minimum_version = 126);
 	bool begin_verified(const char *filename, const char *upload_token);
 	bool write_verified(const uint8_t *data, size_t length);
 	bool finish_verified();

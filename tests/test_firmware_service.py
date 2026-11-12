@@ -65,12 +65,18 @@ struct Flash {
 std::vector<uint8_t>read(const char*p){std::ifstream f(p,std::ios::binary);return {std::istreambuf_iterator<char>(f),{}};}
 '''
 runner=r'''
-int main(int argc,char**argv){assert(argc==4);auto raw=read(argv[1]),sigb=read(argv[2]),image=read(argv[3]);
+int main(int argc,char**argv){assert(argc==6);auto raw=read(argv[1]),sigb=read(argv[2]),image=read(argv[3]);
 std::string sig(sigb.begin(),sigb.end());char token[17];
 auto prepare=[&](){return firmware_update.prepare_verified(raw.data(),raw.size(),sig.c_str(),"1.2.6",true,token);};
 auto stream=[&](){for(size_t i=0;i<image.size();i+=113){size_t n=std::min(size_t(113),image.size()-i);if(!firmware_update.write_verified(image.data()+i,n))return false;}return true;};
 ESP.block=6000;assert(!prepare() && Update.begins==0 && refs==0);ESP.block=20000;
 assert(!firmware_update.prepare_verified(raw.data(),raw.size(),sig.c_str(),"1.2.6",false,token));
+assert(!firmware_update.prepare_verified(raw.data(),raw.size(),sig.c_str(),"1.2.6",true,token,127));
+assert(Update.begins==0 && !firmware_update.token_valid(token));
+auto gate=read(argv[4]),gateSigBytes=read(argv[5]);std::string gateSig(gateSigBytes.begin(),gateSigBytes.end());
+assert(firmware_update.prepare_verified(gate.data(),gate.size(),gateSig.c_str(),"1.2.7",true,token,127));
+assert(firmware_update.token_valid(token));
+
 assert(prepare() && refs==0);assert(!firmware_update.begin_verified("fw.bin","wrong"));assert(!firmware_update.token_valid(token));
 assert(prepare());now+=300000;firmware_update.loop();assert(!firmware_update.token_valid(token));
 now=UINT32_MAX-100;assert(prepare());now+=200;assert(firmware_update.token_valid(token));
@@ -107,7 +113,11 @@ with tempfile.TemporaryDirectory() as t:
  (p/'release.json').write_text(json.dumps(d,separators=(',',':')))
  subprocess.run(['openssl','dgst','-sha256','-sign',str(key),'-out',str(p/'sig.der'),str(p/'release.json')],check=True)
  (p/'sig.txt').write_text((p/'sig.der').read_bytes().hex())
+ d['id']='1.2.7';d['version']=127
+ (p/'gate.json').write_text(json.dumps(d,separators=(',',':')))
+ subprocess.run(['openssl','dgst','-sha256','-sign',str(key),'-out',str(p/'gate.der'),str(p/'gate.json')],check=True)
+ (p/'gate.sig').write_text((p/'gate.der').read_bytes().hex())
  text=stub+'\nstatic const uint8_t FW_UPDATE_PUBLIC_KEY[65]={'+','.join(map(str,pub))+'};\n'+header+source+runner
  (p/'test.cpp').write_text(text)
  subprocess.run(['g++','-std=c++17','-Wno-deprecated-declarations','-I'+str(root/'OpenGarage/.pio/libdeps/d1_mini/ArduinoJson/src'),str(p/'test.cpp'),'-lcrypto','-o',str(p/'test')],check=True)
- subprocess.run([str(p/'test'),str(p/'release.json'),str(p/'sig.txt'),str(p/'fw.bin')],check=True)
+ subprocess.run([str(p/'test'),str(p/'release.json'),str(p/'sig.txt'),str(p/'fw.bin'),str(p/'gate.json'),str(p/'gate.sig')],check=True)
