@@ -260,7 +260,7 @@ static void append_health_json(DebugJson &json) {
 	json += F(",\"free_heap\":"); json += ESP.getFreeHeap();
 	json += F(",\"largest_free_heap_block\":"); json += ESP.getMaxFreeBlockSize();
 	json += F(",\"build_time\":\""); json += F(__TIME__); json += F("\"");
-	json += F(",\"otf_revision\":\"7ecee5a8a8d6614b5e005f51fcb636128ad88640\"");
+	json += F(",\"otf_revision\":\"7439002868a6b1c92fc140cdc2ee52095d7dd884\"");
 	json += F(",\"reset_reason\":\""); json += ESP.getResetReason(); json += F("\"");
 	json += F(",\"reset_reason_code\":"); json += ESP.getResetInfoPtr()->reason;
 	json += F(",\"uptime_s\":"); json += health_stats.uptime_s();
