@@ -198,8 +198,10 @@
     <label class="lbl si" for="gwip">Gateway IP:</label><span class="inp si"><input type="text" id="gwip" maxlength="15"></span>
     <label class="lbl si" for="subn">Subnet:</label><span class="inp si"><input type="text" id="subn" maxlength="15"></span>
     <label class="lbl si" for="dns1">DNS1:</label><span class="inp si"><input type="text" id="dns1" maxlength="64"></span>
+    <p id="key_warning" class="full" hidden><small>Your existing device key still works, but does not meet the current key rules. You can change it below.</small></p>
     <label class="cb full"><input type="checkbox" id="cb_key"><span class="btn c">Change Device Key</span></label>
     <label class="lbl ckey" for="nkey">New Key:</label><span class="inp ckey"><input type="password" id="nkey" maxlength="64" autocomplete="new-password"></span>
+    <p class="full ckey"><small>Use 10–64 printable ASCII characters with no leading or trailing spaces. Letters alone or a passphrase are fine.</small></p>
     <label class="lbl ckey" for="ckey">Confirm:</label><span class="inp ckey"><input type="password" id="ckey" maxlength="64" autocomplete="new-password"></span>
   </div>
 
@@ -572,7 +574,8 @@ $('btn_submit').addEventListener('click', function(e) {
   comm += '&emen=' + eval_cb('emen');
   bc('bprt'); bc('ntp1'); bc('host');
   if ($('cb_key').checked) {
-    if (!$('nkey').value && !confirm('New device key is empty. Are you sure?')) return;
+    if ($('nkey').value !== okey.value && !validNewDeviceKey($('nkey').value)) { show_msg('Use 10–64 printable ASCII characters, without leading or trailing spaces.'); return; }
+    if ($('nkey').value !== $('ckey').value) { show_msg('The new keys do not match.'); return; }
     bc('nkey'); bc('ckey');
   }
   if ($('usi').checked) {
@@ -581,13 +584,16 @@ $('btn_submit').addEventListener('click', function(e) {
   } else comm += '&usi=0';
   // The deployed OTC proxy forwards a POST body but never relays the reply, so through OTC
   // keep the GET (forwarded requests have no request-line limit). Use POST once it is fixed.
+  const submittedNewKey = $('cb_key').checked ? $('nkey').value : null;
   const viaOTC = /\/forward\/v1\//.test(location.pathname);
   (viaOTC ? getJSON('co?' + comm) : postForm('co', comm)).then(function(jd) {
     if (jd.result != 1) {
       if (jd.result == 2) show_msg('Check device key and try again.');
+      else if (jd.item === 'nkey') show_msg('Use 10–64 printable ASCII characters, without leading or trailing spaces.');
       else if (jd.item === 'save') show_msg('Save could not be confirmed. Reload settings to check before trying again.');
       else show_msg('Error code: ' + jd.result + ', item: ' + jd.item);
     } else {
+      if (submittedNewKey !== null) { okey.value = submittedNewKey; saveDeviceKey(okey); dkey.value = submittedNewKey; }
       showMsg(omsg, '', 'ok'); opts_dirty = false; thresholds = false;
       omsg.innerHTML = 'Options are saved. Many options may need<br>a reboot to take effect. If you changed log<br>size, please Clear Log for it to take effect.';
       setTimeout(goback, 4000);
@@ -650,6 +656,7 @@ clear_msg();
 $$('input[type=checkbox]', $('v_opts')).forEach(c => { c.checked = false; });
 ['auth', 'iftt', 'apwd', 'mqpw', 'nkey', 'ckey'].forEach(id => { $(id).value = ''; });
 getJSON('jo').then(function(jd) {
+  $('key_warning').hidden = jd.key_weak !== 1;
   saved_secplus2 = !!jd.has_swrx && jd.secv === 2;
   security_capable = !!jd.has_swrx;
   $('secplus2_client_id').textContent = jd.s2id || 'Unavailable';

@@ -7,8 +7,8 @@ names=re.findall(r'^\s*(OPTION_\w+)',(root/'OpenGarage/defines.h').read_text(),r
 fs=(root/'tests/test_config_store.cpp').read_text().split('bool legacy(')[0]
 fs=fs.replace('  int read(){','  bool available(){return pos<size();}\n  int read(){')
 start=s[s.index('enum class ConfigRecord'):s.index('void OpenGarage::log_reset()')]
-find=s[s.index('int OpenGarage::find_option('):s.index('bool OpenGarage::options_load()')]
-load=s[s.index('bool OpenGarage::options_load()'):s.index('uint OpenGarage::read_distance()')]
+find=s[s.index('int OpenGarage::find_option('):s.index('bool OpenGarage::options_load(')]
+load=s[s.index('bool OpenGarage::options_load('):s.index('uint OpenGarage::read_distance()')]
 rows=re.findall(r'\{"([a-z0-9]+)",\s*([^,]+),\s*([^,]+),\s*([^}]+)\}',s[s.index('OptionStruct OpenGarage::options[]'):s.index('/* Variables')])
 assert len(rows)==len(names)
 # Check the independent default tables against the real initialization table.
@@ -44,7 +44,7 @@ struct String:std::string {
 struct Option {const char *name;unsigned ival=0,max=0;String sval;};
 class OpenGarage {public:
  static Option options[NUM_OPTIONS];static uint8_t config_status;static bool config_locked;
- static void options_setup();static bool options_load(),options_save(),options_reset();static int find_option(String name);
+ static void options_setup();static bool options_load(bool *key_marker_missing=nullptr),options_save(),options_reset();static int find_option(String name);
  static void reset_alarm(){}
 };
 Option OpenGarage::options[NUM_OPTIONS];uint8_t OpenGarage::config_status=0;bool OpenGarage::config_locked=false;
@@ -63,6 +63,39 @@ std::string legacyFile(unsigned version){
 }
 int main(){
  HISTORICAL
+ for(const char *mode:{"42","169"})for(const char *key:{"opendoor","old-key","legacy-\xc3\xa9"}) {
+  init();FILESYS.disk[og_config::current]=std::string("fwv:127\nmod:")+mode+"\nssid:old-wifi\ndkey:"+key+"\n";
+  OpenGarage::options_setup();assert(!OpenGarage::config_locked);
+  assert(OpenGarage::options[OPTION_KSET].ival==1);assert(OpenGarage::options[OPTION_DKEY].sval==key);
+  assert(FILESYS.disk[og_config::current].find("kset:1\r\n")!=std::string::npos);
+  OpenGarage::options[OPTION_KSET].ival=0;assert(OpenGarage::options_load());assert(OpenGarage::options[OPTION_KSET].ival==1);
+ }
+ init();OpenGarage::options_setup();assert(OpenGarage::options[OPTION_KSET].ival==0);
+ assert(FILESYS.disk[og_config::current].find("kset:0\r\n")!=std::string::npos);
+ for(const char *marker:{"0","1"}) {
+  init();FILESYS.disk[og_config::current]=std::string("fwv:127\nssid:old-wifi\ndkey:opendoor\nkset:")+marker+"\n";
+  OpenGarage::options_setup();assert(!OpenGarage::config_locked);assert(OpenGarage::options[OPTION_KSET].ival==unsigned(marker[0]-'0'));
+ }
+ for(const char *marker:{"2\n","bad\n","\n","1\nkset:0\n","1"}) {
+  init();FILESYS.disk[og_config::current]=std::string("fwv:127\nssid:old-wifi\ndkey:opendoor\nkset:")+marker;
+  OpenGarage::options_setup();assert(OpenGarage::config_locked);
+ }
+ // Previous checksummed firmware already reports 127 but lacks the marker.
+ init();assert(og_config::save(FILESYS,valid_legacy_config,[](auto &out){return out.text("fwv:127\nssid:old-wifi\ndkey:opendoor\n");}));
+ OpenGarage::options_setup();assert(!OpenGarage::config_locked&&OpenGarage::options[OPTION_KSET].ival==1);
+ assert(FILESYS.disk[og_config::current].find("kset:1\r\n")!=std::string::npos);
+ // A previously chosen key survives migration even before WiFi was configured.
+ init();FILESYS.disk[og_config::current]="fwv:127\ndkey:old-custom\n";
+ OpenGarage::options_setup();assert(!OpenGarage::config_locked&&OpenGarage::options[OPTION_KSET].ival==1);
+ // Untouched defaults and factory reset remain first-use.
+ init();FILESYS.disk[og_config::current]="fwv:127\ndkey:opendoor\n";
+ OpenGarage::options_setup();assert(!OpenGarage::config_locked&&OpenGarage::options[OPTION_KSET].ival==0);
+ assert(OpenGarage::options_reset());OpenGarage::options[OPTION_KSET].ival=0; // reboot initializer
+ OpenGarage::options_setup();assert(OpenGarage::options[OPTION_KSET].ival==0);
+ // A failed key/marker save rolls both back together.
+ init();OpenGarage::options_setup();FILESYS.short_write=20;
+ OpenGarage::options[OPTION_DKEY].sval="brand-new-key";OpenGarage::options[OPTION_KSET].ival=1;
+ assert(!OpenGarage::options_save());assert(OpenGarage::options[OPTION_DKEY].sval=="opendoor"&&OpenGarage::options[OPTION_KSET].ival==0);
  for(const char *tail:{"name:torn","name:","n","malformed trailing line"}){
   init();FILESYS.disk[og_config::current]=std::string("fwv:126\nmod:42\nssid:old-wifi\ndkey:kept-key\n")+tail;
   OpenGarage::options_setup();assert(!OpenGarage::config_locked);

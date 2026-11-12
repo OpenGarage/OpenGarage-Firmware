@@ -58,7 +58,7 @@ public:
 	static byte has_swrx;
 	static void begin();
 	static void options_setup();
-	static bool options_load();
+	static bool options_load(bool *key_marker_missing = nullptr);
 	static bool options_save();
 	static bool options_reset();
 	static uint8_t config_status;

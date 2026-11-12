@@ -242,6 +242,7 @@ typedef enum {
 	OPTION_PEM,     // Security+ 1.0 panel emulation (0: auto, 1: disabled)
 	OPTION_WFR,     // Automatic AP selection/roaming (0: off, 1: automatic)
 	OPTION_WFG,     // WiFi compatibility: 0 normal (11n enabled), 1 legacy 11g
+	OPTION_KSET,    // credential established/migrated; internal, not writable via /co
 	NUM_OPTIONS     // number of options
 } OG_OPTION_enum;
 

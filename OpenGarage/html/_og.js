@@ -58,3 +58,8 @@ function fwLabel(v) { return (v / 100 >> 0) + '.' + (v / 10 % 10 >> 0) + '.' + (
 function toggleAll(sel, show) { $$(sel).forEach(e => { e.hidden = !show; }); }
 
 document.addEventListener('DOMContentLoaded', wireClearButtons);
+
+/* Applies only to a newly chosen key; existing credentials remain valid. */
+function validNewDeviceKey(key) {
+  return /^[\x20-\x7e]{10,64}$/.test(key) && !key.startsWith(' ') && !key.endsWith(' ');
+}

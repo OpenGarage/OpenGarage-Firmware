@@ -101,6 +101,7 @@ OptionStruct OpenGarage::options[] = {
 	{"pem", 0, 1, ""},
 	{"wfr", 1, 1, ""},
 	{"wfg", 0, 1, ""},
+	{"kset",0, 1, ""},
 };
 
 /* Variables and functions for handling Ultrasonic Distance sensor */
@@ -274,12 +275,13 @@ void OpenGarage::options_setup() {
  auto r=og_config::recover(FILESYS,valid_legacy_config);
  config_status=uint8_t(r.status);
  if(r.status==og_config::Status::FRESH) { options_save(); return; }
- if(!r.path || !options_load()) {
+ bool missing_key_marker=false;
+ if(!r.path || !options_load(&missing_key_marker)) {
   config_locked=true;config_status=uint8_t(og_config::Status::CORRUPT);
   options[OPTION_MOD].ival=OG_MOD_AP;return;
  }
  config_status=uint8_t(r.status);
- if(r.kind==og_config::Kind::LEGACY || options[OPTION_FWV].ival!=OG_FWV) {
+ if(r.kind==og_config::Kind::LEGACY || options[OPTION_FWV].ival!=OG_FWV || missing_key_marker) {
   options[OPTION_FWV].ival=OG_FWV;
   if(options_save() && r.kind==og_config::Kind::LEGACY) config_status=uint8_t(og_config::Status::MIGRATED);
  }
@@ -316,7 +318,7 @@ static const uint16_t config_int_defaults[] PROGMEM = {
 	OG_LIGHT_BLINK_FOREVER, 0, 0, 0, 0, 0, 0, DEFAULT_OTC_PRT,
 	0, 0, 0, 0, 0, 1883, 0, 0,
 	0, 0, 0, DEFAULT_SMTP_PORT, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 1, 0
+	0, 0, 0, 0, 0, 0, 1, 0, 0
 };
 static const char *const config_string_defaults[] PROGMEM = {
 	"", "", "", "", "", "", "", "",
@@ -325,7 +327,7 @@ static const char *const config_string_defaults[] PROGMEM = {
 	"", "", "", "", "", "", DEFAULT_OTC_DMN, "",
 	DEFAULT_DKEY, DEFAULT_NAME, "", "", "", "", "", "",
 	"", "", DEFAULT_SMTP_SERVER, "", "", "", "", "",
-	"", "255.255.255.0", "8.8.8.8", "", "", "", "", ""
+	"", "255.255.255.0", "8.8.8.8", "", "", "", "", "", ""
 };
 static_assert(sizeof(config_int_defaults)/sizeof(config_int_defaults[0])==NUM_OPTIONS,"Update config defaults");
 static_assert(sizeof(config_string_defaults)/sizeof(config_string_defaults[0])==NUM_OPTIONS,"Update config defaults");
@@ -344,7 +346,7 @@ static bool config_defaults_missing(uint64_t seen,bool apply) {
 	return true;
 }
 
-bool OpenGarage::options_load() {
+bool OpenGarage::options_load(bool *key_marker_missing) {
  auto r=og_config::recover(FILESYS,valid_legacy_config);
  if(!r.path)return false;
  uint64_t seen=0;
@@ -356,9 +358,14 @@ bool OpenGarage::options_load() {
   while(f.available()) {
    auto record=config_record(f,name,value);
    if(record==ConfigRecord::ERROR || (record!=ConfigRecord::VALID && r.kind!=og_config::Kind::LEGACY)){f.close();return false;}
-   if(record!=ConfigRecord::VALID)continue;
+   if(record!=ConfigRecord::VALID) {
+    if(name=="kset"){f.close();return false;}
+    continue;
+   }
    int idx=find_option(name);if(idx<0)continue;
    unsigned long number=0;
+   // A present but damaged marker must never be treated as an absent legacy one.
+   if(idx==OPTION_KSET && ((!pass && (seen&(uint64_t(1)<<idx))) || !config_number(value,1,number))) {f.close();return false;}
    if(options[idx].max && !config_number(value,options[idx].max,number))continue;
    if(!pass)seen|=uint64_t(1)<<idx;
    if(!options[idx].max && !options[idx].sval.reserve(value.length())){f.close();return false;}
@@ -370,6 +377,16 @@ bool OpenGarage::options_load() {
   f.close();
   if(!pass && !config_defaults_missing(seen,false))return false;
  }
+ const bool missing=(seen&(uint64_t(1)<<OPTION_KSET))==0;
+ if(key_marker_missing)*key_marker_missing=missing;
+ if(missing) {
+  // Preserve a saved network or an explicitly chosen old key, including WiFi-
+  // only reset in AP mode. An old unfinished setup with a saved SSID cannot be
+  // distinguished and is grandfathered too. Untouched defaults stay first-use.
+  options[OPTION_KSET].ival=options[OPTION_DKEY].sval.length() &&
+   (options[OPTION_SSID].sval.length() || options[OPTION_DKEY].sval!=DEFAULT_DKEY)?1:0;
+ }
+
  return true;
 }
 

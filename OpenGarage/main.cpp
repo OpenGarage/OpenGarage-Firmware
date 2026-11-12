@@ -20,6 +20,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include "device_key_policy.h"
 #include <memory>
 #include <new>
 #include <DNSServer.h>
@@ -1061,7 +1062,7 @@ void sta_change_options_main(const OptionParams &req, OTF::Response &res) {
 		const char *key = o->name;
 		// these options cannot be modified here
 		if(i==OPTION_FWV || i==OPTION_MOD  || i==OPTION_SSID ||
-			i==OPTION_PASS || i==OPTION_DKEY)
+			i==OPTION_PASS || i==OPTION_DKEY || i==OPTION_KSET)
 			continue;
 
 		if(o->max) {  // integer options
@@ -1146,6 +1147,9 @@ void sta_change_options_main(const OptionParams &req, OTF::Response &res) {
 	char* ckey = req.getQueryParameter(_ckey);
 
 	if(nkey != NULL) {
+		if(!og_key::allowed_change(og.options[OPTION_DKEY].sval.c_str(),nkey)) {
+			otf_send_result(res, HTML_DATA_OUTOFBOUND, _nkey);return;
+		}
 		if(ckey != NULL) {
 			if(strcmp(nkey,ckey)!=0) {
 				otf_send_result(res, HTML_MISMATCH, _ckey);
@@ -1165,7 +1169,7 @@ void sta_change_options_main(const OptionParams &req, OTF::Response &res) {
 		const char *key = o->name;
 		// these options cannot be modified here
 		if(i==OPTION_FWV || i==OPTION_MOD  || i==OPTION_SSID ||
-			i==OPTION_PASS || i==OPTION_DKEY)
+			i==OPTION_PASS || i==OPTION_DKEY || i==OPTION_KSET)
 			continue;
 
 		char *sval = req.getQueryParameter(key);
@@ -1199,6 +1203,7 @@ void sta_change_options_main(const OptionParams &req, OTF::Response &res) {
 
 	if(nkey != NULL) {
 			og.options[OPTION_DKEY].sval = nkey;
+			if(og_key::valid_new(nkey))og.options[OPTION_KSET].ival=1;
 	}
 
 	if(!og.options_save()) {
@@ -1289,7 +1294,8 @@ void sta_options_fill_json(String& json) {
 			json += ",";
 		}
 	}
-	json += F("\"auth_set\":"); json += og.options[OPTION_AUTH].sval.length() ? 1 : 0;
+	json += F("\"key_weak\":"); json += og_key::valid_new(og.options[OPTION_DKEY].sval.c_str()) ? 0 : 1;
+	json += F(",\"auth_set\":"); json += og.options[OPTION_AUTH].sval.length() ? 1 : 0;
 	json += F(",\"apwd_set\":"); json += og.options[OPTION_APWD].sval.length() ? 1 : 0;
 	json += F(",\"iftt_set\":"); json += og.options[OPTION_IFTT].sval.length() ? 1 : 0;
 	json += F(",");

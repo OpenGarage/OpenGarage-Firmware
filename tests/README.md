@@ -170,3 +170,10 @@ migration, rollback, reserved string storage, and corrupt-file lockout.
 production has no per-version field list. Tests also cover unknown versions, malformed
 legacy lines and torn non-key tails, invalid numbers, missing/duplicate/truncated keys and a future payload in the frozen v1 envelope. Setup completion and updater refusal are checked separately.
 These model file API behavior, not SPIFFS flash-page corruption or physical power cuts.
+
+Device-key foundation: `python3 tests/test_key_policy.py` checks new-key boundaries,
+printable ASCII, unchanged legacy credentials, browser/server parity and the real
+/co validation and marker update. `test_config_options.py` also covers marker
+migration (including already-1.2.7 files and WiFi-only reset), fresh defaults,
+invalid/duplicate markers, factory reset and failed key-plus-marker save rollback.
+`test_options_security.py` verifies that /co cannot write the internal marker.

@@ -22,6 +22,7 @@ stub = r'''
 #include <cassert>
 #include <cstring>
 #include "OpenGarage/json_escape.h"
+#include "OpenGarage/device_key_policy.h"
 #include "OpenGarage/smtp_exchange.h"
 #define F(x) x
 #define HEX 16
@@ -78,6 +79,9 @@ struct Cloud {int getCloudStatus(){return 1;}} cloud,*otf=&cloud;
 code += 'int main(){\n' + setup + r'''
  og.options[OPTION_NAME].sval="name\"\\\n\t\x01";
  String out;sta_options_fill_json(out);std::cout<<out<<"\n";
+ og.options[OPTION_KSET].max=1;og.options[OPTION_KSET].ival=1;
+ Request marker;marker.values["kset"]="0";save(marker);assert(og.options[OPTION_KSET].ival==1);
+ og.options[OPTION_KSET].ival=0;marker.values["kset"]="1";save(marker);assert(og.options[OPTION_KSET].ival==0);
  og.options[OPTION_WFG].max=1;og.options[OPTION_WFG].ival=0;
  Request wifiOn;wifiOn.values["wfg"]="1";save(wifiOn);assert(og.options[OPTION_WFG].ival==1);
  String wifiJson;sta_options_fill_json(wifiJson);assert(wifiJson.find("\"wfg\":1")!=std::string::npos);
