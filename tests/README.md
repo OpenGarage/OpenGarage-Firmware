@@ -36,6 +36,9 @@ g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined -I. tests/test
 /tmp/og-test-config
 python3 tests/test_config_options.py
 python3 tests/test_config_setup.py
+g++ -std=c++11 -Wall -Wextra -Werror -fsanitize=address,undefined -I. tests/test_storage_mount.cpp -o /tmp/og-test-mount
+/tmp/og-test-mount
+python3 tests/test_storage_adapter.py
 python3 tests/test_options_security.py
 python3 tests/test_options_post.py
 python3 tests/test_device_key.py
@@ -170,3 +173,10 @@ migration, rollback, reserved string storage, and corrupt-file lockout.
 production has no per-version field list. Tests also cover unknown versions, malformed
 legacy lines and torn non-key tails, invalid numbers, missing/duplicate/truncated keys and a future payload in the frozen v1 envelope. Setup completion and updater refusal are checked separately.
 These model file API behavior, not SPIFFS flash-page corruption or physical power cuts.
+
+Mount protection tests scan simulated raw flash across partition boundaries and
+exercise read errors, dirty bytes anywhere in the partition, failed format/remount,
+and physical recovery. The adapter test executes production SPIFFS configuration
+and mount wiring. Options tests verify mount-failed lockout, refusal of remote
+reset/ordinary saves, physical recovery, and preservation of unrelated files on a
+normal factory reset. Destructive hardware tests remain separate.

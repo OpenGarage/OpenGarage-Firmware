@@ -5,6 +5,7 @@ root=Path(__file__).resolve().parents[1]
 s=(root/'OpenGarage/OpenGarage.cpp').read_text()
 names=re.findall(r'^\s*(OPTION_\w+)',(root/'OpenGarage/defines.h').read_text(),re.M)
 fs=(root/'tests/test_config_store.cpp').read_text().split('bool legacy(')[0]
+fs=fs.replace(' bool exists(const char*n)', ' bool format_ok=false,mount_ok=false;unsigned formats=0; bool format(){++formats;if(format_ok)disk.clear();return format_ok;} bool begin(){return mount_ok;}\n bool exists(const char*n)')
 fs=fs.replace('  int read(){','  bool available(){return pos<size();}\n  int read(){')
 start=s[s.index('enum class ConfigRecord'):s.index('void OpenGarage::log_reset()')]
 find=s[s.index('int OpenGarage::find_option('):s.index('bool OpenGarage::options_load()')]
@@ -28,6 +29,7 @@ code=fs+r'''
 #include <algorithm>
 using byte=unsigned char;
 using File=FS::File;
+#include "OpenGarage/storage_mount.h"
 FS FILESYS;
 #include "OpenGarage/defines.h"
 #undef FILESYS
@@ -44,7 +46,7 @@ struct String:std::string {
 struct Option {const char *name;unsigned ival=0,max=0;String sval;};
 class OpenGarage {public:
  static Option options[NUM_OPTIONS];static uint8_t config_status;static bool config_locked;
- static void options_setup();static bool options_load(),options_save(),options_reset();static int find_option(String name);
+ static void options_setup();static bool options_load(),options_save(),options_reset(bool physical=false);static int find_option(String name);
  static void reset_alarm(){}
 };
 Option OpenGarage::options[NUM_OPTIONS];uint8_t OpenGarage::config_status=0;bool OpenGarage::config_locked=false;
@@ -63,6 +65,17 @@ std::string legacyFile(unsigned version){
 }
 int main(){
  HISTORICAL
+ init();OpenGarage::options_setup();FILESYS.disk["/identity-test"]="keep";
+ assert(OpenGarage::options_reset(true));assert(FILESYS.formats==0);assert(FILESYS.disk["/identity-test"]=="keep");
+ init();OpenGarage::config_locked=true;OpenGarage::config_status=uint8_t(og_config::Status::MOUNT_FAILED);
+ FILESYS.disk[og_config::current]="preserve evidence";
+ OpenGarage::options_setup();assert(OpenGarage::config_locked);assert(OpenGarage::options[OPTION_MOD].ival==OG_MOD_AP);
+ assert(!OpenGarage::options_save());assert(!OpenGarage::options_reset());assert(!OpenGarage::options_reset(true));
+ assert(OpenGarage::config_status==uint8_t(og_config::Status::MOUNT_FAILED));
+ assert(FILESYS.disk[og_config::current]=="preserve evidence");assert(FILESYS.formats==1);
+ FILESYS.format_ok=FILESYS.mount_ok=true;
+ assert(!OpenGarage::options_reset());assert(FILESYS.formats==1);
+ assert(OpenGarage::options_reset(true));assert(FILESYS.formats==2&&FILESYS.disk.empty());assert(!OpenGarage::config_locked);
  for(const char *tail:{"name:torn","name:","n","malformed trailing line"}){
   init();FILESYS.disk[og_config::current]=std::string("fwv:126\nmod:42\nssid:old-wifi\ndkey:kept-key\n")+tail;
   OpenGarage::options_setup();assert(!OpenGarage::config_locked);
