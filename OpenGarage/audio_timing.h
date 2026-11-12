@@ -27,7 +27,7 @@ template<class Sink> class Warning {
   bool active_=false;
 };
 
-enum class Tune { AP, STATION, SETUP_SUCCESS };
+enum class Tune { AP, STATION, SETUP_SUCCESS, BUTTON_IP, BUTTON_WIFI, BUTTON_FACTORY };
 template<class Sink> class Melody {
  public:
   explicit Melody(Sink &sink): sink_(sink) {}
@@ -40,11 +40,15 @@ template<class Sink> class Melody {
   void tick(uint32_t now) {
     if (!active_ || uint32_t(now-at_)<wait_) return;
     at_=now;
-    const unsigned count=tune_==Tune::SETUP_SUCCESS?6:3;
+    const bool marker=tune_>=Tune::BUTTON_IP;
+    const unsigned count=marker?unsigned(tune_)-unsigned(Tune::BUTTON_IP)+1:tune_==Tune::SETUP_SUCCESS?6:3;
     if (gap_) {
       sink_.silence();
       if (++index_==count) { active_=false; return; }
-      gap_=false; wait_=40; return;
+      gap_=false; wait_=marker?80:40; return;
+    }
+    if (marker) {
+      wait_=80; sink_.note(2000,wait_); gap_=true; return;
     }
     static constexpr unsigned ap[]={262,330,392};
     static constexpr unsigned station[]={330,392,523};

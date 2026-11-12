@@ -42,6 +42,7 @@ python3 tests/test_device_key.py
 python3 tests/test_ntp_pointer.py
 g++ -std=c++11 -Wall -Wextra -Werror tests/test_audio_timing.cpp -o /tmp/og-test-audio
 /tmp/og-test-audio
+python3 tests/test_button_audio.py
 g++ -std=c++11 -Wall -Wextra -Werror tests/test_crash_record.cpp -o /tmp/og-test-crash-record
 /tmp/og-test-crash-record
 ```

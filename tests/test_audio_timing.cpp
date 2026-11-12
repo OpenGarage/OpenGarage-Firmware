@@ -51,5 +51,19 @@ int main() {
     melody.start(0,tune); melody.cancel(); auto size=m.notes.size();
     melody.tick(3000); assert(m.notes.size()==size && !melody.active());
   }
-  std::puts("Audio: 5/10-second warnings across 1000 start phases, stall/restart/cancel/wrap and all ESPHome melody notes/beats passed");
+  for(auto tune:{og_audio::Tune::BUTTON_IP,og_audio::Tune::BUTTON_WIFI,og_audio::Tune::BUTTON_FACTORY}) {
+    Sink m; og_audio::Melody<Sink> melody(m);
+    const unsigned expected=unsigned(tune)-unsigned(og_audio::Tune::BUTTON_IP)+1;
+    melody.start(0xfffffff0U,tune);
+    assert(m.notes.size()==1);
+    for(unsigned t=1;t<1000;++t) {
+      melody.tick(uint32_t(0xfffffff0U+t));
+      assert(m.notes.size()==(t/160+1<expected?t/160+1:expected));
+    }
+    assert(!melody.active() && m.notes.size()==expected);
+    for(auto n:m.notes) assert(n.frequency==2000 && n.duration==80);
+    melody.start(0,tune); melody.cancel(); auto size=m.notes.size();
+    melody.tick(1000); assert(m.notes.size()==size && !melody.active());
+  }
+  std::puts("Audio: warning timing, melody notes/beats, and 1/2/3 threshold beeps with wrap/cancel passed");
 }

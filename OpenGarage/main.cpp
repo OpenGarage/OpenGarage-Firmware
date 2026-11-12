@@ -1558,12 +1558,25 @@ void do_setup() {
 void process_ui() {
 	// process button
 	static ulong button_down_time = 0;
+	static byte button_hold_stage = 0;
 	if(og.get_button() == LOW) {
 		if(!button_down_time) {
 			button_down_time = millis();
 		} else {
 			ulong curr = millis();
 			long diff = (long)(curr - button_down_time);
+			// Announce only the newly reached action; never replay missed stages
+			// after a busy loop. Actions themselves still happen on release.
+			byte stage = diff > BUTTON_FACRESET_TIMEOUT ? 3 :
+				diff > BUTTON_APRESET_TIMEOUT ? 2 : diff > BUTTON_REPORTIP_TIMEOUT ? 1 : 0;
+			if (stage > button_hold_stage) {
+				button_hold_stage = stage;
+				// Safety warnings and an active IP report take precedence. Do not
+				// restart diagnostic audio while firmware is being written.
+				if (!update_started && !setup_reboot_pending)
+					start_tune(stage == 1 ? og_audio::Tune::BUTTON_IP :
+						stage == 2 ? og_audio::Tune::BUTTON_WIFI : og_audio::Tune::BUTTON_FACTORY);
+			}
 			if(diff > BUTTON_FACRESET_TIMEOUT) {
 				led_blink_ms = 0;
 				og.set_led(LOW);
@@ -1593,6 +1606,7 @@ void process_ui() {
 				performDoorAction(ACTION_TOGGLE, true); // no alarm since manual operation
 			}
 			button_down_time = 0;
+			button_hold_stage = 0;
 		}
 	}
 	// process led

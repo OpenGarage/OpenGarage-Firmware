@@ -20,5 +20,16 @@ release it **before 10 seconds**. Rejoin its setup WiFi and enter the existing
 device key. This WiFi-only reset preserves the key; a factory reset is not needed.
 Holding the button longer than 10 seconds instead requests a factory reset.
 
+While holding the button, short beeps mark the available action:
+
+- One beep after 0.8 seconds: release to hear the IP address.
+- Two quick beeps after 4.5 seconds: release to reopen setup WiFi.
+- Three quick beeps after 9.5 seconds: release to factory-reset.
+
+Each marker sounds once per hold; the action happens only on release. Markers
+are suppressed during a door warning, an IP announcement or an active firmware
+upload. Release after the two-beep marker, before the three-beep marker, for a
+WiFi-only reset.
+
 Expiration leaves WiFi off and the LED toggling
 every two seconds. The same button gesture reopens setup.
