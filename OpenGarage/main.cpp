@@ -1452,7 +1452,7 @@ void do_setup() {
 	Secplus2IdentityStore identity_store;
 	secplus2_identity_ready = og_identity::load(identity_store,
 		[]() -> uint32_t { return ESP.random(); },
-		!og.config_locked && !FILESYS.exists(CONFIG_FNAME), secplus2_client_id);
+		!FILESYS.exists(CONFIG_FNAME), secplus2_client_id);
 	if (secplus2_identity_ready) {
 		secplus2_identity_ready = secplus2_garage.set_client_id(secplus2_client_id);
 	}
@@ -1528,7 +1528,7 @@ void process_ui() {
 			ulong curr = millis();
 			long diff = (long)(curr - button_down_time);
 			if(diff > BUTTON_FACRESET_TIMEOUT) {
-				if(og.options_reset(true))og.state = OG_STATE_RESET;
+				og.state = OG_STATE_RESET;
 			} else if(diff > BUTTON_APRESET_TIMEOUT) {
 				og.reset_to_ap();
 			} else if(diff > BUTTON_REPORTIP_TIMEOUT) {

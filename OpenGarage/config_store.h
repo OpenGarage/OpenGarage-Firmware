@@ -28,7 +28,7 @@ inline uint32_t crc_byte(uint32_t crc, uint8_t b) {
  return crc;
 }
 enum class Kind : uint8_t { MISSING, INVALID, LEGACY, VERIFIED };
-enum class Status : uint8_t { NORMAL, FRESH, MIGRATED, RECOVERED, CORRUPT, SAVE_FAILED, MOUNT_FAILED };
+enum class Status : uint8_t { NORMAL, FRESH, MIGRATED, RECOVERED, CORRUPT, SAVE_FAILED };
 template<class File> struct Writer {
  explicit Writer(File &f):file(f) {}
  File &file; uint32_t crc=~uint32_t(0), length=0; bool ok=true;

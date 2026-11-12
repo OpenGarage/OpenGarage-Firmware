@@ -60,7 +60,7 @@ public:
 	static void options_setup();
 	static bool options_load();
 	static bool options_save();
-	static bool options_reset(bool physical = false);
+	static bool options_reset();
 	static uint8_t config_status;
 	static bool config_locked;
 	static void restart() { ESP.restart();}

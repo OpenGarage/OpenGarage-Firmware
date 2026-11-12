@@ -23,8 +23,6 @@
 #include "OpenGarage.h"
 #include "distance_consensus.h"
 #include "config_store.h"
-#include "storage_mount.h"
-#include <flash_hal.h>
 
 byte  OpenGarage::state = OG_STATE_INITIAL;
 File  OpenGarage::log_file;
@@ -170,17 +168,6 @@ void ud_ticker_cb() {
 	ud_start_trigger();
 }
 
-static bool mount_filesystem() {
-	// Core defaults to formatting on any mount failure. Disable that policy:
-	// initialize only a fully erased partition; preserve all nonblank failures.
-	return FILESYS.setConfig(SPIFFSConfig(false)) && og_storage::mount(FILESYS, []() {
-		return og_storage::blank_partition(FS_PHYS_ADDR, FS_PHYS_ADDR+FS_PHYS_SIZE,
-			ESP.getFlashChipRealSize(),
-			[](uint32_t at,uint32_t *words,size_t n){return ESP.flashRead(at,words,n);},
-			[](){yield();});
-	});
-}
-
 void OpenGarage::begin() {
 	digitalWrite(PIN_BUZZER, LOW);
 	pinMode(PIN_BUZZER, OUTPUT);
@@ -224,11 +211,8 @@ void OpenGarage::begin() {
 
 	state = OG_STATE_INITIAL;
 
-
-	if(!mount_filesystem()) {
-		config_locked=true;
-		config_status=uint8_t(og_config::Status::MOUNT_FAILED);
-		DEBUG_PRINTLN(F("Filesystem unavailable; physical factory reset required"));
+	if(!FILESYS.begin()) {
+		DEBUG_PRINTLN(F("failed to mount file system!"));
 	}
 }
 
@@ -287,7 +271,6 @@ static bool valid_legacy_config(File &file) {
 static_assert(NUM_OPTIONS<64,"Expand config validation presence mask");
 
 void OpenGarage::options_setup() {
- if(config_status==uint8_t(og_config::Status::MOUNT_FAILED)) {options[OPTION_MOD].ival=OG_MOD_AP;return;}
  auto r=og_config::recover(FILESYS,valid_legacy_config);
  config_status=uint8_t(r.status);
  if(r.status==og_config::Status::FRESH) { options_save(); return; }
@@ -302,11 +285,7 @@ void OpenGarage::options_setup() {
  }
 }
 
-bool OpenGarage::options_reset(bool physical) {
- if(config_status==uint8_t(og_config::Status::MOUNT_FAILED)) {
-  if(!physical || !og_storage::physical_recovery(FILESYS))return false;
-  config_status=uint8_t(og_config::Status::FRESH);
- }
+bool OpenGarage::options_reset() {
  if(!og_config::reset(FILESYS)){config_status=uint8_t(og_config::Status::SAVE_FAILED);return false;}
  config_locked=false;return true;
 }
