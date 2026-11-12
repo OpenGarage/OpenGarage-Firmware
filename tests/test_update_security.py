@@ -18,7 +18,7 @@ stub=r'''
 using String=std::string;
 enum {HTTP_POST,HTTP_GET};
 enum {HTML_SUCCESS=1,HTML_UNAUTHORIZED=2,HTML_UPLOAD_FAILED=3,OPTION_DKEY,OPTION_SECV};
-enum {UPLOAD_FILE_START,UPLOAD_FILE_WRITE,UPLOAD_FILE_END,UPLOAD_FILE_ABORTED,OG_MOD_STA,OG_STATE_WAIT_RESTART};
+enum {UPLOAD_FILE_START,UPLOAD_FILE_WRITE,UPLOAD_FILE_END,UPLOAD_FILE_ABORTED,OG_MOD_STA,OG_MOD_AP,OG_STATE_WAIT_RESTART};
 enum class FirmwareUpdatePhase {Idle,Prepared,Uploading,Success,Error};
 struct HTTPUpload {int status=UPLOAD_FILE_START;uint8_t buf[2048]={};size_t currentSize=0;String filename="fw.bin";} upload;
 int http_status=0,closed=0,disruptions=0,result=0,curr_mode=OG_MOD_STA,actions=0;bool busy=false;
@@ -55,6 +55,8 @@ void aborted(){upload.status=UPLOAD_FILE_ABORTED;on_firmware_upload();}
 void reset(){firmware_update=Service{};server=Server{};closed=disruptions=result=0;busy=false;og.state=0;
 update_started=update_authorized=update_failed=update_file_seen=prepare_seen=prepare_ok=false;}
 int main(){
+for(int mode:{OG_MOD_STA,OG_MOD_AP}) {
+curr_mode=mode;
 reset();assert(!updater_body_authorized() && http_status==401);
 server.headers["X-OG-Device-Key"]="hex:74657374";
 assert(updater_body_authorized() && firmware_update.begins==0 && disruptions==0);
@@ -97,7 +99,8 @@ on_prepare_fin();assert(result==HTML_UPLOAD_FAILED && firmware_update.prepares==
 // Interrupted upload without a final or abort callback is cleaned up by request scope.
 reset();server.headers["X-OG-Device-Key"]="hex:74657374";upload.status=UPLOAD_FILE_START;on_prepare_upload();
 assert(prepare_body);service_update_server();assert(!prepare_body);
-puts("Update callbacks: early auth, busy recheck, connection cleanup, abort, prepare cap and no unauthorized cancellation PASS");
+}
+puts("Update callbacks (AP and STA): early auth, busy recheck, connection cleanup, abort, prepare cap and no unauthorized cancellation PASS");
 }
 '''
 with tempfile.TemporaryDirectory() as t:

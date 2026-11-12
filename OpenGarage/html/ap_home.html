@@ -220,6 +220,11 @@
     </div>
 
     <div id='div_input'>
+        <div id="key_section" class="form-group" hidden>
+            <label for="dkey">Existing Device Key</label>
+            <input type="password" id="dkey" autocomplete="current-password">
+            <small>This device is already configured. Enter its existing device key to change setup settings.</small>
+        </div>
         <div class="form-group">
             <label for="ssid">WiFi SSID</label>
             <input type='text' id='ssid'>
@@ -281,6 +286,12 @@ function eval_cb(n){return id(n).checked;}
 function dis_config(x){let a = document.querySelectorAll('#div_input input');for(let e of a){e.disabled = x;}}
 function show_msg(s,c){id('msg').innerHTML='<font color='+c+'>'+s+'</font>';}
 var tci;
+var keyRequired = false;
+var setupKey = '';
+function setupError(jd){
+  if(jd.result===2){keyRequired=true;id('key_section').hidden=false;return 'Check the existing device key and try again.';}
+  return jd.item==='config'?'Settings are damaged. A physical factory reset is required.':jd.item==='save'?'Could not save settings. Please retry.':'Error code: '+jd.result;
+}
 function toggle_cld(){
   id('tb_cld').hidden=true;
   if(eval_cb('otc')) {id('tb_cld').hidden=false;id('bdmn').value='ws.cloud.openthings.io';id('bprt').value='80';}
@@ -292,7 +303,7 @@ function tryConnect(){
     var jd=JSON.parse(xhr.responseText);
     if(jd.result && jd.result!==1) {
       clearInterval(tci);id('butt').disabled=false;id('butt').innerHTML='Submit';
-      show_msg(jd.item==='config'?'Settings are damaged. A physical factory reset is required.':'Could not save settings. Please retry.','red');return;
+      dis_config(false);show_msg(setupError(jd),'red');return;
     }
     if(jd.ip==0) return;
     var ip=''+(jd.ip%256)+'.'+((jd.ip/256>>0)%256)+'.'+(((jd.ip/256>>0)/256>>0)%256)+'.'+(((jd.ip/256>>0)/256>>0)/256>>0);
@@ -303,17 +314,19 @@ function tryConnect(){
     clearInterval(tci);
     }
   }
-  xhr.open('GET', 'jt', true); xhr.send();
+  xhr.open('GET', 'jt?dkey='+encodeURIComponent(setupKey), true); xhr.send();
 }
 function sf(){
   show_msg('','black');
+  if(keyRequired && !id('dkey').value) {show_msg('Enter the existing device key first.','red');return;}
   if(!id('ssid').value) {show_msg('WiFi SSID cannot be empty!','red');return;}
   var xhr=new XMLHttpRequest();
   xhr.onreadystatechange=function() {
     if(xhr.readyState==4 && xhr.status==200) {
       var jd=JSON.parse(xhr.responseText);
       if(jd.result==1) { id('butt').innerHTML='Connecting...'; show_msg('Connecting, please wait...','gray'); tci=setInterval(tryConnect, 2000); return;}
-      show_msg(jd.item==='save'?'Could not save settings. Please retry.':jd.item==='config'?'Settings are damaged. A physical factory reset is required.':'Error code: '+jd.result+', item: '+jd.item,'red');
+      show_msg(setupError(jd),'red');
+      id('butt').disabled=false;
       id('butt').innerHTML='Submit';
       dis_config(false);
     }
@@ -327,12 +340,15 @@ function sf(){
     comm+='&bdmn='+id('bdmn').value;
     comm+='&bprt='+id('bprt').value;
   }
+  setupKey = id('dkey').value;
+  comm += '&dkey='+encodeURIComponent(setupKey);
   xhr.open('GET', comm, true);
   xhr.send();
   id('butt').disabled=true;
   dis_config(true);
 }
 id('btn_autodetect').addEventListener('click', function() {
+  if (keyRequired && !id('dkey').value) {show_msg('Enter the existing device key first.','red');return;}
   if (!confirm('Auto-detecting Security+ version may take up to 15 seconds, and the door may move during this process. Continue?')) {
     return;
   }
@@ -356,9 +372,11 @@ id('btn_autodetect').addEventListener('click', function() {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
 
-  fetch('/ad', { signal: controller.signal })
+  fetch('ad?dkey='+encodeURIComponent(id('dkey').value), { signal: controller.signal, cache: 'no-store' })
     .then(response => response.json())
     .then(data => {
+      if (data.result === 2) {show_msg(setupError(data),'red');return;}
+      if (data.result === 48) {show_msg('Device busy: wait for the current action to finish, then try again.','red');return;}
       const resultText = data.version > 0 ? `Found Security+ v${data.version}.` : 'No supported protocol was found.';
       show_msg(resultText + ' The version has been selected for you.', 'green');
 
@@ -385,6 +403,8 @@ function loadSSIDs(){
   xhr.onreadystatechange=function() {
     if(xhr.readyState==4 && xhr.status==200) {
             var jd=JSON.parse(xhr.responseText);
+            keyRequired = jd.key_required === 1;
+            id('key_section').hidden = !keyRequired;
             if (jd.has_swrx && jd.has_swrx == 1) {
                 id('secv_section').hidden = false;
                 if (typeof jd.secv !== 'undefined') {
@@ -410,7 +430,13 @@ function loadSSIDs(){
                 var cell1 = row.insertCell(0);
                 var cell2 = row.insertCell(1);
                 var cell3 = row.insertCell(2);
-                cell1.innerHTML = "<label style='display:flex; align-items:center; font-weight:normal; margin:0;'><input name='ssids' id='rd"+i+"' onclick='sel("+i+")' type='radio' value='"+jd.ssids[i]+"' style='margin-right: 8px;'>" + jd.ssids[i] + "</label>";
+                var label=document.createElement('label');
+                label.style.cssText='display:flex; align-items:center; font-weight:normal; margin:0;';
+                var radio=document.createElement('input');
+                radio.name='ssids';radio.id='rd'+i;radio.type='radio';radio.value=jd.ssids[i];
+                radio.style.marginRight='8px';radio.onclick=function(){id('ssid').value=this.value;};
+                label.appendChild(radio);label.appendChild(document.createTextNode(jd.ssids[i]));
+                cell1.appendChild(label);
                 cell2.innerHTML = signalstrength;
                 cell3.innerHTML = "(" + jd.rssis[i] + " dBm)";
             }

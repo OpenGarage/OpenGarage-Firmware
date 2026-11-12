@@ -799,10 +799,10 @@ static void restart_configured_protocol() {
 
 static bool auto_detect_busy();
 
-// Outside setup (AP) mode the device key is required: Security+ 2.0 probing can move a Security+
-// 1.0 door. Setup mode stays keyless for first-time detection (that flow is temporary; plan 4a).
+// Security+ 2.0 probing can move a Security+ 1.0 door. Only first-use AP
+// detection is keyless; established units require their existing key in every mode.
 void on_auto_detect(const OTF::Request &req, OTF::Response &res) {
-	if (og.config_locked || (curr_mode != OG_MOD_AP && !verify_device_key(req))) {
+	if (og.config_locked || ((curr_mode != OG_MOD_AP || og.options[OPTION_KSET].ival) && !verify_device_key(req))) {
 		otf_send_result(res, HTML_UNAUTHORIZED, nullptr);
 		return;
 	}
@@ -1328,6 +1328,7 @@ void on_ap_scan(const OTF::Request &req, OTF::Response &res) {
 void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_STA) return;
 	if(og.config_locked) {otf_send_result(res, HTML_NOT_PERMITTED, "config");return;}
+	if(og.options[OPTION_KSET].ival && !verify_device_key(req)) {otf_send_result(res, HTML_UNAUTHORIZED, nullptr);return;}
 	const char *cloud = req.getQueryParameter("cld");
 	if (cloud && strcmp(cloud, "otc") != 0 && strcmp(cloud, "none") != 0) {
 		otf_send_result(res, HTML_DATA_OUTOFBOUND, "cld: Blynk support retired"); return;
@@ -1376,6 +1377,7 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 void on_ap_try_connect(const OTF::Request &req, OTF::Response &res) {
 	if(curr_mode == OG_MOD_STA) return;
 	if(og.config_locked) {otf_send_result(res, HTML_NOT_PERMITTED, "config");return;}
+	if(og.options[OPTION_KSET].ival && !verify_device_key(req)) {otf_send_result(res, HTML_UNAUTHORIZED, nullptr);return;}
 	if(WiFi.status()==WL_CONNECTED && WiFi.localIP() && !complete_ap_setup()) {otf_send_result(res, HTML_UPLOAD_FAILED, "save");return;}
 	String json = "{";
 	json += F("\"ip\":");
@@ -2290,6 +2292,8 @@ void do_loop() {
 			scanned_ssids += og.has_swrx;
 			scanned_ssids += F(",\"secv\":");
 			scanned_ssids += og.options[OPTION_SECV].ival;
+			scanned_ssids += F(",\"key_required\":");
+			scanned_ssids += og.options[OPTION_KSET].ival ? 1 : 0;
 			scanned_ssids += F("}");
 			String ap_ssid = get_ap_ssid();
 			start_network_ap(ap_ssid.c_str(), NULL);

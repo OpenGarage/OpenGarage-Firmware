@@ -177,3 +177,10 @@ printable ASCII, unchanged legacy credentials, browser/server parity and the rea
 migration (including already-1.2.7 files and WiFi-only reset), fresh defaults,
 invalid/duplicate markers, factory reset and failed key-plus-marker save rollback.
 `test_options_security.py` verifies that /co cannot write the internal marker.
+
+Configured AP authorization: `python3 tests/test_ap_authorization.py` executes
+the actual /cc and /jt handlers with missing, empty, wrong and valid existing keys,
+including opendoor and Unicode legacy keys. Refusals must leave options, connection
+state and completion untouched. `node tests/test_ap_page.mjs` checks the key prompt,
+URL encoding, polling snapshot and retry UI. Scanned SSIDs render as text.
+`test_update_security.py` runs its upload/prepare callback suite in both AP and STA.

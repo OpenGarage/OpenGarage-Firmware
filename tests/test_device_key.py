@@ -66,7 +66,7 @@ with tempfile.TemporaryDirectory(prefix='og-device-key-') as tmp:
                     '-o', str(Path(tmp) / 'test')], check=True)
     subprocess.run([str(Path(tmp) / 'test')], check=True)
 # /ad: key required in station mode (Security+ 2.0 probing can move a Security+ 1.0 door), keyless
-# in setup (AP) mode; afterwards the configured protocol is restarted (detection leaves the shared
+# in first-use setup (AP) mode only; afterwards the configured protocol is restarted (detection leaves the shared
 # serial port to whichever protocol it tried last).
 detect_code = r"""
 #include <assert.h>
@@ -79,8 +79,8 @@ struct String : std::string { using std::string::string; String(int v) : std::st
 String operator+(const char *a, const String &b) { String r(a); r.append(b); return r; }
 String operator+(const String &a, const char *b) { String r = a; r.append(b); return r; }
 struct Opt { String sval; int ival = 0; };
-struct { bool config_locked=false; Opt options[2]; } og;
-enum { OPTION_DKEY = 0, OPTION_SECV = 1 };
+struct { bool config_locked=false; Opt options[3]; } og;
+enum { OPTION_DKEY = 0, OPTION_SECV = 1, OPTION_KSET = 2 };
 enum { OG_MOD_AP = 0xA9, OG_MOD_STA = 0x2A };
 enum { HTML_UNAUTHORIZED = 2, DOOR_STATUS_UNKNOWN = 3, PIN_RELAY = 15, LOW = 0, OUTPUT = 1 };
 int curr_mode = OG_MOD_STA, secplus_door_status = 0;
@@ -123,6 +123,16 @@ int main() {
   assert(run(OG_MOD_AP,2,nullptr).empty() && result==HTML_UNAUTHORIZED);
   assert(run(OG_MOD_STA,2,"s3cret").empty() && result==HTML_UNAUTHORIZED);
   og.config_locked=false;
+  // Established AP units: reject before probing, including while busy.
+  og.options[OPTION_KSET].ival=1;
+  for(bool b:{false,true}) {
+    busy=b;
+    for(const char *key:{(const char*)nullptr,"","nope"})
+      assert(run(OG_MOD_AP,2,key).empty()&&result==HTML_UNAUTHORIZED&&json.empty());
+  }
+  busy=false;
+  assert(run(OG_MOD_AP,2,"s3cret").find("detect ")==0);
+  og.options[OPTION_KSET].ival=0;
   // Station mode: no probing without the key.
   for (const char *key : {(const char *)nullptr, "", "nope"}) {
     assert(run(OG_MOD_STA, 2, key).empty() && result == HTML_UNAUTHORIZED && json.empty());
@@ -164,4 +174,4 @@ for signal in ('network_delivery_busy()', 'firmware_update.busy()', 'OG_STATE_WA
                'DOOR_STATUS_OPENING', 'DOOR_STATUS_CLOSING'):
     assert signal in busy_fn, signal
 assert 'og.alarm' in grab(r'^static bool network_delivery_busy\(\) \{.*?^\}')
-print('PASS: device key required locally and over OTC, for GET queries and POST bodies; /ad keyed outside setup mode, refused while busy, protocol restarted')
+print('PASS: device key required locally and over OTC, for GET queries and POST bodies; /ad keyed outside first-use setup, refused while busy, protocol restarted')
