@@ -266,7 +266,8 @@ static void append_health_json(DebugJson &json) {
     json+=F(",\"state\":");json+=unsigned(og_tls::status().state);
     json+=F(",\"allocation_refusals\":");json+=og_tls::status().refusals;
     json+=F(",\"last_ssl_error\":");json+=og_tls::status().error;
-    json+=F(",\"stack_bytes\":6656,\"catalog_version\":\"");json+=FPSTR(trustVersion);
+    json+=F(",\"stack_bytes\":");json+=OG_TLS_STACK_BYTES;
+    json+=F(",\"catalog_version\":\"");json+=FPSTR(trustVersion);
     json+=F("\",\"catalog_hash\":\"");json+=FPSTR(trustHash);json+=F("\"}");
 
 	json += F(",\"active_security_protocol\":"); json += og.options[OPTION_SECV].ival;
@@ -1406,9 +1407,9 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 	}
     const char *cm=req.getQueryParameter("otcm"),*ns=req.getQueryParameter("nossl");
     const char *ch=req.getQueryParameter("bdmn"),*cp=req.getQueryParameter("bprt");
-    if(!og_cloud::flag(cm)||!og_cloud::flag(ns)){otf_send_result(res,HTML_DATA_OUTOFBOUND,"cloud");return;}
+    if(cloud && strcmp(cloud,"otc")==0 && (!og_cloud::flag(cm)||!og_cloud::flag(ns))){otf_send_result(res,HTML_DATA_OUTOFBOUND,"cloud");return;}
     const bool custom=cm?cm[0]=='1':(ch&&!og_cloud::legacy_default(ch,cp?String(cp).toInt():80));
-    if(custom && (!og_cloud::valid_host(ch)||!og_cloud::valid_port(cp))){otf_send_result(res,HTML_DATA_OUTOFBOUND,"cloud");return;}
+    if(cloud && strcmp(cloud,"otc")==0 && custom && (!og_cloud::valid_host(ch)||!og_cloud::valid_port(cp))){otf_send_result(res,HTML_DATA_OUTOFBOUND,"cloud");return;}
 
 	char *ssid = req.getQueryParameter("ssid");
 	if(ssid!=NULL&&strlen(ssid)!=0) {
@@ -1965,7 +1966,14 @@ static og_smtp::Delivery record_email_result(og_smtp::Delivery result, const cha
     return result;
 }
 
+static bool email_settings_ready() {
+    return og.options[OPTION_EMEN].ival && og.options[OPTION_SMTP].sval.length() &&
+        og.options[OPTION_APWD].sval.length() && og.options[OPTION_SEND].sval.length() &&
+        og.options[OPTION_RECP].sval.length();
+}
+
 static og_smtp::Delivery emailNotify_impl(String s){
+    if(!email_settings_ready())return record_email_result(og_smtp::Delivery::REFUSED,"Missing settings","2");
 	DEBUG_PRINTLN(" Sending EMail notification");
 	DEBUG_PRINTLN(GET_FREE_HEAP);
 	EMailSender::EMailMessage email_message;
@@ -1994,9 +2002,7 @@ static og_smtp::Delivery emailNotify_impl(String s){
 }
 
 og_smtp::Delivery emailNotify(String s) {
-    const bool pause=secure_cloud_enabled && otf && otf->cloudTransportActive() &&
-        og.options[OPTION_EMEN].ival && og.options[OPTION_SMTP].sval.length() &&
-        og.options[OPTION_SEND].sval.length() && og.options[OPTION_RECP].sval.length();
+    const bool pause=secure_cloud_enabled && otf && otf->cloudTransportActive() && email_settings_ready();
     if(pause){otf->pauseCloud();smtp_cloud_paused=true;}
     const auto result=emailNotify_impl(s);
     if(smtp_cloud_paused)smtp_finished_ms=millis();

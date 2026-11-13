@@ -30,6 +30,7 @@ uint8_t station_disconnect_reason=0;
 uint32_t millis(){return 100;}
 og_local::Clock local_clock;
 #define F(x) x
+#define OG_TLS_STACK_BYTES 6656
 #define FPSTR(x) x
 bool secure_cloud_enabled=true;
 const char trustVersion[]="test-store",trustHash[]="test-hash";

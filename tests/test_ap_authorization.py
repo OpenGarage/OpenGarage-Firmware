@@ -86,6 +86,11 @@ int main(){
  int calls=og.calls;on_ap_set_key(req,r);assert(r.result==HTML_SUCCESS&&og.calls==calls);
  req.body="a different key";on_ap_set_key(req,r);assert(r.result==HTML_UNAUTHORIZED&&og.calls==calls);
  curr_mode=OG_MOD_STA;on_ap_set_key(req,r);assert(r.result==HTML_NOT_PERMITTED&&og.calls==calls);curr_mode=OG_MOD_AP;
+ // Hidden/stale Custom fields cannot block WiFi-only setup when cloud is off.
+ og.calls=0;OTF::Request wifiOnly;wifiOnly.values["dkey"]=og.options[OPTION_DKEY].sval;
+ wifiOnly.values["ssid"]="wifi-only";wifiOnly.values["cld"]="none";
+ wifiOnly.values["otcm"]="1";wifiOnly.values["bdmn"]="http://bad hidden value";wifiOnly.values["bprt"]="bad";
+ on_ap_change_config(wifiOnly,r);assert(r.result==HTML_SUCCESS&&og.calls==1);
  // A corrupt configuration is never first-use authorization.
  og.config_locked=true;og.calls=completions=0;r={};
  on_ap_change_config(req,r);assert(r.result==HTML_NOT_PERMITTED&&og.calls==0);

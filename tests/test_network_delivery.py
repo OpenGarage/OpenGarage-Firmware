@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess,tempfile
 source=Path('OpenGarage/main.cpp').read_text()
 policy=source[source.index('static bool network_delivery_busy() {'):source.index('\n}',source.index('static bool network_delivery_busy() {'))+2]
-record=source[source.index('static og_smtp::Delivery record_email_result'):source.index('static og_smtp::Delivery emailNotify_impl')]
+record=source[source.index('static og_smtp::Delivery record_email_result'):source.index('static bool email_settings_ready()')]
 functions=source[source.index('void perform_notify(String s) {'):source.index('void process_dynamics(')]
 stub=r'''
 #include "OpenGarage/network_policy.h"

@@ -39,3 +39,14 @@ nodes.otcm.value='1';ui.update_cld();assert.equal(visible['.cloud_custom'],true)
 flags.cld=0;ui.update_cld();assert.equal(visible['.cloud_custom'],false);assert.equal(visible['.cld'],false);
 assert(html.includes("'&nossl=' + eval_cb('nossl')"));
 console.log('Default/custom rows and secure opt-out field wiring passed');
+
+// Execute the actual homepage label branch, including strict-time waiting.
+const labelStart=html.indexOf("$('lbl_cld').textContent = jd.cld");
+const labelEnd=html.indexOf('    dev_name = jd.name;',labelStart);
+const labels={textContent:''};const labelContext=vm.createContext({$:()=>labels,jd:{}});
+function cloudLabel(jd){labelContext.jd=jd;vm.runInContext(html.slice(labelStart,labelEnd),labelContext);return labels.textContent;}
+assert.match(cloudLabel({cld:2,clds:1,cloud_secure:1,cloud_tls_state:1,time_valid:0}),/waiting for time/);
+assert.match(cloudLabel({cld:2,clds:1,cloud_secure:1,cloud_tls_state:2,time_valid:0}),/secure connection unavailable/);
+assert.match(cloudLabel({cld:2,clds:3,cloud_secure:1,time_valid:1}),/connected/);
+assert(!cloudLabel({cld:2,clds:1,cloud_secure:0,time_valid:0}).includes('waiting for time'));
+console.log('PASS: homepage exposes strict-time waiting and secure-resource failure');
