@@ -267,12 +267,17 @@ static void append_health_json(DebugJson &json) {
     json+=F(",\"allocation_refusals\":");json+=og_tls::status().refusals;
     json+=F(",\"last_ssl_error\":");json+=og_tls::status().error;
     json+=F(",\"stack_bytes\":");json+=OG_TLS_STACK_BYTES;
+    json+=F(",\"stack_peak\":");json+=stack_thunk_get_max_usage();
+    unsigned iram_block;
+    {HeapSelectIram heap;iram_block=ESP.getMaxFreeBlockSize();}
+    json+=F(",\"iram_largest_block\":");json+=iram_block;
     json+=F(",\"catalog_version\":\"");json+=FPSTR(trustVersion);
     json+=F("\",\"catalog_hash\":\"");json+=FPSTR(trustHash);json+=F("\"}");
 
 	json += F(",\"active_security_protocol\":"); json += og.options[OPTION_SECV].ival;
 	json += F(",\"free_heap\":"); json += ESP.getFreeHeap();
 	json += F(",\"largest_free_heap_block\":"); json += ESP.getMaxFreeBlockSize();
+	json += F(",\"cpu_mhz\":");json+=ESP.getCpuFreqMHz();
 	json += F(",\"build_time\":\""); json += F(__TIME__); json += F("\"");
 	json += F(",\"otf_revision\":\"75400e35f08def6441d102066a761cc2b474a608\"");
 	json += F(",\"reset_reason\":\""); json += ESP.getResetReason(); json += F("\"");
