@@ -204,3 +204,24 @@ loop shutdown and cleanup with fakes, including millis rollover,
 admission cutoffs and preserved setup mode/settings for all credential states.
 Hardware must still verify real loop-delay/radio shutdown, interrupted
 upload bootability, button recovery and one actual 30-minute expiry.
+
+WSS integration checks (candidate branch):
+
+```
+python3 tests/test_cloud_email_mode.py
+python3 tests/test_cloud_form.py
+python3 tests/test_cloud_resources.py
+g++ -std=c++11 -Wall -Wextra -Werror -fsanitize=address,undefined tests/test_cloud_policy.cpp -o /tmp/og-cloud-policy
+/tmp/og-cloud-policy
+python3 tests/test_wss_reserved_rx.py
+python3 tests/test_wss_flash_store.py
+python3 tests/test_wss_iram_budget.py
+```
+
+The actual email wrapper tests plain-WS continuity versus WSS suspension;
+configuration tests exercise official/custom upgrade migration and legacy API
+edits. Resource tests inject RX, stack, trust, time, heap and SMTP probe failures.
+Public roots are regenerated from fingerprint-pinned inputs, with core BearSSL
+DN/key decoding checked under sanitizers. These do not replace the integrated
+160MHz hardware,10s timeout and subsequent soak checks. The candidate dependency
+is local/unreleased and intentionally refused by release signing preparation.

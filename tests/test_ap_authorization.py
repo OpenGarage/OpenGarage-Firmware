@@ -14,6 +14,7 @@ bool setup_expired=false,room=true;bool setup_room(uint32_t){return room;}
 #include <cstring>
 #include <cstdint>
 #include "OpenGarage/defines.h"
+#include "OpenGarage/cloud_policy.h"
 #include "OpenGarage/device_key_policy.h"
 #include "OpenGarage/body_device_key.h"
 #define F(x) x

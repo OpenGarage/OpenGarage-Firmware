@@ -29,3 +29,13 @@ for(const field of ['auth','iftt','apwd','mqpw']) {
 assert(context.secret_edit_error({},{auth:true},true));
 assert.equal(context.secret_edit_error({},{mqpw:true},true),'');
 console.log('Cloud options: legacy/disabled/OTC/custom endpoints and secret edit conflicts passed');
+
+// Execute the actual visibility function with a small DOM boundary fake.
+const flags={cld:1};const nodes={otcm:{value:'0'}};const visible={};
+const ui=vm.createContext({eval_cb:id=>flags[id],$:id=>nodes[id],toggleAll:(selector,on)=>{visible[selector]=!!on;}});
+const visibility=html.match(/function update_cld\(\) \{[^\n]+\}/)[0];
+vm.runInContext(visibility,ui);ui.update_cld();assert.equal(visible['.cld'],true);assert.equal(visible['.cloud_custom'],false);
+nodes.otcm.value='1';ui.update_cld();assert.equal(visible['.cloud_custom'],true);
+flags.cld=0;ui.update_cld();assert.equal(visible['.cloud_custom'],false);assert.equal(visible['.cld'],false);
+assert(html.includes("'&nossl=' + eval_cb('nossl')"));
+console.log('Default/custom rows and secure opt-out field wiring passed');

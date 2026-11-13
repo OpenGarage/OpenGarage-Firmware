@@ -1,0 +1,64 @@
+--- a/src/ESP8266WiFi.h
++++ b/src/ESP8266WiFi.h
+@@ -24,0 +25 @@
++#include "OGCoreVersion.h"
+--- a/src/WiFiClientSecureBearSSL.cpp
++++ b/src/WiFiClientSecureBearSSL.cpp
+@@ -246,0 +247,3 @@
++#ifdef OG_WSS_RESERVED_RX
++  if (_external_iobuf) _external_iobuf->release(this);
++#endif
+@@ -1134,0 +1138,6 @@
++#ifdef OG_WSS_RESERVED_RX
++  // Claim before TLS allocations. Never silently replace a configured reservation.
++  if (_external_iobuf && !_external_iobuf->acquire(this, _iobuf_in_size)) {
++    _oom_err=true; return false;
++  }
++#endif
+@@ -1136,0 +1146,3 @@
++#ifdef OG_WSS_RESERVED_RX
++  if (!_external_iobuf) _iobuf_in = _alloc_iobuf(_iobuf_in_size);
++#else
+@@ -1137,0 +1150 @@
++#endif
+@@ -1143,0 +1157,3 @@
++#ifdef OG_WSS_RESERVED_RX
++  if (!_sc || !_inputBuffer() || !_iobuf_out) {
++#else
+@@ -1144,0 +1161 @@
++#endif
+@@ -1163,0 +1181,3 @@
++#ifdef OG_WSS_RESERVED_RX
++  br_ssl_engine_set_buffers_bidi(_eng, _inputBuffer(), _iobuf_in_size, _iobuf_out.get(), _iobuf_out_size);
++#else
+@@ -1164,0 +1185 @@
++#endif
+--- a/src/WiFiClientSecureBearSSL.h
++++ b/src/WiFiClientSecureBearSSL.h
+@@ -25,0 +26 @@
++#include "OGCoreVersion.h"
+@@ -30,0 +32,3 @@
++#ifdef OG_WSS_RESERVED_RX
++#include "ExternalReceiveBuffer.h"
++#endif
+@@ -112,0 +117,9 @@
++#ifdef OG_WSS_RESERVED_RX
++    // Storage must outlive this context. An active context cannot switch buffers.
++    bool setExternalReceiveBuffer(ExternalReceiveBuffer *buffer) {
++      if (ctx_present()) return false;
++      if (buffer && buffer->capacity()<size_t(_iobuf_in_size)) return false;
++      if (_external_iobuf) _external_iobuf->release(this);
++      _external_iobuf=buffer; return true;
++    }
++#endif
+@@ -165,0 +179,6 @@
++#ifdef OG_WSS_RESERVED_RX
++    ExternalReceiveBuffer *_external_iobuf=nullptr;
++    unsigned char *_inputBuffer() const {
++      return _external_iobuf ? _external_iobuf->dataFor(this) : _iobuf_in.get();
++    }
++#endif
+@@ -322,0 +342,3 @@
++#ifdef OG_WSS_RESERVED_RX
++    bool setExternalReceiveBuffer(ExternalReceiveBuffer *buffer) { return _ctx->setExternalReceiveBuffer(buffer); }
++#endif
