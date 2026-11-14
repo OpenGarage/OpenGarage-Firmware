@@ -25,6 +25,11 @@
 #ifndef WEBSOCKETSCLIENT_H_
 #define WEBSOCKETSCLIENT_H_
 
+// Capability required by the paired OTF secure-cloud opt-in.
+#ifdef OG_SECURE_CLOUD
+#define OG_VERIFIED_WSS_TRANSPORT 1
+#endif
+
 #include "WebSockets.h"
 
 class WebSocketsClient : protected WebSockets {

@@ -23,3 +23,8 @@ queued cloud work without replay, sends email, then reconnects with backoff.
 No bench endpoints, fake tokens, forced11g mode, edge-capture ISR or handshake
 history is included. Keep the public catalog fingerprint manifest and core
 ownership patch in review; final hardware regression/soak is still required.
+
+The paired OTF opt-in checks OG_VERIFIED_WSS_TRANSPORT=1, exported by this
+reviewed transport. Upstream WebSockets does not advertise it, preventing an
+accidental secure-cloud build with an unreviewed/insecure backend. This marker
+is a build compatibility check, not a substitute for source/dependency review.
