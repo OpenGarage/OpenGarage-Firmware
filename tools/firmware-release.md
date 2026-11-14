@@ -40,6 +40,28 @@ atomically replace the catalog last. Verify public signatures, hashes, size and
 CORS afterward. Never upload the private key. GitHub and the update host must
 serve the same tested image bytes.
 
+## 1.2.7 secure-cloud performance gate
+
+After all source, dependency, certificate-store and build-setting changes,
+archive the final image, ELF, source/dependency revisions and SHA-256. Do not use
+allocator-statistics flags or private diagnostic firmware for release timing.
+The diagnostic soak remains evidence about memory and stability only.
+
+On the Security+2 bench, perform at least five fresh full handshakes using the
+exact release firmware payload, with the computer-side network reference running
+alongside. Reboot between cases to clear the RAM-only session cache. Record
+radio mode, clock, current time validity, cloud connection result, stack/heap
+readings and each boot's `max_loop_us`. That field is the longest whole-loop
+pause, not a separate exact TLS timer; label it accordingly. Investigate any
+unexplained departure from the validated normal-endpoint timing, and include
+the silent-server deadline test in the release evidence.
+
+Signing signs the descriptor and copies the image without rebuilding or changing
+its bytes. Verify the signed bundle and confirm its image SHA-256 is identical
+to the tested payload; smoke-test the signed update path too. Any late change to
+the payload invalidates the prior timing gate and requires remeasurement. No
+new code, padding or layout adjustment is allowed after that final check.
+
 ## Development testing without publishing a release
 
 Keep test bundles under an ignored local directory, separate from the production

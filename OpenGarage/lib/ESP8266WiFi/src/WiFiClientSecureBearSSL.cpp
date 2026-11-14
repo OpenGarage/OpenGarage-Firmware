@@ -232,6 +232,34 @@ int WiFiClientSecureCtx::connect(const String& host, uint16_t port) {
   return connect(host.c_str(), port);
 }
 
+int WiFiClientSecureCtx::connectWithTimeout(const char* name, uint16_t port, uint32_t timeout_ms) {
+  // Do not hide an unbounded flush of a previous connection in this budget.
+  // WebSockets creates a fresh client for each attempt. Ordinary connect()
+  // remains available to other callers with its original semantics.
+  if (!name || !*name || !timeout_ms || _client || ctx_present()) return 0;
+  const ConnectionDeadline deadline{millis(), timeout_ms};
+  IPAddress address;
+  if (!WiFi.hostByName(name, address, deadline.remaining(millis()))) return 0;
+  uint32_t remaining = deadline.remaining(millis());
+  if (!remaining) return 0;
+  _timeout = remaining; // WiFiClient passes this to ClientContext::connect().
+  if (!WiFiClient::connect(address, port)) { _timeout = 15000; return 0; }
+  if (!deadline.remaining(millis())) {
+    _client->abort(); // No virtual TLS flush or additional network wait.
+    _freeSSL();
+    return 0;
+  }
+  const bool connected = _connectSSL(name, &deadline);
+  if (!deadline.remaining(millis())) {
+    _client->abort();
+    _freeSSL();
+    return 0;
+  }
+  // Preserve BearSSL's certificate/protocol error until the caller reads it.
+  if (!connected) _client->abort();
+  return connected;
+}
+
 void WiFiClientSecureCtx::_freeSSL() {
   // These are smart pointers and will free if refcnt==0
   _sc = nullptr;
@@ -1123,7 +1151,7 @@ std::shared_ptr<unsigned char> WiFiClientSecureCtx::_alloc_iobuf(size_t sz)
 
 // Called by connect() to do the actual SSL setup and handshake.
 // Returns if the SSL handshake succeeded.
-bool WiFiClientSecureCtx::_connectSSL(const char* hostName) {
+bool WiFiClientSecureCtx::_connectSSL(const char* hostName, const ConnectionDeadline *deadline) {
   DEBUG_BSSL("_connectSSL: start connection\n");
   _freeSSL();
   _oom_err = false;
@@ -1212,6 +1240,13 @@ bool WiFiClientSecureCtx::_connectSSL(const char* hostName) {
     return false;
   }
 
+  if (deadline) {
+    // _freeSSL() above resets _timeout. Apply the shared budget only after
+    // TLS setup, immediately before waiting, not to the outer Stream wrapper.
+    const uint32_t remaining = deadline->remaining(millis());
+    if (!remaining) { _client->abort(); _freeSSL(); return false; }
+    _timeout = remaining;
+  }
   auto ret = _wait_for_handshake();
 #ifdef DEBUG_ESP_SSL
   if (!ret) {

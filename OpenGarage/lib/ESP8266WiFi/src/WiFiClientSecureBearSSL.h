@@ -29,6 +29,7 @@
 #include <bearssl/bearssl.h>
 #include "BearSSLHelpers.h"
 #include "CertStoreBearSSL.h"
+#include "ConnectionDeadline.h"
 #ifdef OG_WSS_RESERVED_RX
 #include "ExternalReceiveBuffer.h"
 #endif
@@ -53,6 +54,8 @@ class WiFiClientSecureCtx : public WiFiClient {
     int connect(IPAddress ip, uint16_t port) override;
     int connect(const String& host, uint16_t port) override;
     int connect(const char* name, uint16_t port) override;
+    // Fresh client only. Milliseconds shared across DNS, TCP and TLS.
+    int connectWithTimeout(const char* name, uint16_t port, uint32_t timeout_ms);
 
     uint8_t connected() override;
     size_t write(const uint8_t *buf, size_t size) override;
@@ -161,7 +164,7 @@ class WiFiClientSecureCtx : public WiFiClient {
     virtual void peekConsume (size_t consume) override;
 
   protected:
-    bool _connectSSL(const char *hostName); // Do initial SSL handshake
+    bool _connectSSL(const char *hostName, const ConnectionDeadline *deadline = nullptr);
 
   private:
     void _clear();
@@ -285,6 +288,9 @@ class WiFiClientSecure : public WiFiClient {
     int connect(IPAddress ip, uint16_t port) override { return _ctx->connect(ip, port); }
     int connect(const String& host, uint16_t port) override { return _ctx->connect(host, port); }
     int connect(const char* name, uint16_t port) override { return _ctx->connect(name, port); }
+    int connectWithTimeout(const char* name, uint16_t port, uint32_t timeout_ms) {
+      return _ctx->connectWithTimeout(name, port, timeout_ms);
+    }
 
     uint8_t connected() override { return _ctx->connected(); }
     size_t write(const uint8_t *buf, size_t size) override { return _ctx->write(buf, size); }

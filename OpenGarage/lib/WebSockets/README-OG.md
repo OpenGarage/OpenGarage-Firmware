@@ -11,8 +11,9 @@ files. Changes are enabled only by OG_SECURE_CLOUD, for pinned ESP8266 core3.1.2
 - Session parameters allocated only for a secure client, reused across reconnects,
   cleared on begin/endpoint changes, and freed after client teardown. No session
   secrets are printed or exposed by the UI/API.
-- Provisional10000-ms core timeout. It is not an end-to-end wall-clock bound;
-  integrated silent-server and successful-chain hardware tests remain required.
+- Explicit10000-ms shared DNS/TCP/TLS budget through `connectWithTimeout()`.
+  A late completion is refused; synchronous SDK/crypto steps can overrun before
+  returning. This is a cooperative budget, not a hard wall-clock cutoff.
 
 The application decides whether secure cloud is active at boot. Cloud-off, AP
 and plain-WS selections do not reserve RX/retained stack. Plain WS stays connected

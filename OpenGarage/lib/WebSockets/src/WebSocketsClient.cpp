@@ -272,7 +272,6 @@ void WebSocketsClient::loop(void) {
             _client.ssl->setCertStore(&og_wss_trust::catalog());
             _client.ssl->setSession(_og_session);
             _client.ssl->setSSLVersion(BR_TLS12,BR_TLS12);
-            _client.ssl->setTimeout(10000); // Provisional: failure-path timing must be measured.
             _client.ssl->setBufferSizes(16384,512);
             if(!_client.ssl->setExternalReceiveBuffer(&og_tls::rx()) || ESP.getFreeHeap()<9000 || ESP.getMaxFreeBlockSize()<4096){
                 delete _client.ssl;_client.ssl=nullptr;_client.tcp=nullptr;
@@ -363,12 +362,19 @@ void WebSocketsClient::loop(void) {
 #if defined(ESP32)
         if(_client.tcp->connect(_host.c_str(), _port, WEBSOCKETS_TCP_TIMEOUT)) {
 #else
+#ifdef OG_SECURE_CLOUD
+        // Explicit API: the outer Stream timeout does not reach BearSSL's ctx.
+        bool connected=_client.isSSL ? _client.ssl->connectWithTimeout(_host.c_str(), _port, 10000)
+                                     : _client.tcp->connect(_host.c_str(), _port);
+#else
         bool connected=_client.tcp->connect(_host.c_str(), _port);
+#endif
 #ifdef OG_SECURE_CLOUD
         if(_client.isSSL){
             og_wss_trust::catalog().endHandshake();
             og_tls::status().error=_client.ssl->getLastSSLError();
             og_tls::status().state=connected?og_tls::State::CONNECTED:og_tls::State::FAILED;
+            if(!connected)_client.ssl->stop(); // Release the reservation after reading the SSL error.
         }
 #endif
         if(connected) {
