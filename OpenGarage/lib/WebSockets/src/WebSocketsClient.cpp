@@ -24,12 +24,12 @@
 
 #include "WebSockets.h"
 #include "WebSocketsClient.h"
-#ifdef OG_SECURE_CLOUD
+#ifdef OTF_SECURE_CLOUD
 #include "OGSecureCloud.h"
 #endif
 
 WebSocketsClient::WebSocketsClient() {
-#ifdef OG_SECURE_CLOUD
+#ifdef OTF_SECURE_CLOUD
     _client.tcp=nullptr;_client.ssl=nullptr;_client.status=WSC_NOT_CONNECTED;_client.isSSL=false;
 #endif
     _cbEvent             = NULL;
@@ -43,7 +43,7 @@ WebSocketsClient::WebSocketsClient() {
 
 WebSocketsClient::~WebSocketsClient() {
     disconnect();
-#ifdef OG_SECURE_CLOUD
+#ifdef OTF_SECURE_CLOUD
     delete _og_session;
 #endif
 }
@@ -52,7 +52,7 @@ WebSocketsClient::~WebSocketsClient() {
  * calles to init the Websockets server
  */
 void WebSocketsClient::begin(const char * host, uint16_t port, const char * url, const char * protocol) {
-#ifdef OG_SECURE_CLOUD
+#ifdef OTF_SECURE_CLOUD
     disconnect();
     delete _og_session;_og_session=nullptr; // Endpoint changes invalidate resumption.
 #endif
@@ -261,7 +261,7 @@ void WebSocketsClient::loop(void) {
 
 #if defined(HAS_SSL)
         if(_client.isSSL) {
-#ifdef OG_SECURE_CLOUD
+#ifdef OTF_SECURE_CLOUD
             if(_client.ssl){delete _client.ssl;_client.ssl=nullptr;_client.tcp=nullptr;}
             if(!og_tls::prepare()){_lastConnectionFail=millis();return;}
             if(!_og_session)_og_session=new(std::nothrow) BearSSL::Session();
@@ -362,14 +362,14 @@ void WebSocketsClient::loop(void) {
 #if defined(ESP32)
         if(_client.tcp->connect(_host.c_str(), _port, WEBSOCKETS_TCP_TIMEOUT)) {
 #else
-#ifdef OG_SECURE_CLOUD
+#ifdef OTF_SECURE_CLOUD
         // Explicit API: the outer Stream timeout does not reach BearSSL's ctx.
         bool connected=_client.isSSL ? _client.ssl->connectWithTimeout(_host.c_str(), _port, 10000)
                                      : _client.tcp->connect(_host.c_str(), _port);
 #else
         bool connected=_client.tcp->connect(_host.c_str(), _port);
 #endif
-#ifdef OG_SECURE_CLOUD
+#ifdef OTF_SECURE_CLOUD
         if(_client.isSSL){
             og_wss_trust::catalog().endHandshake();
             og_tls::status().error=_client.ssl->getLastSSLError();
@@ -1027,7 +1027,7 @@ void WebSocketsClient::connectedCb() {
 #endif
     } else if(_client.isSSL && !_CA_cert) {
 #if defined(SSL_BARESSL)
-#ifndef OG_SECURE_CLOUD
+#ifndef OTF_SECURE_CLOUD
         _client.ssl->setInsecure();
 #endif
 #endif

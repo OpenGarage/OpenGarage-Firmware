@@ -33,7 +33,7 @@
  */
 
 #include "EMailSender.h"
-#ifdef OG_SECURE_CLOUD
+#ifdef OTF_SECURE_CLOUD
 #include <OGSecureCloud.h>
 #endif
 #include "smtp_exchange.h"
@@ -500,7 +500,7 @@ EMailSender::Response EMailSender::send(const char* to[], byte sizeOfTo,  byte s
   // Stock-layout measurement: 18.7 KB consumed by a send. Keep ~3 KB reserve;
   // require a 12 KB block for the stack and initial TLS contexts.
   if(
-#ifdef OG_SECURE_CLOUD
+#ifdef OTF_SECURE_CLOUD
       og_tls::status().retained ? !og_tls::smtp_ready() :
 #endif
       !og_smtp::memory_ready(ESP.getFreeHeap(),ESP.getMaxFreeBlockSize())) {

@@ -13,9 +13,10 @@ namespace og_smtp {enum class Delivery{SENT,REFUSED,FAILED};}
 unsigned now=100;uint32_t millis(){return now;}
 enum{OPTION_EMEN,OPTION_SMTP,OPTION_SEND,OPTION_RECP,OPTION_APWD};
 struct Opt{unsigned ival=1;std::string sval="configured";};struct{Opt options[5];}og;
-struct Cloud{bool active=true;unsigned pauses=0;bool cloudTransportActive(){return active;}void pauseCloud(){++pauses;active=false;}}cloud;
+struct Cloud{bool active=true,pauseAllowed=true;unsigned pauses=0;bool cloudTransportActive(){return active;}bool pauseCloud(){if(!pauseAllowed)return false;++pauses;active=false;return true;}}cloud;
 Cloud*otf=&cloud;bool secure_cloud_enabled=false,smtp_cloud_paused=false;uint32_t smtp_finished_ms=0;
-unsigned sends=0;og_smtp::Delivery result=og_smtp::Delivery::SENT;
+unsigned sends=0,refusals=0;og_smtp::Delivery result=og_smtp::Delivery::SENT;
+og_smtp::Delivery record_email_result(og_smtp::Delivery r,const char*stage,const char*code){assert(r==og_smtp::Delivery::REFUSED && std::string(stage)=="busy" && std::string(code)=="2");++refusals;return r;}
 og_smtp::Delivery emailNotify_impl(String){++sends;return result;}
 '''+settings+wrapper+r'''
 int main(){
@@ -24,6 +25,10 @@ int main(){
  now=200;result=og_smtp::Delivery::FAILED;emailNotify("failure");assert(cloud.pauses==1&&smtp_finished_ms==200);
  smtp_cloud_paused=false;cloud.active=true;og.options[OPTION_APWD].sval="";emailNotify("missing password");assert(cloud.pauses==1&&cloud.active&&!smtp_cloud_paused);
  assert(!email_settings_ready());og.options[OPTION_APWD].sval="restored";assert(email_settings_ready());
+ cloud.pauseAllowed=false;unsigned count=sends;auto finished=smtp_finished_ms;
+ assert(emailNotify("unsupported context")==og_smtp::Delivery::REFUSED);
+ assert(refusals==1 && sends==count && cloud.active && cloud.pauses==1 && !smtp_cloud_paused && smtp_finished_ms==finished);
+ cloud.pauseAllowed=true;
  smtp_cloud_paused=false;og.options[OPTION_EMEN].ival=0;cloud.active=true;emailNotify("disabled");assert(cloud.pauses==1&&cloud.active&&!smtp_cloud_paused);
 }
 '''

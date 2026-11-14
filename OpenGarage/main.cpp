@@ -279,7 +279,7 @@ static void append_health_json(DebugJson &json) {
 	json += F(",\"largest_free_heap_block\":"); json += ESP.getMaxFreeBlockSize();
 	json += F(",\"cpu_mhz\":");json+=ESP.getCpuFreqMHz();
 	json += F(",\"build_time\":\""); json += F(__TIME__); json += F("\"");
-	json += F(",\"otf_revision\":\"bc57247c4a0d496ca7195048e73110a4c9c30607\"");
+	json += F(",\"otf_revision\":\"1a65a4e4cd8f49a9f18ab708e27fa73403d43983\"");
 	json += F(",\"reset_reason\":\""); json += ESP.getResetReason(); json += F("\"");
 	json += F(",\"reset_reason_code\":"); json += ESP.getResetInfoPtr()->reason;
 	json += F(",\"uptime_s\":"); json += health_stats.uptime_s();
@@ -2008,7 +2008,10 @@ static og_smtp::Delivery emailNotify_impl(String s){
 
 og_smtp::Delivery emailNotify(String s) {
     const bool pause=secure_cloud_enabled && otf && otf->cloudTransportActive() && email_settings_ready();
-    if(pause){otf->pauseCloud();smtp_cloud_paused=true;}
+    if(pause){
+        if(!otf->pauseCloud())return record_email_result(og_smtp::Delivery::REFUSED,"busy","2");
+        smtp_cloud_paused=true;
+    }
     const auto result=emailNotify_impl(s);
     if(smtp_cloud_paused)smtp_finished_ms=millis();
     return result;

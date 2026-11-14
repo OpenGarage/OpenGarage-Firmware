@@ -26,8 +26,8 @@
 #define WEBSOCKETSCLIENT_H_
 
 // Capability required by the paired OTF secure-cloud opt-in.
-#ifdef OG_SECURE_CLOUD
-#define OG_VERIFIED_WSS_TRANSPORT 1
+#ifdef OTF_SECURE_CLOUD
+#define OTF_VERIFIED_WSS_TRANSPORT 1
 #endif
 
 #include "WebSockets.h"
@@ -42,7 +42,7 @@ class WebSocketsClient : protected WebSockets {
 
     WebSocketsClient(void);
     virtual ~WebSocketsClient(void);
-#ifdef OG_SECURE_CLOUD
+#ifdef OTF_SECURE_CLOUD
     BearSSL::Session *_og_session=nullptr;
 #endif
 
