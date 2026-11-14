@@ -26,6 +26,9 @@ configured hostname and current time, and send the intermediate certificates
 needed to reach a root in this firmware's selected store. Use a DNS hostname.
 Private/self-signed CAs and arbitrary public CAs outside that store are not
 supported. The device has no user CA-upload or certificate-check bypass.
+The USERTrust RSA/ECC roots are intentionally excluded because of their upcoming
+TLS retirement. Older custom-server chains that require them must be renewed or
+configured to reach a supported root, such as Sectigo R46/E46.
 
 Certificates and trust policy can change. The store version/hash in verbose
 `/db` identify the installed catalog. Roots are maintained through firmware

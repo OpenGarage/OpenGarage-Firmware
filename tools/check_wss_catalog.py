@@ -129,7 +129,7 @@ def check_catalog(root=ROOT, today=None, require_approval=True):
     if generated != header.read_text():
         raise ValueError('Generated WSS header differs from the reviewed catalog')
     if require_approval and (manifest.get('shipping_approved') is not True or
-            any(r.get('shipping_approved') is False for r in roots)):
+            any(r.get('shipping_approved') is not True for r in roots)):
         raise ValueError('WSS root catalog is not approved for shipping')
     return len(roots)
 

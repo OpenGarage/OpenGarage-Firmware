@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "catalog_version": "candidate-2026-11-14.1",
-  "catalog_metadata_sha256": "ddc46826649d1ab9364c58d97af40fcb222e8e67c57f4a3dd1f393ab6effe977",
+  "catalog_version": "candidate-2026-11-14.2",
+  "catalog_metadata_sha256": "270d878b18691e3ff974855b4a857ef7f6d5208ea93d9ec2444d37d75e97f117",
   "reviewed_on": "2026-11-14",
   "review_expires": "2027-02-12",
   "nss_source": {
@@ -11,14 +11,6 @@
     "commit_date": "2026-11-13T23:31:24Z"
   },
   "tls_retirements": {
-    "USERTrust_RSA_Certification_Authority": {
-      "stop_shipping_on": "2027-04-15",
-      "source": "https://bugzilla.mozilla.org/show_bug.cgi?id=2017182"
-    },
-    "USERTrust_ECC_Certification_Authority": {
-      "stop_shipping_on": "2027-04-15",
-      "source": "https://bugzilla.mozilla.org/show_bug.cgi?id=2017182"
-    },
     "SSL.com_Root_Certification_Authority_RSA": {
       "stop_shipping_on": "2028-12-31",
       "source": "https://bugzilla.mozilla.org/show_bug.cgi?id=2032170"
@@ -34,6 +26,18 @@
       "sha256": "8d25cd97229dbf70356bda4eb3cc734031e24cf00fafcfd32dc76eb5841c7ea8",
       "reason": "NSS websites trust removed; email only",
       "source": "https://bugzilla.mozilla.org/show_bug.cgi?id=2020137"
+    },
+    {
+      "name": "USERTrust_ECC_Certification_Authority",
+      "sha256": "4ff460d54b9c86dabfbcfc5712e0400d2bed3fbc4d4fbdaa86e06adcd2a9ad7a",
+      "reason": "Omitted at initial release: Mozilla websites trust retirement scheduled for 2027-04-15; current server hierarchy uses Sectigo R46/E46",
+      "source": "https://bugzilla.mozilla.org/show_bug.cgi?id=2017182"
+    },
+    {
+      "name": "USERTrust_RSA_Certification_Authority",
+      "sha256": "e793c9b02fd8aa13e21c31228accb08119643b749c898964b1746d46c3d4cbd2",
+      "reason": "Omitted at initial release: Mozilla websites trust retirement scheduled for 2027-04-15; current server hierarchy uses Sectigo R46/E46",
+      "source": "https://bugzilla.mozilla.org/show_bug.cgi?id=2017182"
     }
   ],
   "review_sources": [
@@ -43,5 +47,14 @@
     "https://bugzilla.mozilla.org/show_bug.cgi?id=2017182",
     "https://bugzilla.mozilla.org/show_bug.cgi?id=2032170",
     "https://www.sectigo.com/resource-library/advisory-on-compromised-emudhra-intermediate-certificates"
+  ],
+  "maintenance_watch": [
+    {
+      "roots": [
+        "ISRG Root YE",
+        "ISRG Root YR"
+      ],
+      "action": "Review Mozilla TLS inclusion and Let\u2019s Encrypt chain plans. Existing YE/YR chain fixtures require X1/X2 cross-signs; review before servers remove those cross-signs."
+    }
   ]
 }

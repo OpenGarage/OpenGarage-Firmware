@@ -1,8 +1,8 @@
 {
-  "catalog_version": "candidate-2026-11-14.1",
-  "catalog_metadata_sha256": "ddc46826649d1ab9364c58d97af40fcb222e8e67c57f4a3dd1f393ab6effe977",
+  "catalog_version": "candidate-2026-11-14.2",
+  "catalog_metadata_sha256": "270d878b18691e3ff974855b4a857ef7f6d5208ea93d9ec2444d37d75e97f117",
   "shipping_approved": false,
-  "scope": "13 candidate TLS roots. GTS Root R2 removed after current NSS server-trust review. Provenance and snapshot checks do not grant shipping approval or provide browser revocation coverage.",
+  "scope": "11 candidate TLS roots. GTS Root R2 and USERTrust RSA/ECC excluded. Final selection reviewed; shipping approval awaits exact-image hardware validation. Snapshot checks do not provide browser revocation coverage.",
   "roots": [
     {
       "name": "GTS_Root_R1",
@@ -19,7 +19,8 @@
       "verified_utc": "2026-11-11T15:05:09.234739+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "provenance checked; shipping coverage/trust-policy review pending"
+      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
+      "shipping_approved": false
     },
     {
       "name": "GTS_Root_R3",
@@ -36,7 +37,8 @@
       "verified_utc": "2026-11-11T15:05:09.244279+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "provenance checked; shipping coverage/trust-policy review pending"
+      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
+      "shipping_approved": false
     },
     {
       "name": "GTS_Root_R4",
@@ -53,7 +55,8 @@
       "verified_utc": "2026-11-11T15:05:09.249381+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "provenance checked; shipping coverage/trust-policy review pending"
+      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
+      "shipping_approved": false
     },
     {
       "name": "ISRG_Root_X1",
@@ -70,7 +73,8 @@
       "verified_utc": "2026-11-11T15:05:09.460253+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "provenance checked; shipping coverage/trust-policy review pending"
+      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
+      "shipping_approved": false
     },
     {
       "name": "ISRG_Root_X2",
@@ -87,7 +91,8 @@
       "verified_utc": "2026-11-11T15:05:09.463940+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "provenance checked; shipping coverage/trust-policy review pending"
+      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
+      "shipping_approved": false
     },
     {
       "name": "SSL.com_Root_Certification_Authority_ECC",
@@ -104,7 +109,8 @@
       "verified_utc": "2026-11-11T15:05:09.665496+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "provenance checked; shipping coverage/trust-policy review pending"
+      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
+      "shipping_approved": false
     },
     {
       "name": "SSL.com_Root_Certification_Authority_RSA",
@@ -121,7 +127,8 @@
       "verified_utc": "2026-11-11T15:05:09.654903+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "provenance checked; shipping coverage/trust-policy review pending"
+      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
+      "shipping_approved": false
     },
     {
       "name": "SSL.com_TLS_ECC_Root_CA_2022",
@@ -138,7 +145,8 @@
       "verified_utc": "2026-11-11T15:05:09.797242+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "provenance checked; shipping coverage/trust-policy review pending"
+      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
+      "shipping_approved": false
     },
     {
       "name": "SSL.com_TLS_RSA_Root_CA_2022",
@@ -155,7 +163,8 @@
       "verified_utc": "2026-11-11T15:05:09.792620+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "provenance checked; shipping coverage/trust-policy review pending"
+      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
+      "shipping_approved": false
     },
     {
       "name": "Sectigo_Public_Server_Authentication_Root_E46",
@@ -207,7 +216,7 @@
       "provenance_verified": true,
       "shipping_approved": false,
       "vendor_download_error": "HTTPSConnectionPool(host='crt.sectigo.com', port=443): Max retries exceeded with url: /SectigoPublicServerAuthenticationRootE46.crt (Caused by SSLError(SSLError(1, '[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)')))",
-      "review_status": "Independent provenance verified; shipping trust policy and integrated hardware tests pending"
+      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending"
     },
     {
       "name": "Sectigo_Public_Server_Authentication_Root_R46",
@@ -259,112 +268,7 @@
       "provenance_verified": true,
       "shipping_approved": false,
       "vendor_download_error": "HTTPSConnectionPool(host='crt.sectigo.com', port=443): Max retries exceeded with url: /SectigoPublicServerAuthenticationRootR46.crt (Caused by SSLError(SSLError(1, '[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)')))",
-      "review_status": "Independent provenance verified; shipping trust policy and integrated hardware tests pending"
-    },
-    {
-      "name": "USERTrust_ECC_Certification_Authority",
-      "subject": "CN=USERTrust ECC Certification Authority,O=The USERTRUST Network,L=Jersey City,ST=New Jersey,C=US",
-      "sha256": "4ff460d54b9c86dabfbcfc5712e0400d2bed3fbc4d4fbdaa86e06adcd2a9ad7a",
-      "der_bytes": 659,
-      "key_bytes": 97,
-      "algorithm": "secp384r1",
-      "bits": 384,
-      "not_after": "2038-01-18T23:59:59",
-      "ca": true,
-      "source_url": "https://ccadb.my.salesforce-sites.com/ccadb/Report?Name=MozillaTLSServerAuthenticationCSV",
-      "sources": [
-        {
-          "source": "local OS store",
-          "path": "/usr/share/ca-certificates/mozilla/USERTrust_ECC_Certification_Authority.crt",
-          "certificate_sha256": "4ff460d54b9c86dabfbcfc5712e0400d2bed3fbc4d4fbdaa86e06adcd2a9ad7a"
-        },
-        {
-          "source": "Mozilla NSS",
-          "url": "https://raw.githubusercontent.com/nss-dev/nss/master/lib/ckfw/builtins/certdata.txt",
-          "artifact_sha256": "358dd0dbd2f9cd734e429f92501ce6562a5811ab77d1f9a17635bcdc1db239c6",
-          "certificate_sha256": "4ff460d54b9c86dabfbcfc5712e0400d2bed3fbc4d4fbdaa86e06adcd2a9ad7a",
-          "der_match": true
-        },
-        {
-          "source": "Mozilla CCADB TLS report",
-          "url": "https://ccadb.my.salesforce-sites.com/ccadb/Report?Name=MozillaTLSServerAuthenticationCSV",
-          "artifact_sha256": "8feda8ad5c5ce4c7c6e77f62f1c3770ad92fdb79cb461b249bb62596a5b15837",
-          "certificate_sha256": "4ff460d54b9c86dabfbcfc5712e0400d2bed3fbc4d4fbdaa86e06adcd2a9ad7a",
-          "der_match": true,
-          "mozilla_status": "Included",
-          "distrust_after": "",
-          "constraints": ""
-        },
-        {
-          "source": "crt.sh",
-          "url": "https://crt.sh/?sha256=4ff460d54b9c86dabfbcfc5712e0400d2bed3fbc4d4fbdaa86e06adcd2a9ad7a",
-          "certificate_url": "https://crt.sh/?id=2841410",
-          "artifact_sha256": "182d113c6376efca559b65ccc1c2249b6d1678a073ed7b292e46781ac7e2662a",
-          "certificate_sha256": "4ff460d54b9c86dabfbcfc5712e0400d2bed3fbc4d4fbdaa86e06adcd2a9ad7a",
-          "fingerprint_table_match": true,
-          "downloaded_der_match": false,
-          "download_note": "PEM download timed out, then returned HTTP 404. The result fingerprint table was verified; DER independently matches NSS and CCADB."
-        }
-      ],
-      "verified_utc": "2026-11-11T15:13:45.557510+00:00",
-      "inventory_der_match": true,
-      "self_signature_valid": true,
-      "provenance_verified": true,
-      "shipping_approved": false,
-      "vendor_download_error": "HTTPSConnectionPool(host='crt.sectigo.com', port=443): Max retries exceeded with url: /USERTrustECCCertificationAuthority.crt (Caused by SSLError(SSLError(1, '[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)')))",
-      "review_status": "Independent provenance verified; shipping trust policy and integrated hardware tests pending"
-    },
-    {
-      "name": "USERTrust_RSA_Certification_Authority",
-      "subject": "CN=USERTrust RSA Certification Authority,O=The USERTRUST Network,L=Jersey City,ST=New Jersey,C=US",
-      "sha256": "e793c9b02fd8aa13e21c31228accb08119643b749c898964b1746d46c3d4cbd2",
-      "der_bytes": 1506,
-      "key_bytes": 515,
-      "algorithm": "RSA",
-      "bits": 4096,
-      "not_after": "2038-01-18T23:59:59",
-      "ca": true,
-      "source_url": "https://ccadb.my.salesforce-sites.com/ccadb/Report?Name=MozillaTLSServerAuthenticationCSV",
-      "sources": [
-        {
-          "source": "local OS store",
-          "path": "/usr/share/ca-certificates/mozilla/USERTrust_RSA_Certification_Authority.crt",
-          "certificate_sha256": "e793c9b02fd8aa13e21c31228accb08119643b749c898964b1746d46c3d4cbd2"
-        },
-        {
-          "source": "Mozilla NSS",
-          "url": "https://raw.githubusercontent.com/nss-dev/nss/master/lib/ckfw/builtins/certdata.txt",
-          "artifact_sha256": "358dd0dbd2f9cd734e429f92501ce6562a5811ab77d1f9a17635bcdc1db239c6",
-          "certificate_sha256": "e793c9b02fd8aa13e21c31228accb08119643b749c898964b1746d46c3d4cbd2",
-          "der_match": true
-        },
-        {
-          "source": "Mozilla CCADB TLS report",
-          "url": "https://ccadb.my.salesforce-sites.com/ccadb/Report?Name=MozillaTLSServerAuthenticationCSV",
-          "artifact_sha256": "8feda8ad5c5ce4c7c6e77f62f1c3770ad92fdb79cb461b249bb62596a5b15837",
-          "certificate_sha256": "e793c9b02fd8aa13e21c31228accb08119643b749c898964b1746d46c3d4cbd2",
-          "der_match": true,
-          "mozilla_status": "Included",
-          "distrust_after": "",
-          "constraints": ""
-        },
-        {
-          "source": "crt.sh",
-          "url": "https://crt.sh/?sha256=e793c9b02fd8aa13e21c31228accb08119643b749c898964b1746d46c3d4cbd2",
-          "certificate_url": "https://crt.sh/?id=1199354",
-          "artifact_sha256": "951ffbefe0a7aea1e81090fe6d36e28f1ae360ccad86796c4d68d44657011dc2",
-          "certificate_sha256": "e793c9b02fd8aa13e21c31228accb08119643b749c898964b1746d46c3d4cbd2",
-          "fingerprint_table_match": true,
-          "downloaded_der_match": true
-        }
-      ],
-      "verified_utc": "2026-11-11T15:13:45.512449+00:00",
-      "inventory_der_match": true,
-      "self_signature_valid": true,
-      "provenance_verified": true,
-      "shipping_approved": false,
-      "vendor_download_error": "HTTPSConnectionPool(host='crt.sectigo.com', port=443): Max retries exceeded with url: /USERTrustRSACertificationAuthority.crt (Caused by SSLError(SSLError(1, '[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)')))",
-      "review_status": "Independent provenance verified; shipping trust policy and integrated hardware tests pending"
+      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending"
     }
   ],
   "metadata_hash_scope": "Canonical JSON of roots, sorted keys, compact separators; includes source evidence."

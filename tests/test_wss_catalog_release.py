@@ -54,16 +54,31 @@ with tempfile.TemporaryDirectory() as temp:
     def check(approval=False, today=TODAY):
         return c.check_catalog(tree, today, require_approval=approval)
 
-    assert check() == 13
+    assert check() == 11
     rejected(lambda: check(True), 'not approved')
     # Hypothetical approval validates the guard; the real catalog stays false.
     edit('manifest', lambda m: (m.update(shipping_approved=True),
-                              [row.pop('shipping_approved', None) for row in m['roots']]))
+                              [row.update(shipping_approved=True) for row in m['roots']]))
     m = json.loads(paths['manifest'].read_text())
     m['catalog_metadata_sha256'] = c.metadata_hash(m['roots'])
     paths['manifest'].write_text(json.dumps(m))
     edit('release-policy', lambda p: p.update(catalog_metadata_sha256=m['catalog_metadata_sha256']))
-    assert check(True) == 13
+    assert check(True) == 11
+    # Even with global approval, each root must have literal boolean True.
+    approved_manifest = paths['manifest'].read_text()
+    approved_policy = paths['release-policy'].read_text()
+    for root_index in range(11):
+        for approval in (None, False, 0, 1, 'true'):
+            m = json.loads(approved_manifest)
+            if approval is None:
+                m['roots'][root_index].pop('shipping_approved')
+            else:
+                m['roots'][root_index]['shipping_approved'] = approval
+            m['catalog_metadata_sha256'] = c.metadata_hash(m['roots'])
+            paths['manifest'].write_text(json.dumps(m))
+            edit('release-policy', lambda p: p.update(catalog_metadata_sha256=m['catalog_metadata_sha256']))
+            rejected(lambda: check(True), 'not approved')
+            paths['release-policy'].write_text(approved_policy)
     reset()
 
     for name, mutation, message in [
@@ -74,7 +89,7 @@ with tempfile.TemporaryDirectory() as temp:
         ('nss-audit', lambda a: a['roots'].pop(), 'exactly'),
         ('nss-audit', lambda a: a['roots'][0].update(server_auth='CKT_NSS_MUST_VERIFY_TRUST'), 'not unconditionally'),
         ('nss-audit', lambda a: a['roots'][0].update(server_distrust_after='MULTILINE_OCTAL'), 'not unconditionally'),
-        ('release-policy', lambda p: p['tls_retirements']['USERTrust_RSA_Certification_Authority'].update(stop_shipping_on='2027-01-01'), 'retirement'),
+        ('release-policy', lambda p: p['tls_retirements']['SSL.com_Root_Certification_Authority_RSA'].update(stop_shipping_on='2027-01-01'), 'retirement'),
     ]:
         edit(name, mutation)
         rejected(check, message)
@@ -92,9 +107,9 @@ with tempfile.TemporaryDirectory() as temp:
     rejected(check, 'Pinned root changed')
     pem.write_bytes(original_pem)
     # Advance a freshly reviewed policy to the retirement horizon.
-    edit('release-policy', lambda p: p.update(reviewed_on='2027-01-16', review_expires='2027-03-01'))
-    edit('nss-audit', lambda a: a.update(reviewed_on='2027-01-16'))
-    rejected(lambda: check(today=date(2027, 1, 16)), 'retirement')
+    edit('release-policy', lambda p: p.update(reviewed_on='2028-10-03', review_expires='2028-12-01'))
+    edit('nss-audit', lambda a: a.update(reviewed_on='2028-10-03'))
+    rejected(lambda: check(today=date(2028, 10, 3)), 'retirement')
     reset()
     # prepare must refuse before dependency lookup, private-key access or output.
     args = SimpleNamespace(version=127, root=tree)

@@ -84,20 +84,6 @@
       "present": true,
       "server_auth": "CKT_NSS_TRUSTED_DELEGATOR",
       "server_distrust_after": "CK_BBOOL CK_FALSE"
-    },
-    {
-      "name": "USERTrust_ECC_Certification_Authority",
-      "sha256": "4ff460d54b9c86dabfbcfc5712e0400d2bed3fbc4d4fbdaa86e06adcd2a9ad7a",
-      "present": true,
-      "server_auth": "CKT_NSS_TRUSTED_DELEGATOR",
-      "server_distrust_after": "CK_BBOOL CK_FALSE"
-    },
-    {
-      "name": "USERTrust_RSA_Certification_Authority",
-      "sha256": "e793c9b02fd8aa13e21c31228accb08119643b749c898964b1746d46c3d4cbd2",
-      "present": true,
-      "server_auth": "CKT_NSS_TRUSTED_DELEGATOR",
-      "server_distrust_after": "CK_BBOOL CK_FALSE"
     }
   ]
 }
