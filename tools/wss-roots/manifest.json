@@ -1,8 +1,8 @@
 {
-  "catalog_version": "candidate-2026-11-11.2",
-  "catalog_metadata_sha256": "c399faf1e058ca58e97aef86505b3e5304bcd34a59f143cdd234551636025132",
+  "catalog_version": "candidate-2026-11-14.1",
+  "catalog_metadata_sha256": "ddc46826649d1ab9364c58d97af40fcb222e8e67c57f4a3dd1f393ab6effe977",
   "shipping_approved": false,
-  "scope": "All 14 candidate roots have provenance checks. This is not release approval, an exhaustive revocation check, or proof of Cloudflare chain coverage. Mozilla NSS and CCADB are related sources, not independent root programs.",
+  "scope": "13 candidate TLS roots. GTS Root R2 removed after current NSS server-trust review. Provenance and snapshot checks do not grant shipping approval or provide browser revocation coverage.",
   "roots": [
     {
       "name": "GTS_Root_R1",
@@ -17,23 +17,6 @@
       "source_url": "https://pki.goog/repo/certs/gtsr1.pem",
       "resolved_url": "https://pki.goog/repo/certs/gtsr1.pem",
       "verified_utc": "2026-11-11T15:05:09.234739+00:00",
-      "inventory_der_match": true,
-      "self_signature_valid": true,
-      "review_status": "provenance checked; shipping coverage/trust-policy review pending"
-    },
-    {
-      "name": "GTS_Root_R2",
-      "subject": "CN=GTS Root R2,O=Google Trust Services LLC,C=US",
-      "sha256": "8d25cd97229dbf70356bda4eb3cc734031e24cf00fafcfd32dc76eb5841c7ea8",
-      "der_bytes": 1371,
-      "key_bytes": 515,
-      "algorithm": "RSA",
-      "bits": 4096,
-      "not_after": "2036-06-22T00:00:00",
-      "ca": true,
-      "source_url": "https://pki.goog/repo/certs/gtsr2.pem",
-      "resolved_url": "https://pki.goog/repo/certs/gtsr2.pem",
-      "verified_utc": "2026-11-11T15:05:09.234898+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
       "review_status": "provenance checked; shipping coverage/trust-policy review pending"

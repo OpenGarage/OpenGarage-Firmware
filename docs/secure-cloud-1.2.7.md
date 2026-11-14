@@ -21,6 +21,21 @@ encryption. For the default OTC service, the firmware selects the appropriate
 server and port. With **Custom**, configure the server and port yourself; the
 checkbox selects security, and the port number does not select it.
 
+Secure custom servers must support TLS 1.2, present a certificate valid for the
+configured hostname and current time, and send the intermediate certificates
+needed to reach a root in this firmware's selected store. Use a DNS hostname.
+Private/self-signed CAs and arbitrary public CAs outside that store are not
+supported. The device has no user CA-upload or certificate-check bypass.
+
+Certificates and trust policy can change. The store version/hash in verbose
+`/db` identify the installed catalog. Roots are maintained through firmware
+updates; the device does not download browser revocation lists or root updates.
+If secure cloud becomes unavailable, use local access to check time and server
+settings or install updated firmware. The one-click updater downloads through
+your browser and uploads locally, so it can recover a device whose own cloud
+certificate store is outdated. Disabling secure WebSocket is an explicit choice
+that removes transport encryption, never an automatic recovery action.
+
 During an email notification, a secure cloud connection is temporarily closed
 and reconnects afterward to keep memory available for email. Plain WebSocket
 connections are left connected. Reconnecting may briefly delay the main loop,

@@ -68,4 +68,4 @@ int main(int argc,char **argv){
   path=p/(str(i)+'.der');path.write_bytes(x509.load_pem_x509_certificate(pem).public_bytes(serialization.Encoding.DER));files.append(str(path))
  output=subprocess.check_output([str(p/'test'),*files],text=True).splitlines();assert len(output)==len(pems)
  for raw,(_,pem) in zip(output,pems):assert bytes.fromhex(raw)==gen.subject_der(x509.load_pem_x509_certificate(pem).public_bytes(serialization.Encoding.DER))
-print('PASS: 14 pinned roots, actual BearSSL DN/key extraction, workspace claims/releases, bounds, missing anchors, reproducibility and bad-fingerprint refusal')
+print(f'PASS: {len(pems)} pinned roots, actual BearSSL DN/key extraction, workspace claims/releases, bounds, missing anchors, reproducibility and bad-fingerprint refusal')

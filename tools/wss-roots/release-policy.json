@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "catalog_version": "candidate-2026-11-14.1",
+  "catalog_metadata_sha256": "ddc46826649d1ab9364c58d97af40fcb222e8e67c57f4a3dd1f393ab6effe977",
+  "reviewed_on": "2026-11-14",
+  "review_expires": "2027-02-12",
+  "nss_source": {
+    "commit": "8c60e757c30b1b239bae46532b4f6d4ebb1e1cad",
+    "url": "https://raw.githubusercontent.com/nss-dev/nss/8c60e757c30b1b239bae46532b4f6d4ebb1e1cad/lib/ckfw/builtins/certdata.txt",
+    "sha256": "6d177e33ab54b338edfee24dc3868585833636716a320a725137ab4a15927292",
+    "commit_date": "2026-11-13T23:31:24Z"
+  },
+  "tls_retirements": {
+    "USERTrust_RSA_Certification_Authority": {
+      "stop_shipping_on": "2027-04-15",
+      "source": "https://bugzilla.mozilla.org/show_bug.cgi?id=2017182"
+    },
+    "USERTrust_ECC_Certification_Authority": {
+      "stop_shipping_on": "2027-04-15",
+      "source": "https://bugzilla.mozilla.org/show_bug.cgi?id=2017182"
+    },
+    "SSL.com_Root_Certification_Authority_RSA": {
+      "stop_shipping_on": "2028-12-31",
+      "source": "https://bugzilla.mozilla.org/show_bug.cgi?id=2032170"
+    },
+    "SSL.com_Root_Certification_Authority_ECC": {
+      "stop_shipping_on": "2028-12-31",
+      "source": "https://bugzilla.mozilla.org/show_bug.cgi?id=2032170"
+    }
+  },
+  "excluded_roots": [
+    {
+      "name": "GTS_Root_R2",
+      "sha256": "8d25cd97229dbf70356bda4eb3cc734031e24cf00fafcfd32dc76eb5841c7ea8",
+      "reason": "NSS websites trust removed; email only",
+      "source": "https://bugzilla.mozilla.org/show_bug.cgi?id=2020137"
+    }
+  ],
+  "review_sources": [
+    "https://developers.cloudflare.com/ssl/reference/certificate-authorities/",
+    "https://developers.cloudflare.com/ssl/edge-certificates/backup-certificates/",
+    "https://wiki.mozilla.org/CA/Additional_Trust_Changes",
+    "https://bugzilla.mozilla.org/show_bug.cgi?id=2017182",
+    "https://bugzilla.mozilla.org/show_bug.cgi?id=2032170",
+    "https://www.sectigo.com/resource-library/advisory-on-compromised-emudhra-intermediate-certificates"
+  ]
+}
