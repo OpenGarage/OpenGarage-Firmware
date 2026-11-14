@@ -3,8 +3,8 @@
 Development draft for firmware 1.2.7, including the approved secure-cloud candidate. Final release validation is still in progress.
 
 ### 1. Overview
-* <span class="hl">Protected requests require the device key on the LAN **and through OTC**. Most use <code>dkey=xxx</code>; POST <code>/co</code> uses a form body, <code>/s2id_gen</code> and <code>/setup_key</code> use raw bodies, and firmware uploads use headers. New/factory-reset units must set a key during setup; upgraded units retain their existing key, including <code>opendoor</code>.</span>
-* The device's IP address is referred to as `devip`. For most commands, parameters are optional and the order of parameters does not matter.
+* Existing endpoints that require a device key use `dkey=xxx`. See [`/co`](#5-change-options-co), [`/s2id_gen`](#12-regenerate-sec-20-client-id), [`/setup_key`](#15-setup-ap-apis) and [firmware uploads](#13-firmware-upload) for endpoint-specific credential requirements.
+* The device's IP address is referred to as `devip`. <span class="hl">You can also use a resolvable hostname, for example <code>mygarage.local</code>, in place of the IP address.</span> For most commands, parameters are optional and the order of parameters does not matter.
 * API replies normally use JSON, for example: `{"result":1}`. Transport/parser errors may instead be HTTP errors without JSON. Below is the list of API result codes:
 
 |Code|Meaning|
