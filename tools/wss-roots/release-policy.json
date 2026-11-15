@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "catalog_version": "candidate-2026-11-14.2",
-  "catalog_metadata_sha256": "270d878b18691e3ff974855b4a857ef7f6d5208ea93d9ec2444d37d75e97f117",
+  "catalog_metadata_sha256": "99634204a476b33f1a18c113558514f47f47ec472bf2af22de69131d0015391f",
   "reviewed_on": "2026-11-14",
   "review_expires": "2027-02-12",
   "nss_source": {
@@ -56,5 +56,24 @@
       ],
       "action": "Review Mozilla TLS inclusion and Let\u2019s Encrypt chain plans. Existing YE/YR chain fixtures require X1/X2 cross-signs; review before servers remove those cross-signs."
     }
-  ]
+  ],
+  "shipping_approval": {
+    "approved_utc": "2026-11-15T00:30:02.712690+00:00",
+    "selection_review": "Owner/Claude approval of 2ebd8b6; USERTrust RSA/ECC omitted",
+    "validated_source_revision": "2ebd8b6c36c475ff412a89242018539613c222fc",
+    "validated_image_sha256": "a9450037b250aac7730c0bc76ecc5d48a9a5a3e402784c267f7bf7382e690d6a",
+    "full_boot_handshakes": 5,
+    "radio": "802.11g",
+    "cpu_mhz": 160,
+    "whole_loop_us": [
+      3242688,
+      3338005,
+      3191880,
+      3226790,
+      3260664
+    ],
+    "tls_peak_bytes": 5940,
+    "main_stack_min_after_email_bytes": 1456,
+    "scope": "Root-catalog approval, not whole-firmware publication approval. Repeat final-image timing after any later payload change; original settings/firmware/radio restored."
+  }
 }

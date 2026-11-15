@@ -1,8 +1,8 @@
 {
   "catalog_version": "candidate-2026-11-14.2",
-  "catalog_metadata_sha256": "270d878b18691e3ff974855b4a857ef7f6d5208ea93d9ec2444d37d75e97f117",
-  "shipping_approved": false,
-  "scope": "11 candidate TLS roots. GTS Root R2 and USERTrust RSA/ECC excluded. Final selection reviewed; shipping approval awaits exact-image hardware validation. Snapshot checks do not provide browser revocation coverage.",
+  "catalog_metadata_sha256": "99634204a476b33f1a18c113558514f47f47ec472bf2af22de69131d0015391f",
+  "shipping_approved": true,
+  "scope": "11 reviewed TLS roots approved after exact-image hardware verification. GTS Root R2 and USERTrust RSA/ECC excluded. Snapshot checks do not provide browser revocation coverage.",
   "roots": [
     {
       "name": "GTS_Root_R1",
@@ -19,8 +19,8 @@
       "verified_utc": "2026-11-11T15:05:09.234739+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
-      "shipping_approved": false
+      "review_status": "Owner/Claude final selection approved; exact-image public-endpoint hardware checks passed 2026-11-15 UTC",
+      "shipping_approved": true
     },
     {
       "name": "GTS_Root_R3",
@@ -37,8 +37,8 @@
       "verified_utc": "2026-11-11T15:05:09.244279+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
-      "shipping_approved": false
+      "review_status": "Owner/Claude final selection approved; exact-image public-endpoint hardware checks passed 2026-11-15 UTC",
+      "shipping_approved": true
     },
     {
       "name": "GTS_Root_R4",
@@ -55,8 +55,8 @@
       "verified_utc": "2026-11-11T15:05:09.249381+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
-      "shipping_approved": false
+      "review_status": "Owner/Claude final selection approved; exact-image public-endpoint hardware checks passed 2026-11-15 UTC",
+      "shipping_approved": true
     },
     {
       "name": "ISRG_Root_X1",
@@ -73,8 +73,8 @@
       "verified_utc": "2026-11-11T15:05:09.460253+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
-      "shipping_approved": false
+      "review_status": "Owner/Claude final selection approved; exact-image public-endpoint hardware checks passed 2026-11-15 UTC",
+      "shipping_approved": true
     },
     {
       "name": "ISRG_Root_X2",
@@ -91,8 +91,8 @@
       "verified_utc": "2026-11-11T15:05:09.463940+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
-      "shipping_approved": false
+      "review_status": "Owner/Claude final selection approved; exact-image public-endpoint hardware checks passed 2026-11-15 UTC",
+      "shipping_approved": true
     },
     {
       "name": "SSL.com_Root_Certification_Authority_ECC",
@@ -109,8 +109,8 @@
       "verified_utc": "2026-11-11T15:05:09.665496+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
-      "shipping_approved": false
+      "review_status": "Owner/Claude final selection approved; exact-image public-endpoint hardware checks passed 2026-11-15 UTC",
+      "shipping_approved": true
     },
     {
       "name": "SSL.com_Root_Certification_Authority_RSA",
@@ -127,8 +127,8 @@
       "verified_utc": "2026-11-11T15:05:09.654903+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
-      "shipping_approved": false
+      "review_status": "Owner/Claude final selection approved; exact-image public-endpoint hardware checks passed 2026-11-15 UTC",
+      "shipping_approved": true
     },
     {
       "name": "SSL.com_TLS_ECC_Root_CA_2022",
@@ -145,8 +145,8 @@
       "verified_utc": "2026-11-11T15:05:09.797242+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
-      "shipping_approved": false
+      "review_status": "Owner/Claude final selection approved; exact-image public-endpoint hardware checks passed 2026-11-15 UTC",
+      "shipping_approved": true
     },
     {
       "name": "SSL.com_TLS_RSA_Root_CA_2022",
@@ -163,8 +163,8 @@
       "verified_utc": "2026-11-11T15:05:09.792620+00:00",
       "inventory_der_match": true,
       "self_signature_valid": true,
-      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending",
-      "shipping_approved": false
+      "review_status": "Owner/Claude final selection approved; exact-image public-endpoint hardware checks passed 2026-11-15 UTC",
+      "shipping_approved": true
     },
     {
       "name": "Sectigo_Public_Server_Authentication_Root_E46",
@@ -214,9 +214,9 @@
       "inventory_der_match": true,
       "self_signature_valid": true,
       "provenance_verified": true,
-      "shipping_approved": false,
+      "shipping_approved": true,
       "vendor_download_error": "HTTPSConnectionPool(host='crt.sectigo.com', port=443): Max retries exceeded with url: /SectigoPublicServerAuthenticationRootE46.crt (Caused by SSLError(SSLError(1, '[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)')))",
-      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending"
+      "review_status": "Owner/Claude final selection approved; exact-image public-endpoint hardware checks passed 2026-11-15 UTC"
     },
     {
       "name": "Sectigo_Public_Server_Authentication_Root_R46",
@@ -266,10 +266,29 @@
       "inventory_der_match": true,
       "self_signature_valid": true,
       "provenance_verified": true,
-      "shipping_approved": false,
+      "shipping_approved": true,
       "vendor_download_error": "HTTPSConnectionPool(host='crt.sectigo.com', port=443): Max retries exceeded with url: /SectigoPublicServerAuthenticationRootR46.crt (Caused by SSLError(SSLError(1, '[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1000)')))",
-      "review_status": "Final 11-root selection approved in owner/Claude review; exact-image hardware validation pending"
+      "review_status": "Owner/Claude final selection approved; exact-image public-endpoint hardware checks passed 2026-11-15 UTC"
     }
   ],
-  "metadata_hash_scope": "Canonical JSON of roots, sorted keys, compact separators; includes source evidence."
+  "metadata_hash_scope": "Canonical JSON of roots, sorted keys, compact separators; includes source evidence.",
+  "shipping_approval": {
+    "approved_utc": "2026-11-15T00:30:02.712690+00:00",
+    "selection_review": "Owner/Claude approval of 2ebd8b6; USERTrust RSA/ECC omitted",
+    "validated_source_revision": "2ebd8b6c36c475ff412a89242018539613c222fc",
+    "validated_image_sha256": "a9450037b250aac7730c0bc76ecc5d48a9a5a3e402784c267f7bf7382e690d6a",
+    "full_boot_handshakes": 5,
+    "radio": "802.11g",
+    "cpu_mhz": 160,
+    "whole_loop_us": [
+      3242688,
+      3338005,
+      3191880,
+      3226790,
+      3260664
+    ],
+    "tls_peak_bytes": 5940,
+    "main_stack_min_after_email_bytes": 1456,
+    "scope": "Root-catalog approval, not whole-firmware publication approval. Repeat final-image timing after any later payload change; original settings/firmware/radio restored."
+  }
 }

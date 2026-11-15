@@ -40,6 +40,16 @@ with tempfile.TemporaryDirectory() as temp:
     header.parent.mkdir(parents=True)
     shutil.copyfile(ROOT / 'OpenGarage/lib/WebSockets/src/OGWssPublicAnchors.h', header)
     paths = {name: folder / (name + '.json') for name in ('manifest', 'release-policy', 'nss-audit')}
+    # Exercise both approval states independently of the source catalog's state.
+    fixture = json.loads(paths['manifest'].read_text())
+    fixture['shipping_approved'] = False
+    for item in fixture['roots']:
+        item['shipping_approved'] = False
+    fixture['catalog_metadata_sha256'] = c.metadata_hash(fixture['roots'])
+    paths['manifest'].write_text(json.dumps(fixture))
+    policy = json.loads(paths['release-policy'].read_text())
+    policy['catalog_metadata_sha256'] = fixture['catalog_metadata_sha256']
+    paths['release-policy'].write_text(json.dumps(policy))
     originals = {name: path.read_text() for name, path in paths.items()}
 
     def edit(name, change):
@@ -56,7 +66,7 @@ with tempfile.TemporaryDirectory() as temp:
 
     assert check() == 11
     rejected(lambda: check(True), 'not approved')
-    # Hypothetical approval validates the guard; the real catalog stays false.
+    # Approval validates the fixture guard without changing the source catalog.
     edit('manifest', lambda m: (m.update(shipping_approved=True),
                               [row.update(shipping_approved=True) for row in m['roots']]))
     m = json.loads(paths['manifest'].read_text())

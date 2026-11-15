@@ -1,8 +1,9 @@
 # Candidate WSS roots and release maintenance
 
 These are public certificates copied from the fingerprint-checked candidate
-inventory. `manifest.json` retains provenance and explicitly marks shipping
-approval false. This is a candidate catalog, not an approved release policy.
+inventory. `manifest.json` retains provenance and explicit shipping approval
+for the reviewed 11-root catalog, with matching hardware evidence recorded in
+`release-policy.json`. This does not approve publication of the whole firmware.
 Private keys and controller credentials are not included.
 
 Regenerate from the experiment root:
@@ -78,8 +79,12 @@ Before approving a release:
    bind the policy to it. Missing approval, false, strings or numeric values
    never count as approval. Run the checker without `--check-candidate`.
 
-The 11-root selection is approved in the owner/Claude review. Shipping approval
-is still false while its final-image hardware checks await the .103 soak's end.
+The 11-root selection is approved in the owner/Claude review. Its exact-image
+hardware checks passed on November 15 UTC (November 14 Eastern): five fresh full
+handshakes, normal release-image timing and an email-path stack check. The
+manifest and policy record the tested image hash and results. Approval metadata
+does not change the generated anchors or tested image bytes. Later firmware
+payload changes still require the final-image timing gate to be repeated.
 
 Firmware release preparation for version 127 or later runs the same check before
 reading a private key or creating output. It has no network dependency and adds
