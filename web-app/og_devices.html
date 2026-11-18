@@ -1,0 +1,1859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="OpenGarage">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#2c3e50">
+    <link rel="icon" type="image/png" href="og_web_512.png">
+    <link rel="apple-touch-icon" href="og_web_512.png">
+    <link rel="manifest" href="manifest.json">
+    <title>OpenGarage Web App</title>
+    <style>
+        :root {
+            --primary-color: #5994bd;
+            --secondary-color: #2c3e50;
+            --light-gray: #ecf0f1;
+            --medium-gray: #bdc3c7;
+            --dark-gray: #7f8c8d;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --danger-color-dark: #c0392b;
+            --warning-color: #f39c12;
+            --bg-color: #f4f7f6;
+            --font-color: #333;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--font-color);
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none; 
+        }
+
+        /* Page Layout */
+        .page {
+            display: none;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .page.active {
+            display: flex;
+        }
+
+        .header {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 1rem;
+            padding-top: max(1rem, env(safe-area-inset-top)); 
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+        .header .header-btn {
+            position: absolute;
+            top: calc(50% + env(safe-area-inset-top) / 2);
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1rem;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            border-radius: var(--border-radius);
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .header .header-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .header .header-btn.left { left: 1rem; }
+        .header .header-btn.right { right: 1rem; }
+
+        .content {
+            padding: 1rem 0.5rem;
+            flex-grow: 1;
+            padding-bottom: max(1rem, env(safe-area-inset-bottom));
+        }
+
+        .footer {
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+            padding: 0.5rem 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+            border-top: 1px solid var(--medium-gray);
+            padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+        }
+
+        #page_devices .footer {
+            background: none;
+            border: none;
+            padding: 0;
+            margin-top: 1.5rem;
+        }
+
+        #page_devices .footer hr {
+            border: 0;
+            border-top: 1px solid var(--medium-gray);
+            margin: 0;
+        }
+
+        #page_devices .footer p {
+            margin: 0.5rem 0 0 0;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: var(--box-shadow);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            table-layout: auto;
+        }
+        th, td {
+            padding: 12px 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--light-gray);
+            vertical-align: middle;
+        }
+        th {
+            background-color: var(--light-gray);
+            font-weight: bold;
+            text-align: center;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        tr.selected td {
+            background-color: #fef08a;
+        }
+        td:first-child {
+            font-weight: bold;
+        }
+
+        #tab_devlist {
+            width: auto;
+            margin: 0;
+        }
+
+        /* Image Styles */
+        .device-thumb {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            background-color: #eee;
+            border: 2px solid var(--light-gray);
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* Side-by-Side Container */
+        .device-info-row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 1.5rem;
+        }
+
+        .main-device-image-container {
+            position: relative;
+            margin: 0; 
+            cursor: pointer;
+            flex-shrink: 0; 
+        }
+
+        .main-device-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            background-color: #ddd;
+            transition: opacity 0.2s;
+        }
+        
+        .main-device-image-container:hover .main-device-image {
+            opacity: 0.8;
+        }
+
+        .edit-icon-overlay {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            border: 2px solid white;
+            pointer-events: none;
+        }
+
+        /* Buttons & Controls */
+        .main-button-container {
+            max-width: 400px;
+        }
+        .control-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .control-group .btn {
+            flex: 0 1 100px;
+        }
+        .btn {
+            padding: 0.75rem 0.75rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-align: center;
+            user-select: none;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background-color: #2471a3;
+        }
+        .btn-secondary {
+            background-color: var(--light-gray);
+            color: var(--secondary-color);
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background-color: var(--dark-gray);
+            color: white;
+        }
+        .btn-danger {
+            background-color: var(--error-color);
+            color: white;
+        }
+        .btn-danger:hover:not(:disabled) {
+            background-color: var(--danger-color-dark);
+        }
+        .btn:disabled {
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+            cursor: not-allowed;
+            opacity: 0.4;
+            border-color: var(--light-gray);
+        }
+
+        /* Add Device Menu */
+        #dev_addmenu {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            width: 220px;
+            overflow: hidden;
+        }
+        #dev_addmenu a {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: var(--secondary-color);
+            text-decoration: none;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        #dev_addmenu a:hover {
+            background-color: var(--light-gray);
+        }
+        #dev_addmenu li:last-child a {
+            border-bottom: none;
+        }
+
+        /* Modal / Popup */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 1000;
+        }
+        .modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+        .modal-overlay.visible .modal-content {
+            transform: scale(1);
+        }
+        .modal-header {
+            border-bottom: 1px solid var(--light-gray);
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+        .modal-header h3 {
+            margin: 0;
+        }
+        .modal-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--dark-gray);
+        }
+        #confirm_message {
+            margin: 0 0 1.5rem 0;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        /* Cropper Modal Styles */
+        .crop-container {
+            width: 100%;
+            background: #333;
+            position: relative;
+            overflow: hidden;
+            cursor: grab;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            touch-action: none; 
+        }
+        .crop-container:active {
+            cursor: grabbing;
+        }
+        #crop_canvas {
+            position: absolute;
+            transform-origin: 0 0; 
+        }
+        .crop-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); 
+            border-radius: 50%;
+            border: 2px solid white;
+            box-sizing: border-box;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+        .slider-container input {
+            flex-grow: 1;
+        }
+
+        /* Form Elements */
+        .form-field {
+            margin-bottom: 1rem;
+        }
+        .form-field label, .form-field b {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        input[type="text"], input[type="password"], input[type="number"], input[type="email"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: var(--border-radius);
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        /* Checkbox styling */
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 0.5rem;
+        }
+
+        .message-label {
+            min-height: 1.2em;
+            margin: 0.5rem 0;
+        }
+
+        /* Specific Page Styles */
+        #page_devices .content > b {
+            font-size: 1.1rem;
+        }
+        .smallfont {
+            font-size: 0.9rem;
+            color: var(--dark-gray);
+        }
+
+        #page_currdev .content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Modified Table for Side-by-Side View */
+        .currdev-status-table {
+            font-size: 1.25rem;
+            flex-grow: 1;
+            width: auto;
+            min-width: 150px;
+            margin-bottom: 0;
+        }
+
+        #currdev-btn {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            border: 5px solid white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            user-select: none;
+            -webkit-user-select: none;
+            margin-bottom: 2rem;
+        }
+        #currdev-btn.open {
+            background: linear-gradient(145deg, #e85a4f, #d84315);
+        }
+        #currdev-btn.closed {
+            background: linear-gradient(145deg, #2ecc71, #27ae60);
+        }
+        #currdev-btn.opening {
+            background: linear-gradient(145deg, #9b59b6, #8e44ad);
+        }
+        #currdev-btn.stopped {
+            background: linear-gradient(145deg, #f1c40f, #f39c12);
+        }
+        #currdev-btn.closing {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+        }
+
+        .device-actions { flex-wrap: nowrap; }
+        .control-group .reorder { flex: 0 0 44px; }
+        .device-links { display: flex; gap: 0.5rem; }
+        #btn_dev_home {
+            margin-top: 2rem;
+        }
+
+        /* --- TOGGLE SWITCHES (75px Width) --- */
+        #extra_controls {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            margin-bottom: 2rem;
+            overflow: hidden;
+            display: none; /* Hidden by default */
+        }
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        .toggle-row:last-child { border-bottom: none; }
+        .toggle-label { font-weight: bold; font-size: 1.1rem; }
+        
+        /* The Switch Container */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 75px; 
+            height: 28px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        
+        /* The Slider */
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        input:checked + .slider { background-color: var(--success-color); }
+        /* Translation: 75px (width) - 22px (knob) - 6px (margins) = 47px */
+        input:checked + .slider:before { transform: translateX(47px); }
+        /* Disabled state */
+        input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
+
+        /* Sync Option Buttons */
+        .sync-option-btn {
+            width: 100%;
+            margin-bottom: 0.5rem;
+            text-align: left;
+            justify-content: flex-start;
+        }
+        .warning-text {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 1rem;
+            font-style: italic;
+            border-top: 1px solid #eee;
+            padding-top: 0.5rem;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class='page active' id='page_devices'>
+    <div class='header'>
+        <button class='header-btn left' id='btn_cloud_sync'>☁️</button>
+        <h3>OpenGarage Web App v1.2</h3>
+    </div>
+    <div class='content'>
+        <table id='tab_devlist'>
+            <thead>
+                <tr><th style="width: 50px;"></th><th>Device Name</th><th>Door</th><th>Car</th><th>Dist.</th></tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+        <br>
+        <b>Selected</b>: <span id='lb_sel_msg'>-</span><br>
+        <span class='smallfont'>(Click a device name to select/unselect it)</span>
+        <br><br>
+        <div class="main-button-container">
+            <div class='control-group device-actions'>
+                <button class='btn btn-secondary clbtnmod' id='btn_dev_del' disabled>❌ Delete</button>
+                <button class='btn btn-secondary clbtnmod' id='btn_dev_edit' disabled>Edit</button>
+                <button class='btn btn-secondary clbtnmod reorder' id='btn_dev_up' aria-label='Move up' title='Move up' disabled>⬆</button>
+                <button class='btn btn-secondary clbtnmod reorder' id='btn_dev_down' aria-label='Move down' title='Move down' disabled>⬇</button>
+            </div>
+            <div class='control-group'>
+                <button class='btn btn-primary' id='btn_dev_add'>✓ Add</button>
+                <button class='btn btn-primary clbtnmod' id='btn_dev_click' disabled>🫵 Click</button>
+                <button class='btn btn-primary clbtnmod' id='btn_dev_got' disabled>Go to ➡</button>
+            </div>
+        </div>
+        <ul id='dev_addmenu' style='display:none;'>
+            <li><a href='#' id='btn_dev_add_by_ip'>by IP</a></li>
+            <li><a href='#' id='btn_dev_add_by_otc'>by OTC token</a></li>
+        </ul>
+        <div class='footer'>
+            <hr>
+            <p>Number of devices: <label id='ndevs'>0</label></p>
+        </div>
+    </div>
+</div>
+
+<div class='page' id='page_currdev'>
+    <div class='header' id='name_curr'>
+        <button class='header-btn left' id='btn_dev_list'>⬅ List</button>
+        <h3>OpenGarage</h3>
+    </div>
+    <div class='content'>
+        
+        <div class="device-info-row">
+            <div class="main-device-image-container" id="btn_edit_image">
+                <img src="" id="currdev_img_display" class="main-device-image" alt="Device">
+                <div class="edit-icon-overlay">✎</div>
+            </div>
+
+            <table class='currdev-status-table'>
+                <tbody>
+                    <tr><td><b>Door:</b></td><td id='door_curr'>(offline)</td></tr>
+                    <tr><td><b>Car:</b></td><td id='car_curr'>-</td></tr>
+                    <tr><td><b>Dist:</b></td><td id='dist_curr'>-</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <button id='currdev-btn' class='btn' disabled>Click</button>
+
+        <div id="extra_controls">
+            <div class="toggle-row">
+                <span class="toggle-label">Light</span>
+                <label class="switch">
+                    <input type="checkbox" id="sw_light">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <span class="toggle-label">Remote Lock</span>
+                <label class="switch">
+                    <input type="checkbox" id="sw_lock">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="device-links">
+            <button class="btn btn-secondary" id="btn_dev_options">Edit Options</button>
+            <button class="btn btn-secondary" id="btn_dev_logs">View Logs</button>
+        </div>
+        <button class='btn btn-secondary' id='btn_dev_home'>Device Homepage ➡</button>
+    </div>
+    <div class='footer'>
+        <p>This device: <label id='lbl_currdev'>-</label></p>
+    </div>
+</div>
+
+<div id='popup_dev_add' class='modal-overlay'>
+    <div class='modal-content'>
+        <button class='modal-close-btn' id='btn_dev_add_close'>&times;</button>
+        <div class='modal-header'>
+            <h3>Add A New Device</h3>
+        </div>
+        <div class='modal-body'>
+            <div class='form-field daip'>
+                <b>IP or domain name:</b>
+                <input type='text' id='da_ip' placeholder='192.168.0.15'>
+            </div>
+            <div class='form-field'>
+                <label for='da_devkey'><b>Device key:</b></label>
+                <input type='password' id='da_devkey'>
+            </div>
+            <div class='form-field dacld'>
+                <b><label id='lb_cld_token'></label> Token:</b>
+                <input type='text' id='da_token'>
+            </div>
+            <div class='form-field dacld'>
+                <b><label id='lb_cld_server'></label> Server:</b>
+                <input type='text' id='da_server'>
+            </div>
+            <div class='form-field dacld'>
+                <b>Port:</b>
+                <input type='number' id='da_port'>
+            </div>
+            <div class='message-label' id='lb_da_msg'></div>
+            <div class='control-group'>
+                <button id='btn_dev_add_cancel' class='btn btn-secondary dabtn'>Cancel</button>
+                <button id='btn_dev_add_submit' class='btn btn-primary dabtn'>Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id='popup_cloud_login' class='modal-overlay'>
+    <div class='modal-content'>
+        <button class='modal-close-btn' id='btn_cloud_close'>&times;</button>
+        <div class='modal-header'>
+            <h3>OpenThings Cloud Data Sync</h3>
+        </div>
+        <div class='modal-body'>
+            <div class='form-field'>
+                <b>OpenThings.io Username or Email:</b>
+                <input type='text' id='cloud_user'>
+            </div>
+            <div class='form-field'>
+                <b>Password:</b>
+                <input type='password' id='cloud_pass'>
+            </div>
+            <div class='form-field'>
+                <label style="font-weight: normal; display: flex; align-items: center;">
+                    <input type="checkbox" id="cloud_remember" checked> 
+                    Remember the device list on this browser
+                </label>
+            </div>
+            <p class="warning-text">
+                Note: Uncheck on public computers to automatically clear device list when you close the tab.
+            </p>
+            <div class='message-label' id='lb_cloud_msg'></div>
+            <div class='control-group'>
+                <button id='btn_cloud_login' class='btn btn-primary' style="width:100%; flex: auto;">Login & Sync</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id='popup_sync_choice' class='modal-overlay'>
+    <div class='modal-content'>
+        <div class='modal-header'>
+            <h3>Sync Options</h3>
+        </div>
+        <div class='modal-body'>
+            <p>Cloud data found. How would you like to proceed?</p>
+            <button class='btn btn-secondary sync-option-btn' id='btn_sync_merge'><b>Merge:</b> <span style="font-weight:normal">Combine cloud and local</span></button>
+            <button class='btn btn-secondary sync-option-btn' id='btn_sync_pull'><b>Restore:</b> <span style="font-weight:normal">Overwrite local with Cloud data</span></button>
+            <button class='btn btn-secondary sync-option-btn' id='btn_sync_push'><b>Backup:</b> <span style="font-weight:normal">Overwrite Cloud with local data</span></button>
+            <br>
+            <div class='control-group'>
+                <button id='btn_sync_cancel' class='btn btn-secondary'>Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id='popup_confirm' class='modal-overlay'>
+    <div class='modal-content'>
+        <div class='modal-header'>
+            <h3 id='confirm_title'>Are you sure?</h3>
+        </div>
+        <div class='modal-body'>
+            <p id='confirm_message'></p>
+            <div class='control-group'>
+                <button id='btn_confirm_cancel' class='btn btn-secondary'>Cancel</button>
+                <button id='btn_confirm_ok' class='btn btn-primary'>OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id='popup_image_crop' class='modal-overlay'>
+    <div class='modal-content'>
+        <button class='modal-close-btn' id='btn_crop_close'>&times;</button>
+        <div class='modal-header'>
+            <h3>Change Device Image</h3>
+        </div>
+        <div class='modal-body'>
+            <input type="file" id="inp_image_file" accept="image/*" style="margin-bottom: 10px;">
+            
+            <div class="crop-container" id="crop_container" style="display:none;">
+                <canvas id="crop_canvas"></canvas>
+                <div class="crop-overlay"></div>
+            </div>
+
+            <div class="slider-container" id="crop_controls" style="display:none;">
+                <span style="font-size:1.2rem">−</span>
+                <input type="range" id="crop_zoom" min="0.1" max="3" step="0.05" value="1">
+                <span style="font-size:1.2rem">+</span>
+            </div>
+
+            <div class='control-group'>
+                <button id='btn_crop_save' class='btn btn-primary' style="display:none; width:100%">Save Image</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- State Variables ---
+    const og_devices_key = 'og_devices_v1';
+    const default_icon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%237f8c8d'%3E%3Cpath d='M19,20H5V21H19M12,2.25L3,9H4V18H20V9H21M6,16.5H8V11H6M16,16.5H18V11H16M11,16.5H13V11H11M6,16.5V18H18V16.5'/%3E%3C/svg%3E";
+    
+    let devlist = [];
+    let currdev = -1;
+    let dev_add_by = '';
+    let editing = null;
+    const supported = device => device.type === 'ip' || device.type === 'otc';
+    let selected = -1;
+    let config_currdev = null;
+    let tm_devices = null;
+    let tm_currdev = null;
+    let storageEngine = localStorage; // Default to localStorage
+
+    // --- DOM Element References ---
+    const pages = document.querySelectorAll('.page');
+    const pageDevices = document.getElementById('page_devices');
+    const pageCurrDev = document.getElementById('page_currdev');
+
+    // --- Helper Functions ---
+    const showPage = (pageId) => {
+        pages.forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+    };
+
+    const showMsg = (selector, msg, duration = 0, color = 'black') => {
+        const el = document.querySelector(selector);
+        if (el) {
+            el.textContent = msg;
+            el.style.color = color;
+            if (duration > 0) {
+                setTimeout(() => { el.textContent = ''; }, duration);
+            }
+        }
+    };
+    const clearMsg = (selector) => showMsg(selector, '');
+
+    // --- UPDATED: Storage Logic (Session vs Local) ---
+    const detectStorageEngine = () => {
+        if (sessionStorage.getItem(og_devices_key)) {
+            storageEngine = sessionStorage;
+            return;
+        }
+        if (localStorage.getItem(og_devices_key)) {
+            storageEngine = localStorage;
+            return;
+        }
+        storageEngine = localStorage;
+    };
+
+    const save_storage = () => {
+        const data = JSON.stringify({ 'currdev': currdev, 'devlist': devlist });
+        storageEngine.setItem(og_devices_key, data);
+    };
+
+    const load_storage = () => {
+        detectStorageEngine();
+        const store = storageEngine.getItem(og_devices_key);
+        if (store) {
+            try {
+                const og_devices = JSON.parse(store);
+                devlist = og_devices.devlist || [];
+                currdev = og_devices.currdev ?? -1;
+                devlist.forEach(d => { d.door = -1; if(!d.image) d.image = default_icon; });
+                sync_table_to_devlist();
+            } catch (e) {
+                console.error("Error parsing storage data", e);
+                devlist = [];
+                currdev = -1;
+            }
+        }
+        document.getElementById('ndevs').textContent = devlist.length;
+    };
+
+    // --- Confirmation Modal Logic ---
+    const confirmModal = document.getElementById('popup_confirm');
+    const confirmMessageEl = document.getElementById('confirm_message');
+    const confirmTitleEl = document.getElementById('confirm_title');
+    let confirmOkBtn = document.getElementById('btn_confirm_ok');
+    let confirmCancelBtn = document.getElementById('btn_confirm_cancel');
+
+    const showConfirmation = (message, onConfirm, options = {}) => {
+        confirmMessageEl.textContent = message;
+        confirmTitleEl.textContent = options.title || 'Are you sure?';
+
+        let newOkBtn = confirmOkBtn.cloneNode(true);
+        confirmOkBtn.parentNode.replaceChild(newOkBtn, confirmOkBtn);
+        confirmOkBtn = newOkBtn;
+
+        let newCancelBtn = confirmCancelBtn.cloneNode(true);
+        confirmCancelBtn.parentNode.replaceChild(newCancelBtn, confirmCancelBtn);
+        confirmCancelBtn = newCancelBtn;
+
+        confirmOkBtn.className = 'btn';
+        confirmOkBtn.classList.add(options.okClass || 'btn-primary');
+        confirmOkBtn.textContent = options.okText || 'OK';
+
+        const closeConfirm = () => confirmModal.classList.remove('visible');
+
+        confirmOkBtn.addEventListener('click', () => {
+            closeConfirm();
+            onConfirm();
+        });
+
+        confirmCancelBtn.addEventListener('click', closeConfirm);
+
+        confirmModal.classList.add('visible');
+    };
+
+
+    // --- UI Update Functions ---
+    const door2str = (d) => {
+        const status = {
+            0: 'closed', 1: 'OPEN', 2: 'Stopped', 3: 'closing',
+            4: 'OPENING', 5: '(unknown)'
+        };
+        return status[d] || '(offline)';
+    };
+
+    const car2str = (c) => {
+        if (c === 0 || c === '0') return 'vacant';
+        if (c === 1 || c === '1') return 'parked';
+        return '-';
+    };
+
+    const conf2str_short = (c) => {
+        if (!supported(c)) return 'Retired connection';
+        if (c.type === 'ip') return `ip (${c.ip})`;
+        return `${c.type} (${c.token.slice(0, 4)}...${c.token.slice(-4)}@${c.server})`;
+    };
+
+    const update_lb_sel_msg = () => {
+        const msgEl = document.getElementById('lb_sel_msg');
+        msgEl.textContent = selected === -1 ? '-' : conf2str_short(devlist[selected]);
+    };
+
+    const updateControlButtons = () => {
+        const isSelected = selected >= 0;
+        document.querySelectorAll('.clbtnmod').forEach(btn => {
+            btn.disabled = !isSelected;
+        });
+        if (isSelected) {
+            const device = devlist[selected];
+            document.getElementById('btn_dev_click').disabled = !supported(device) || device.door === -1;
+            document.getElementById('btn_dev_got').disabled = !supported(device);
+            document.getElementById('btn_dev_edit').disabled = !supported(device);
+            document.getElementById('btn_dev_up').disabled = selected < 1;
+            document.getElementById('btn_dev_down').disabled = selected >= devlist.length - 1;
+        }
+    };
+
+    const select_tr = (id) => {
+        const prevSelected = selected;
+        if (prevSelected >= 0) {
+            const prevRow = document.getElementById(`dev${prevSelected}`);
+            if (prevRow) prevRow.classList.remove('selected');
+        }
+
+        if (prevSelected === id) {
+            selected = -1; 
+        } else {
+            selected = id;
+            const newRow = document.getElementById(`dev${id}`);
+            if (newRow) newRow.classList.add('selected');
+        }
+        updateControlButtons();
+        update_lb_sel_msg();
+    };
+
+    const sync_table_to_devlist = () => {
+        const tbody = document.querySelector('#tab_devlist tbody');
+        tbody.innerHTML = '';
+        devlist.forEach((config, i) => {
+            const r = document.createElement('tr');
+            r.id = `dev${i}`;
+            r.innerHTML = `
+                <td><img class="device-thumb"></td>
+                <td id="name${i}"></td>
+                <td id="door${i}"></td>
+                <td id="car${i}"></td>
+                <td id="dist${i}"></td>
+            `;
+            r.querySelector('img').src = config.image || default_icon;
+            r.addEventListener('click', () => select_tr(i));
+            r.querySelector(`#door${i}`).addEventListener('click', (e) => {
+                e.stopPropagation(); 
+                if (selected === i) {
+                    document.getElementById('btn_dev_click').click();
+                }
+            });
+            tbody.appendChild(r);
+        });
+        update_tr(0, devlist.length);
+        if(selected >= devlist.length) selected = -1;
+        if(selected > -1) {
+             const selectedRow = document.getElementById(`dev${selected}`);
+             if(selectedRow) selectedRow.classList.add('selected');
+        }
+        updateControlButtons();
+        update_lb_sel_msg();
+    };
+
+    const update_tr = (start, n) => {
+        for (let i = start; i < start + n; i++) {
+            const d = devlist[i];
+            document.getElementById(`name${i}`).textContent = d.name;
+            if (d.door === -1) {
+                document.getElementById(`door${i}`).textContent = '(offline)';
+                document.getElementById(`car${i}`).textContent = '-';
+                document.getElementById(`dist${i}`).textContent = '-';
+            } else {
+                document.getElementById(`door${i}`).textContent = door2str(d.door);
+                document.getElementById(`car${i}`).textContent = car2str(d.car);
+                document.getElementById(`dist${i}`).textContent = d.dist;
+            }
+        }
+    };
+
+    const update_tr_currdev = () => {
+        const d = config_currdev;
+        document.querySelector('#name_curr h3').textContent = d.name;
+        document.getElementById('currdev_img_display').src = d.image || default_icon;
+        
+        const btn = document.getElementById('currdev-btn');
+
+        if (d.door === -1) {
+            document.getElementById('door_curr').textContent = '(offline)';
+            document.getElementById('car_curr').textContent = '-';
+            document.getElementById('dist_curr').textContent = '-';
+            btn.disabled = true;
+            btn.textContent = 'Click';
+            btn.className = 'btn'; 
+            document.getElementById('extra_controls').style.display = 'none'; // Hide when offline
+        } else {
+            document.getElementById('door_curr').textContent = door2str(d.door);
+            document.getElementById('car_curr').textContent = car2str(d.car);
+            document.getElementById('dist_curr').textContent = d.dist;
+            btn.disabled = false;
+
+            btn.classList.remove('open', 'closed', 'opening', 'stopped', 'closing');
+
+            switch (d.door) {
+                case 0: btn.textContent = 'Open'; btn.classList.add('closed'); break;
+                case 1: btn.textContent = 'Close'; btn.classList.add('open'); break;
+                case 2: btn.textContent = 'Click'; btn.classList.add('stopped'); break;
+                case 3: btn.textContent = 'Click'; btn.classList.add('closing'); break;
+                case 4: btn.textContent = 'Click'; btn.classList.add('opening'); break;
+                default: btn.textContent = 'Click'; break;
+            }
+        }
+    };
+
+    // --- Device Communication ---
+    const deviceUrl = (config, path) => {
+        if (config.type === 'ip') return `http://${config.ip}${path}`;
+        if (config.type === 'otc') return `https://${config.server}:${config.port || 443}/forward/v1/${encodeURIComponent(config.token)}${path}`;
+        throw new Error('Unsupported device connection');
+    };
+
+    const connect_device = async (config, success_cb, fail_cb, endpoint = '/jc') => {
+        const comm = deviceUrl(config, endpoint);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        try {
+            const response = await fetch(comm, { signal: controller.signal });
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+            const result = await response.json();
+            success_cb(result);
+        } catch (error) {
+            console.error('Connection failed:', error);
+            fail_cb();
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    };
+
+    const applyStatus = (device, status) => {
+        const values = {fwv: Number(status.fwv), door: status.door, car: status.vehicle,
+                        dist: status.dist, name: status.name};
+        const changed = Object.keys(values).some(key => device[key] !== values[key]);
+        Object.assign(device, values);
+        return changed;
+    };
+
+    const update_status = () => {
+        devlist.forEach((device, index) => {
+            if (!supported(device)) return;
+            const refresh = () => {
+                update_tr(index, 1);
+                save_storage();
+                if (selected === index) updateControlButtons();
+            };
+            connect_device(device, status => {
+                if (devlist[index] === device && applyStatus(device, status)) refresh();
+            }, () => {
+                if (devlist[index] === device && device.door !== -1) {
+                    device.door = -1;
+                    refresh();
+                }
+            });
+        });
+    };
+
+    const update_status_currdev = () => {
+        const device = config_currdev;
+        if (!device) return;
+        connect_device(device, status => {
+            if (config_currdev !== device) return;
+            applyStatus(device, status);
+            const switches = status.secv === 1 || status.secv === 2;
+            document.getElementById('extra_controls').style.display = switches ? 'block' : 'none';
+            document.getElementById('sw_light').checked = status.light === 1;
+            document.getElementById('sw_lock').checked = status.lock === 1;
+            update_tr_currdev();
+        }, () => {
+            if (config_currdev !== device) return;
+            device.door = -1;
+            update_tr_currdev();
+        });
+    };
+
+    // --- Buttons ---
+    const perform_btn_click = (config, action = null) => {
+        if (config.door === -1) return;
+
+        const keyed = config.type === 'ip' || !(config.fwv > 0 && config.fwv < 127);
+        const editKey = () => {
+            if (!devlist.includes(config)) return;
+            setupAddModal(config.type, config);
+            showMsg('#lb_da_msg', 'Enter the device key, save, then try the command again.');
+            document.getElementById('da_devkey').focus();
+        };
+        if (keyed && !config.devkey) return editKey();
+        const send = () => {
+            const params = new URLSearchParams(action ? {[action]: 'toggle'} : {click: '1'});
+            if (keyed) params.set('dkey', config.devkey);
+            connect_device(config, result => {
+                if (result.result === 2) return editKey();
+                if (result.result !== 1) alert(result.item || `Command refused (${result.result})`);
+            }, () => alert('No reply. Check the device status before trying again.'), '/cc?' + params);
+        };
+        if (action) send();
+        else showConfirmation('The door will start moving. Are you sure?', send,
+            {title: 'Confirm Action', okText: 'Confirm'});
+    };
+
+    // Toggle Switch Event Listeners
+    document.getElementById('sw_light').onchange = () => { perform_btn_click(config_currdev, 'light'); };
+    document.getElementById('sw_lock').onchange = () => { perform_btn_click(config_currdev, 'lock'); };
+
+    document.getElementById('btn_dev_click').addEventListener('click', () => {
+        if (selected < 0) return;
+        perform_btn_click(devlist[selected]);
+    });
+
+    document.getElementById('currdev-btn').addEventListener('click', () => {
+        perform_btn_click(config_currdev);
+    });
+
+    document.getElementById('btn_dev_list').addEventListener('click', () => {
+        currdev = -1;
+        config_currdev = null;
+        save_storage();
+        showPage('page_devices');
+        handlePageDevicesShow();
+    });
+
+    document.getElementById('btn_dev_got').addEventListener('click', () => {
+        if (selected < 0 || selected >= devlist.length) return;
+        currdev = selected;
+        save_storage();
+        showPage('page_currdev');
+        handlePageCurrDevShow();
+    });
+
+    document.getElementById('btn_dev_del').addEventListener('click', () => {
+        if (selected < 0) return;
+        showConfirmation(
+            'This will permanently delete the selected device.',
+            () => {
+                devlist.splice(selected, 1);
+                document.getElementById('ndevs').textContent = devlist.length;
+                const currentSelected = selected;
+                selected = -1;
+                sync_table_to_devlist();
+                save_storage(); 
+                if (currentSelected > 0) {
+                    select_tr(currentSelected - 1);
+                } else {
+                    select_tr(-1);
+                }
+            },
+            {
+                title: 'Delete Device?',
+                okText: 'Delete',
+                okClass: 'btn-danger'
+            }
+        );
+    });
+
+    const swap_dev = (i, j) => {
+        [devlist[i], devlist[j]] = [devlist[j], devlist[i]];
+        save_storage(); 
+    };
+
+    document.getElementById('btn_dev_up').addEventListener('click', () => {
+        if (selected < 1) return;
+        swap_dev(selected, selected - 1);
+        sync_table_to_devlist();
+        select_tr(selected - 1);
+    });
+
+    document.getElementById('btn_dev_down').addEventListener('click', () => {
+        if (selected < 0 || selected >= devlist.length - 1) return;
+        swap_dev(selected, selected + 1);
+        sync_table_to_devlist();
+        select_tr(selected + 1);
+    });
+
+    for (const [id, path] of [['btn_dev_home', '/'], ['btn_dev_options', '/vo'], ['btn_dev_logs', '/vl']]) {
+        document.getElementById(id).onclick = () => window.open(deviceUrl(config_currdev, path), '_blank', 'noopener');
+    }
+    document.getElementById('btn_dev_edit').onclick = () => {
+        const device = devlist[selected];
+        if (device) setupAddModal(device.type, device);
+    };
+
+    // --- Modal Logic (Add) ---
+    const openModal = (id) => document.getElementById(id).classList.add('visible'); 
+    const closeModal = (id) => document.getElementById(id).classList.remove('visible'); 
+
+    document.getElementById('btn_dev_add').addEventListener('click', (e) => {
+        e.preventDefault();
+        const menu = document.getElementById('dev_addmenu');
+        menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    });
+
+    document.getElementById('btn_dev_add_close').addEventListener('click', () => closeModal('popup_dev_add'));
+    document.getElementById('btn_dev_add_cancel').addEventListener('click', () => closeModal('popup_dev_add'));
+    
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.classList.remove('visible');
+        });
+    });
+
+    const clear_da_fields = () => {
+        document.getElementById('da_ip').value = '';
+        document.getElementById('da_devkey').value = '';
+        document.getElementById('da_token').value = '';
+        document.getElementById('da_server').value = '';
+        document.getElementById('da_port').value = '';
+        clearMsg('#lb_da_msg');
+    };
+
+    const setupAddModal = (type, device = null) => {
+        editing = device;
+        document.querySelector('#popup_dev_add h3').textContent = device ? 'Edit Device' : 'Add A New Device';
+        document.getElementById('btn_dev_add_submit').textContent = device ? 'Save' : 'Submit';
+        dev_add_by = type;
+        const isIp = type === 'ip';
+        document.querySelectorAll('.daip').forEach(el => el.style.display = isIp ? 'block' : 'none');
+        document.querySelectorAll('.dacld').forEach(el => el.style.display = isIp ? 'none' : 'block');
+
+        clear_da_fields();
+
+        if (type === 'otc') {
+            document.getElementById('lb_cld_token').textContent = 'OTC';
+            document.getElementById('lb_cld_server').textContent = 'OTC';
+            document.getElementById('da_server').value = device?.server || 'cloud.openthings.io';
+            document.getElementById('da_port').value = device?.port || 443;
+            document.getElementById('da_token').value = device?.token || '';
+        } else {
+            document.getElementById('da_ip').value = device?.ip || '';
+        }
+        document.getElementById('da_devkey').value = device?.devkey || '';
+
+        document.getElementById('dev_addmenu').style.display = 'none';
+        openModal('popup_dev_add');
+    };
+
+    document.getElementById('btn_dev_add_by_ip').addEventListener('click', (e) => { e.preventDefault(); setupAddModal('ip'); });
+    document.getElementById('btn_dev_add_by_otc').addEventListener('click', (e) => { e.preventDefault(); setupAddModal('otc'); });
+
+    const validHost = (value, allowPort) => {
+        if (!value || /[\s\\/?#@%]/.test(value)) return false;
+        try {
+            const url = new URL('http://' + value);
+            return !!url.hostname && (allowPort || value === url.hostname || value.toLowerCase() === url.hostname);
+        } catch { return false; }
+    };
+
+    document.getElementById('btn_dev_add_submit').addEventListener('click', () => {
+        let config;
+        if (dev_add_by === 'ip') {
+            const ip = document.getElementById('da_ip').value.trim();
+            if (!validHost(ip, true)) return alert('Enter an IP address or hostname, optionally with a port.');
+            config = {ip};
+        } else if (dev_add_by === 'otc') {
+            const token = document.getElementById('da_token').value.trim();
+            if (token.length < 32) return alert('Invalid token length!');
+            const server = document.getElementById('da_server').value.trim();
+            if (!validHost(server, false)) return alert('Enter the OTC server hostname.');
+            const port = Number(document.getElementById('da_port').value);
+            if (!Number.isInteger(port) || port < 1 || port > 65535) return alert('Invalid port!');
+            config = { 'token': token, 'server': server, 'port': port };
+        } else {
+            return alert('Invalid add method');
+        }
+
+        config.devkey = document.getElementById('da_devkey').value;
+        if (editing) {
+            const index = devlist.indexOf(editing);
+            if (index < 0) return;
+            const updated = {...editing, ...config, door: -1, fwv: null};
+            devlist[index] = updated;
+            save_storage();
+            sync_table_to_devlist();
+            closeModal('popup_dev_add');
+            if (config_currdev === editing) {
+                config_currdev = updated;
+                document.getElementById('lbl_currdev').textContent = conf2str_short(updated);
+                update_tr_currdev();
+                update_status_currdev();
+            } else update_status();
+            return;
+        }
+        Object.assign(config, { type: dev_add_by, name: 'OG', door: -1, car: -1, dist: -1, image: default_icon });
+
+        showMsg('#lb_da_msg', 'Connecting...', 0, 'green');
+        document.querySelectorAll('.dabtn').forEach(b => b.disabled = true);
+
+        const add_new_dev = (conf) => {
+            devlist.push(conf);
+            save_storage();
+            document.getElementById('ndevs').textContent = devlist.length;
+            sync_table_to_devlist();
+            update_tr(devlist.length - 1, 1);
+            closeModal('popup_dev_add');
+        };
+
+        connect_device(config, (result) => {
+            if (typeof result.name === 'string') {
+                config.name = result.name;
+            }
+            add_new_dev(config);
+        }, () => {
+            if (confirm('Failed to connect. Add device anyway?')) {
+                add_new_dev(config);
+            }
+        })
+        .finally(() => {
+            document.querySelectorAll('.dabtn').forEach(b => b.disabled = false);
+            clearMsg('#lb_da_msg');
+        });
+    });
+
+    // --- Image Cropper Logic ---
+    const cropModal = document.getElementById('popup_image_crop');
+    const cropCanvas = document.getElementById('crop_canvas');
+    const cropContainer = document.getElementById('crop_container');
+    const cropCtx = cropCanvas.getContext('2d');
+    const inpFile = document.getElementById('inp_image_file');
+    const zoomSlider = document.getElementById('crop_zoom');
+    
+    let currentImage = null;
+    let imgState = { x: 0, y: 0, scale: 1 };
+    let dragStart = { x: 0, y: 0 };
+    let isDragging = false;
+    const CANVAS_SIZE = 300; // Display size
+
+    document.getElementById('btn_edit_image').addEventListener('click', () => {
+        openModal('popup_image_crop');
+    });
+    
+    const closeCropModal = () => {
+        closeModal('popup_image_crop');
+        inpFile.value = '';
+        cropContainer.style.display = 'none';
+        document.getElementById('crop_controls').style.display = 'none';
+        document.getElementById('btn_crop_save').style.display = 'none';
+    };
+
+    document.getElementById('btn_crop_close').addEventListener('click', closeCropModal);
+    
+    inpFile.addEventListener('change', (e) => {
+        if (!e.target.files || !e.target.files[0]) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            currentImage = new Image();
+            currentImage.onload = () => {
+                initCropper();
+            };
+            currentImage.src = event.target.result;
+        };
+        reader.readAsDataURL(e.target.files[0]);
+    });
+
+    const initCropper = () => {
+        cropContainer.style.display = 'block';
+        document.getElementById('crop_controls').style.display = 'flex';
+        document.getElementById('btn_crop_save').style.display = 'block';
+
+        const size = cropContainer.offsetWidth;
+        cropContainer.style.height = size + 'px';
+        cropCanvas.width = size;
+        cropCanvas.height = size;
+        
+        const ratio = Math.min(size / currentImage.width, size / currentImage.height);
+        imgState.scale = ratio; 
+        imgState.x = (size - currentImage.width * imgState.scale) / 2;
+        imgState.y = (size - currentImage.height * imgState.scale) / 2;
+        
+        zoomSlider.value = 1; 
+        
+        drawCrop();
+    };
+
+    const drawCrop = () => {
+        if (!currentImage) return;
+        cropCtx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+        cropCtx.fillStyle = '#333';
+        cropCtx.fillRect(0,0, cropCanvas.width, cropCanvas.height);
+        
+        const w = currentImage.width * imgState.scale;
+        const h = currentImage.height * imgState.scale;
+        
+        cropCtx.drawImage(currentImage, imgState.x, imgState.y, w, h);
+    };
+
+    zoomSlider.addEventListener('input', (e) => {
+        if(!currentImage) return;
+        const fitScale = Math.min(cropCanvas.width / currentImage.width, cropCanvas.height / currentImage.height);
+        const newScale = fitScale * parseFloat(e.target.value);
+        
+        const oldW = currentImage.width * imgState.scale;
+        const oldH = currentImage.height * imgState.scale;
+        const newW = currentImage.width * newScale;
+        const newH = currentImage.height * newScale;
+        
+        imgState.x -= (newW - oldW) / 2;
+        imgState.y -= (newH - oldH) / 2;
+        imgState.scale = newScale;
+        
+        drawCrop();
+    });
+
+    cropContainer.addEventListener('mousedown', startDrag);
+    cropContainer.addEventListener('touchstart', startDrag, {passive: false});
+    window.addEventListener('mousemove', doDrag);
+    window.addEventListener('touchmove', doDrag, {passive: false});
+    window.addEventListener('mouseup', endDrag);
+    window.addEventListener('touchend', endDrag);
+
+    function getPos(e) {
+        if(e.touches && e.touches.length > 0) {
+            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+        return { x: e.clientX, y: e.clientY };
+    }
+
+    function startDrag(e) {
+        if(!currentImage) return;
+        isDragging = true;
+        dragStart = getPos(e);
+        e.preventDefault(); 
+    }
+
+    function doDrag(e) {
+        if (!isDragging) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        const dx = pos.x - dragStart.x;
+        const dy = pos.y - dragStart.y;
+        
+        imgState.x += dx;
+        imgState.y += dy;
+        dragStart = pos;
+        drawCrop();
+    }
+
+    function endDrag() {
+        isDragging = false;
+    }
+
+    document.getElementById('btn_crop_save').addEventListener('click', () => {
+        if(!currentImage) return;
+        
+        const outSize = 200; 
+        const outCanvas = document.createElement('canvas');
+        outCanvas.width = outSize;
+        outCanvas.height = outSize;
+        const outCtx = outCanvas.getContext('2d');
+        
+        outCtx.drawImage(cropCanvas, 0, 0, cropCanvas.width, cropCanvas.height, 0, 0, outSize, outSize);
+        
+        const base64 = outCanvas.toDataURL('image/jpeg', 0.8);
+        
+        if (config_currdev) {
+            config_currdev.image = base64;
+            if (currdev >= 0 && currdev < devlist.length) {
+                devlist[currdev].image = base64;
+                save_storage();
+                update_tr_currdev(); 
+            }
+        }
+        
+        closeCropModal();
+    });
+
+    // --- Page Change Logic ---
+    const handlePageDevicesShow = () => {
+        if (tm_currdev) { clearInterval(tm_currdev); tm_currdev = null; }
+        clearInterval(tm_devices);
+        sync_table_to_devlist();
+        setTimeout(update_status, 100);
+        tm_devices = setInterval(update_status, 5000);
+    };
+
+    const handlePageCurrDevShow = () => {
+        if (currdev < 0 || currdev >= devlist.length || !supported(devlist[currdev])) {
+            showPage('page_devices');
+            handlePageDevicesShow();
+            return;
+        }
+        if (tm_devices) { clearInterval(tm_devices); tm_devices = null; }
+        clearInterval(tm_currdev);
+        config_currdev = devlist[currdev]; 
+        config_currdev.door = -1; 
+
+        document.getElementById('lbl_currdev').textContent = conf2str_short(config_currdev);
+
+        update_tr_currdev();
+
+        setTimeout(update_status_currdev, 100);
+        tm_currdev = setInterval(update_status_currdev, 2000);
+    };
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            if (tm_devices) { clearInterval(tm_devices); tm_devices = null; }
+            if (tm_currdev) { clearInterval(tm_currdev); tm_currdev = null; }
+        } else {
+            if (pageDevices.classList.contains('active')) {
+                handlePageDevicesShow();
+            } else if (pageCurrDev.classList.contains('active')) {
+                handlePageCurrDevShow();
+            }
+        }
+    });
+
+    load_storage();
+    if (currdev < 0 || currdev >= devlist.length || !supported(devlist[currdev])) {
+        showPage('page_devices');
+        handlePageDevicesShow();
+    } else {
+        showPage('page_currdev');
+        handlePageCurrDevShow();
+    }
+
+    // --- NEW: Web Crypto API Implementation (Native, Secure) ---
+    class CryptoUtils {
+        static async deriveKey(password, salt) {
+            const enc = new TextEncoder();
+            const keyMaterial = await window.crypto.subtle.importKey(
+                "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]
+            );
+            return window.crypto.subtle.deriveKey(
+                {
+                    name: "PBKDF2", salt: enc.encode(salt),
+                    iterations: 100000, hash: "SHA-256"
+                },
+                keyMaterial,
+                { name: "AES-GCM", length: 256 },
+                true, ["encrypt", "decrypt"]
+            );
+        }
+
+        static async encrypt(dataObj, password) {
+            const salt = crypto.getRandomValues(new Uint8Array(16)); 
+            const iv = crypto.getRandomValues(new Uint8Array(12));   
+            const key = await this.deriveKey(password, this.buf2hex(salt));
+            
+            const enc = new TextEncoder();
+            const encrypted = await window.crypto.subtle.encrypt(
+                { name: "AES-GCM", iv: iv },
+                key,
+                enc.encode(JSON.stringify(dataObj))
+            );
+
+            return {
+                v: 2, 
+                salt: this.buf2hex(salt),
+                iv: this.buf2hex(iv),
+                ct: this.buf2hex(new Uint8Array(encrypted))
+            };
+        }
+
+        static async decrypt(packageObj, password) {
+            if (!packageObj.v || packageObj.v !== 2) throw new Error("Unsupported version");
+            
+            const key = await this.deriveKey(password, packageObj.salt);
+            const iv = this.hex2buf(packageObj.iv);
+            const ct = this.hex2buf(packageObj.ct);
+
+            const decrypted = await window.crypto.subtle.decrypt(
+                { name: "AES-GCM", iv: iv },
+                key,
+                ct
+            );
+
+            const dec = new TextDecoder();
+            return JSON.parse(dec.decode(decrypted));
+        }
+
+        static buf2hex(buffer) {
+            return [...new Uint8Array(buffer)].map(x => x.toString(16).padStart(2, '0')).join('');
+        }
+        static hex2buf(hex) {
+            return new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+        }
+    }
+
+    const Cloud = {
+        api: "https://opengarage.io/wp-admin/admin-ajax.php",
+        token: null,
+        password: null, 
+        
+        login: async (user, pass) => {
+            const params = new URLSearchParams();
+            params.append('action', 'ajaxLogin');
+            params.append('username', user);
+            params.append('password', pass);
+            
+            try {
+                const res = await fetch(Cloud.api, { method: 'POST', body: params });
+                const data = await res.json();
+                
+                if(data && data.token) {
+                    Cloud.token = data.token;
+                    Cloud.password = pass; 
+                    return true;
+                }
+            } catch (e) { console.error(e); }
+            return false;
+        },
+
+        getSites: async () => {
+            const params = new URLSearchParams();
+            params.append('action', 'getSites');
+            params.append('token', Cloud.token);
+            params.append('controllerType', 'opengarage_web'); 
+            
+            try {
+                const res = await fetch(Cloud.api, { method: 'POST', body: params });
+                const data = await res.json();
+                
+                if (!data.sites || data.sites === "") return [];
+
+                let packageObj;
+                try {
+                    packageObj = (typeof data.sites === 'string') ? JSON.parse(data.sites) : data.sites;
+                } catch(e) { return null; }
+
+                if (packageObj.v === 2) {
+                    return await CryptoUtils.decrypt(packageObj, Cloud.password);
+                } else {
+                    console.warn("Legacy data found, treated as unreadable.");
+                    return null;
+                }
+
+            } catch (e) {
+                console.error("Crypto/Network error", e);
+                return null;
+            }
+        },
+
+        saveSites: async (sites) => {
+            const encryptedPackage = await CryptoUtils.encrypt(sites, Cloud.password);
+            
+            const params = new URLSearchParams();
+            params.append('action', 'saveSites');
+            params.append('token', Cloud.token);
+            params.append('controllerType', 'opengarage_web');
+            params.append('sites', encodeURIComponent(JSON.stringify(encryptedPackage)));
+            
+            const res = await fetch(Cloud.api, { method: 'POST', body: params });
+            const data = await res.json();
+            return data.success;
+        },
+        
+        mapFromCloud: (cloudItem) => {
+            let type = cloudItem.type || 'ip';
+            
+            if (!cloudItem.type) {
+                if(cloudItem.auth && cloudItem.auth.startsWith('OT')) type='otc';
+                else if(cloudItem.auth && !cloudItem.ip) type='retired';
+            }
+
+            let srv = cloudItem.server;
+            let prt = cloudItem.port;
+
+            if (!srv) {
+                if (type === 'otc') srv = 'cloud.openthings.io';
+            }
+            if (!prt) {
+                if (type === 'otc') prt = 443;
+            }
+
+            return {
+                type: type,
+                name: cloudItem.name || 'OG',
+                ip: cloudItem.ip || '',
+                token: cloudItem.auth || '', 
+                devkey: cloudItem.password || '', 
+                mac: cloudItem.mac || '',
+                
+                server: srv,
+                port: prt,
+                image: cloudItem.image || default_icon,
+
+                door: -1, car: -1, dist: -1
+            };
+        },
+
+        mapToCloud: (webItem) => {
+            return {
+                type: webItem.type,
+                ip: webItem.ip,
+                auth: webItem.token,      
+                password: webItem.devkey, 
+                name: webItem.name,
+                mac: webItem.mac || '',
+                
+                server: webItem.server,
+                port: webItem.port,
+                image: webItem.image 
+            };
+        }
+    };
+
+    document.getElementById('btn_cloud_sync').onclick = () => {
+        clearMsg('#lb_cloud_msg'); 
+        openModal('popup_cloud_login');
+    };
+    
+    document.getElementById('btn_cloud_close').onclick = () => closeModal('popup_cloud_login');
+    
+    document.getElementById('btn_cloud_login').onclick = async () => {
+        const u = document.getElementById('cloud_user').value.trim();
+        const p = document.getElementById('cloud_pass').value.trim();
+        const remember = document.getElementById('cloud_remember').checked;
+
+        if(!u || !p) return showMsg('#lb_cloud_msg', 'Missing credentials', 0, 'red');
+        
+        if (remember) {
+            storageEngine = localStorage;
+            sessionStorage.removeItem(og_devices_key);
+        } else {
+            storageEngine = sessionStorage;
+            localStorage.removeItem(og_devices_key);
+        }
+
+        showMsg('#lb_cloud_msg', 'Logging in...', 0, 'blue');
+        try {
+            if (await Cloud.login(u, p)) {
+                showMsg('#lb_cloud_msg', 'Downloading...', 0, 'blue');
+                let cloudSites = await Cloud.getSites();
+                
+                if (cloudSites === null) {
+                    if(!confirm("Warning: Existing cloud data is encrypted with a legacy format or a different password.\n\nSince this is a new Web App version, you must overwrite the old data to enable sync.\n\nClick OK to open Sync Options (then choose 'Push').")) {
+                        showMsg('#lb_cloud_msg', 'Sync cancelled.', 0, 'red');
+                        return;
+                    }
+                    cloudSites = null; 
+                }
+                
+                window.tempCloudSites = cloudSites;
+                closeModal('popup_cloud_login');
+                setupSyncWindow(cloudSites);
+                openModal('popup_sync_choice');
+            } else {
+                showMsg('#lb_cloud_msg', 'Login failed', 0, 'red');
+            }
+        } catch (e) {
+            console.error(e);
+            showMsg('#lb_cloud_msg', 'Network error', 0, 'red');
+        }
+    };
+
+    const setupSyncWindow = (sites) => {
+        const btnMerge = document.getElementById('btn_sync_merge');
+        const btnPull = document.getElementById('btn_sync_pull');
+        const btnPush = document.getElementById('btn_sync_push');
+        const msg = document.querySelector('#popup_sync_choice .modal-body p');
+
+        if (sites === null) {
+            msg.innerHTML = "<b style='color:red'>Legacy/Invalid Data Found:</b> The cloud contains data that cannot be decrypted.<br><br>Please <b>Push</b> to overwrite it with your current local list.";
+            btnMerge.disabled = true;
+            btnPull.disabled = true;
+            btnPush.disabled = false;
+        } else if (sites.length === 0) {
+            msg.innerHTML = "Cloud account is empty. Push your local data to sync.";
+            btnMerge.disabled = true;
+            btnPull.disabled = true;
+            btnPush.disabled = false;
+        } else {
+            msg.innerHTML = `Found <b>${sites.length}</b> devices on cloud. Choose an action:`;
+            btnMerge.disabled = false;
+            btnPull.disabled = false;
+            btnPush.disabled = false;
+        }
+    };
+
+    const finishSync = () => {
+        save_storage();
+        load_storage();
+        closeModal('popup_sync_choice');
+        alert("Sync Complete!");
+    };
+
+    document.getElementById('btn_sync_cancel').onclick = () => closeModal('popup_sync_choice');
+    
+    document.getElementById('btn_sync_pull').onclick = () => {
+        if(!window.tempCloudSites) return;
+        if (window.tempCloudSites.length === 0 && devlist.length > 0) {
+            if (!confirm("Warning: Cloud storage is empty. Restoring now will DELETE your local devices. Continue?")) return;
+        }
+        
+        devlist = window.tempCloudSites.map(Cloud.mapFromCloud);
+        finishSync();
+    };
+
+    document.getElementById('btn_sync_push').onclick = async () => {
+        if (devlist.length === 0 && window.tempCloudSites && window.tempCloudSites.length > 0) {
+            if (!confirm(`Warning: Your local list is empty, but the cloud has ${window.tempCloudSites.length} devices.\n\nPushing now will DELETE all cloud data. Continue?`)) return;
+        }
+
+        const exportList = devlist.map(Cloud.mapToCloud);
+        if(await Cloud.saveSites(exportList)) finishSync();
+        else alert("Failed to save to cloud");
+    };
+
+    document.getElementById('btn_sync_merge').onclick = async () => {
+        if(!window.tempCloudSites) return;
+        const localTokens = new Set(devlist.map(d => d.token));
+        const localIps = new Set(devlist.map(d => d.ip));
+        
+        window.tempCloudSites.forEach(site => {
+            const mapped = Cloud.mapFromCloud(site);
+            const exists = (mapped.token && localTokens.has(mapped.token)) || 
+                           (mapped.ip && localIps.has(mapped.ip));
+            if(!exists) devlist.push(mapped);
+        });
+        
+        const exportList = devlist.map(Cloud.mapToCloud);
+        await Cloud.saveSites(exportList);
+        finishSync();
+    };
+});
+</script>
+</body>
+</html>

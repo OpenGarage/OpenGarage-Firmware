@@ -1,0 +1,16 @@
+{
+    "name": "OpenGarage",
+    "short_name": "OpenGarage",
+    "start_url": "./og_devices.html",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#ffffff",
+    "icons": [
+        {
+            "src": "og_web_512_android.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
