@@ -77,6 +77,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <option value=2>10 seconds</option>
 </select></td></tr>
 <tr><td colspan=2><input type='checkbox' id='aoo' data-mini='true'><label for='aoo'>Do not alarm when opening</label></td></tr>
+<tr><td colspan=2><input type='checkbox' id='mgrd' data-mini='true'><label for='mgrd'>Ignore commands while the door is moving</label></td></tr>
 <tr><td><b>Log Size:</b><a href='#lszInfo' data-rel='popup' data-role='button' data-inline='true' data-transition='pop' data-icon='info' data-theme='c' data-iconpos='notext'>Important note</a><div data-role='popup' id='lszInfo' class='ui-content' data-theme='b' style='max-width:280px;'><p>If you change log size, please Clear Log for the new size to take effect.</p></div></td><td>
 <select name='lsz' id='lsz' data-mini='true'>
 <option value=20>20</option>
@@ -100,6 +101,7 @@ input[type="radio"].green:checked + label span{ background-color:#00A000; }
 <tr class='mqt'><td><b>MQTT Port:</b></td><td><input type='text' size=5 maxlength=5 id='mqpt' data-mini='true'></td></tr>
 <tr class='mqt'><td><b>MQTT Username:</b></td><td><input type='text' size=16 maxlength=64 id='mqur' data-mini='true' placeholder='(optional)'></td></tr>
 <tr class='mqt'><td><b>MQTT Password:</b></td><td><input type='password' size=16 maxlength=64 id='mqpw' data-mini='true' placeholder='(unchanged if left blank)'><label><input type='checkbox' id='clear_mqpw' data-mini='true'>Clear saved password</label></td></tr>
+<tr class='mqt'><td colspan=2><input type='checkbox' id='mqrt' data-mini='true'><label for='mqrt'>Retain door state messages</label></td></tr>
 <tr class='mqt'><td><b>MQTT Topic:</b></td><td><input type='text' size=16 maxlength=64 id='mqtp' data-mini='true' placeholder='(optional)'></td></tr>
 <tr class='mqt'><td colspan=2><hr></td></tr>
 <tr><td colspan=2><input type='checkbox' id='emen' data-mini='true' onclick='update_email()'><label for='emen'>Enable Email Notifications</label></td></tr>
@@ -283,6 +285,7 @@ comm='co?dkey='+encodeURIComponent(get_and_save_dkey());
 bc('sn1');bc('sn2');bc('sno');bc('dth');bc('vth');bc('riv');bc('bas');bc('alm');
 bc('wfr');bc('lsz');bc('tsn');bc('htp');bc('cdt');bc('dri');bc('ati');bc('atib');
 comm+='&aoo='+($('#aoo').is(':checked')?1:0);
+comm+='&mgrd='+($('#mgrd').is(':checked')?1:0);
 if(security_capable){
 comm+='&secv='+$('input[name="secv"]:checked').val();
 if($('input[name="secv"]:checked').val()==='1') comm+='&pem='+$('input[name="pem"]:checked').val();
@@ -309,6 +312,7 @@ else if($('#'+field).val().length) bc(field,1);
 }
 bc('mqtt',1);bc('mqur',1);bc('mqtp',1);bc('mqpt');
 comm+='&mqen='+(eval_cb('#mqen')?1:0);
+comm+='&mqrt='+(eval_cb('#mqrt')?1:0);
 bc('smtp',1);bc('send',1);bc('recp',1);bc('sprt');
 comm+='&emen='+(eval_cb('#emen')?1:0);
 bc('bprt');bc('ntp1',1);bc('host',1);
@@ -398,6 +402,7 @@ $('#secplus2_client_id').text(jd.s2id || 'Unavailable');
 $('#fwv').text((jd.fwv/100>>0)+'.'+(jd.fwv/10%10>>0)+'.'+(jd.fwv%10>>0));
 $('#alm').val(jd.alm).selectmenu('refresh');
 if(jd.aoo>0) cbt('aoo');
+if(jd.mgrd>0) cbt('mgrd');
 $('#lsz').val(jd.lsz).selectmenu('refresh');
 $('#tsn').val(jd.tsn).selectmenu('refresh');
 $('#sn1').val(jd.sn1).selectmenu('refresh');
@@ -445,6 +450,7 @@ $('#bdmn').val(endpoint.host);
 $('#bprt').val(endpoint.port);
 $('#iftt').val('');
 if(jd.mqen>0) cbt('mqen');
+if(jd.mqrt>0) cbt('mqrt');
 $('#mqtt').val(jd.mqtt);
 if(jd.mqur) $('#mqur').val(jd.mqur);
 if(jd.mqtp) $('#mqtp').val(jd.mqtp);

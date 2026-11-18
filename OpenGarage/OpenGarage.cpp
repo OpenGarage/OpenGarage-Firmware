@@ -98,6 +98,8 @@ OptionStruct OpenGarage::options[] = {
 	{"host", 0, 0, ""},
 	{"pem", 0, 1, ""},
 	{"wfr", 1, 1, ""},
+	{"mqrt", 0, 1, ""},
+	{"mgrd", 0, 1, ""},
 };
 
 /* Variables and functions for handling Ultrasonic Distance sensor */

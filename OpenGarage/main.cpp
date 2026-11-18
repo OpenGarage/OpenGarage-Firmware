@@ -48,6 +48,14 @@ static WiFiClient wificlient;
 static WiFiClient httpclient;
 PubSubClient mqttclient(wificlient);
 String mqtt_topic;
+
+// OUT/STATE honours the "Retain door state" option, but only for settled states (OPEN, CLOSED,
+// STOPPED): a retained OPENING or CLOSING would stay on the broker if the device lost power mid-move.
+// The plain topic is never retained because the device subscribes to it. STATUS keeps its own retain flag.
+static bool mqtt_publish_state(const char *payload, bool settled) {
+	const String topic = mqtt_topic + "/OUT/STATE";
+	return mqttclient.publish(topic.c_str(), payload, settled && og.options[OPTION_MQRT].ival > 0);
+}
 String mqtt_id;
 static uint32_t mqtt_json_failures = 0;
 static uint32_t mqtt_json_bytes = 0;
@@ -98,6 +106,7 @@ SecPlus1::Garage secplus1_garage(PIN_SW_RX, PIN_SW_TX);
 #include "body_device_key.h"
 #include "health_stats.h"
 #include "audio_timing.h"
+#include "move_guard.h"
 struct BuzzerSink {
 	void note(unsigned frequency, unsigned duration) { tone(PIN_BUZZER, frequency, duration); }
 	void silence() { noTone(PIN_BUZZER); }
@@ -703,9 +712,46 @@ static bool network_delivery_busy() {
 		(local_action_seen && uint32_t(millis()-local_action_ms)<5000);
 }
 
+static og_guard::MoveGuard move_guard(OG_MOVE_GUARD_MS);
+static og_guard::PendingMove pending_move(OG_MOVE_GUARD_MS);
+
+// A command that may move the door has just been sent (at once, or after the alarm countdown).
+// Starts the guard and the pending move, and announces OPENING or CLOSING, unless the door is
+// already in the requested state: Security+ 2.0 accepts such commands but nothing moves, so there
+// is nothing to announce. A command that arrives while a move is pending (the option to ignore
+// them is off) may have stopped or reversed the door, so the direction is unknown: say nothing.
+static void door_command_sent(uint8_t action) {
+	if (pending_move.active(millis())) { pending_move.clear(); return; }
+	if ((action == ACTION_OPEN && (door_status == DOOR_STATUS_OPEN || door_status == DOOR_STATUS_OPENING)) ||
+		(action == ACTION_CLOSE && (door_status == DOOR_STATUS_CLOSED || door_status == DOOR_STATUS_CLOSING))) return;
+	if (og.options[OPTION_MGRD].ival > 0) move_guard.arm(millis(), door_status);
+	const char* transition_state = nullptr;
+	const char* transition_legacy = nullptr;
+	if(action == ACTION_OPEN || (action == ACTION_TOGGLE && door_status == DOOR_STATUS_CLOSED)) {
+		transition_state = "OPENING";
+		transition_legacy = "Opening";
+	} else if(action == ACTION_CLOSE || (action == ACTION_TOGGLE && (door_status == DOOR_STATUS_OPEN || door_status == DOOR_STATUS_STOPPED))) {
+		transition_state = "CLOSING";
+		transition_legacy = "Closing";
+	}
+	if(!transition_state) return;
+	pending_move.start(millis(), transition_state, transition_legacy);
+	if(og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval) && mqttclient.connected()) {
+		mqtt_publish_state(transition_state, false);
+		mqttclient.publish(mqtt_topic.c_str(), transition_legacy);
+	}
+}
+
 void performDoorAction(uint8_t action, bool force_alarm_off = false) {
 	if (firmware_update.busy() || firmware_update.phase()==FirmwareUpdatePhase::Success) return;
 	if (identity_restart_pending) return;
+	// With "Ignore commands while the door is moving" on, commands sent through OpenGarage are ignored
+	// while the door is still moving because of an earlier one. The device's own button (force_alarm_off) always works, and a hardware remote
+	// never goes through here.
+	if (!force_alarm_off && og.options[OPTION_MGRD].ival > 0 && move_guard.blocked(millis())) {
+		DEBUG_PRINTLN(F("Door command ignored: a door command is already in progress"));
+		return;
+	}
 	// Check if the requested action is valid based on the current door state
 	bool isValidAction = false;
 	if((og.options[OPTION_SECV].ival == 2) || // For Sec+ 2.0, open/close commands are always valid
@@ -738,22 +784,7 @@ void performDoorAction(uint8_t action, bool force_alarm_off = false) {
 		return;
 	}
 
-	// Immediately publish transitional MQTT state before hardware command executes
-	if(og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval) && mqttclient.connected()) {
-		const char* transition_state = nullptr;
-		const char* transition_legacy = nullptr;
-		if(action == ACTION_OPEN || (action == ACTION_TOGGLE && door_status == DOOR_STATUS_CLOSED)) {
-			transition_state = "OPENING";
-			transition_legacy = "Opening";
-		} else if(action == ACTION_CLOSE || (action == ACTION_TOGGLE && (door_status == DOOR_STATUS_OPEN || door_status == DOOR_STATUS_STOPPED))) {
-			transition_state = "CLOSING";
-			transition_legacy = "Closing";
-		}
-		if(transition_state) {
-			mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(), transition_state);
-			mqttclient.publish(mqtt_topic.c_str(), transition_legacy);
-		}
-	}
+	door_command_sent(action);
 
 	// no alarm
 	switch (og.options[OPTION_SECV].ival) {
@@ -1022,6 +1053,7 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 	// SECOND ROUND: change option values
 	uint old_secv = og.options[OPTION_SECV].ival;
 	uint old_pem = og.options[OPTION_PEM].ival;
+	uint old_mqrt = og.options[OPTION_MQRT].ival;
 	o = og.options;
 	for(i=0;i<NUM_OPTIONS;i++,o++) {
 		const char *key = o->name.c_str();
@@ -1064,6 +1096,14 @@ void sta_change_options_main(const OTF::Request &req, OTF::Response &res) {
 	}
 
 	og.options_save();
+
+	// Turning "Retain door state" off, or MQTT off, must also remove the retained copy, otherwise a
+	// late subscriber would keep getting a state that is never updated again. An empty retained
+	// payload deletes it. Needs the broker connection; a topic rename leaves the old topic's copy.
+	if (old_mqrt > 0 && (og.options[OPTION_MQRT].ival == 0 || og.options[OPTION_MQEN].ival == 0) &&
+		mqttclient.connected() && mqtt_topic.length()) {
+		mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(), "", true);
+	}
 
 	uint new_secv = og.options[OPTION_SECV].ival;
 	secplus1_garage.set_panel_emulation_disabled(og.options[OPTION_PEM].ival != 0);
@@ -1937,7 +1977,11 @@ void check_status() {
 			aux_ticker.once_ms(OG_LIGHT_BLINK_NOTIFY, og.set_led, (byte)LOW);
 		}
 
+		move_guard.observe(millis(), door_status, door_status==DOOR_STATUS_OPENING || door_status==DOOR_STATUS_CLOSING,
+			door_status==DOOR_STATUS_OPEN || door_status==DOOR_STATUS_CLOSED || door_status==DOOR_STATUS_STOPPED);
 		byte event = check_door_event();
+		// the sensor has confirmed the door settled: the pending move is over
+		if(event == DOOR_EVENT_JUST_OPENED || event == DOOR_EVENT_JUST_CLOSED || event == DOOR_EVENT_JUST_STOPPED) pending_move.clear();
 
 		// Log door status changes (only record opened, closed, stopped status changes, as the other statuses are transient)
 		if(event == DOOR_EVENT_JUST_OPENED || event == DOOR_EVENT_JUST_CLOSED || event == DOOR_EVENT_JUST_STOPPED) {
@@ -1963,21 +2007,25 @@ void check_status() {
 			// Mqtt update
 			if(WiFi.status() == WL_CONNECTED && og.options[OPTION_MQEN].ival>0 && valid_url(og.options[OPTION_MQTT].sval) && mqttclient.connected()) {
 				//DEBUG_PRINTLN(F(" Update MQTT (State Refresh)"));
-				if(event == DOOR_EVENT_REMAIN_OPEN || event == DOOR_EVENT_JUST_OPENED) {
-					mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(),"OPEN");
-					mqttclient.publish(mqtt_topic.c_str(),"Open"); //Support existing mqtt code
+				const char *moving = pending_move.state(millis());
+				if(moving && (event == DOOR_EVENT_REMAIN_OPEN || event == DOOR_EVENT_REMAIN_CLOSED || event == DOOR_EVENT_REMAIN_STOPPED)) {
+					mqtt_publish_state(moving, false); // sensor not caught up yet: keep saying OPENING or CLOSING
+					mqttclient.publish(mqtt_topic.c_str(), pending_move.legacy(millis()));
+				} else if(event == DOOR_EVENT_REMAIN_OPEN || event == DOOR_EVENT_JUST_OPENED) {
+					mqtt_publish_state("OPEN", true);
+					mqttclient.publish(mqtt_topic.c_str(), "Open"); //Support existing mqtt code
 				} else if(event == DOOR_EVENT_REMAIN_CLOSED || event == DOOR_EVENT_JUST_CLOSED) {					// MQTT: If door closed...
-					mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(),"CLOSED");
-					mqttclient.publish(mqtt_topic.c_str(),"Closed"); //Support existing mqtt code
+					mqtt_publish_state("CLOSED", true);
+					mqttclient.publish(mqtt_topic.c_str(), "Closed"); //Support existing mqtt code
 				} else if (event == DOOR_EVENT_REMAIN_STOPPED || event == DOOR_EVENT_JUST_STOPPED) {					// MQTT: If door closed...
-					mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(),"STOPPED");
-					mqttclient.publish(mqtt_topic.c_str(),"Stopped"); //Support existing mqtt code
+					mqtt_publish_state("STOPPED", true);
+					mqttclient.publish(mqtt_topic.c_str(), "Stopped"); //Support existing mqtt code
 				} else if (event == DOOR_EVENT_START_OPENING || event == DOOR_EVENT_STILL_OPENING) {
-					mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(),"OPENING");
-					mqttclient.publish(mqtt_topic.c_str(),"Opening"); //Support existing mqtt code
+					mqtt_publish_state("OPENING", false);
+					mqttclient.publish(mqtt_topic.c_str(), "Opening"); //Support existing mqtt code
 				} else if (event == DOOR_EVENT_START_CLOSING || event == DOOR_EVENT_STILL_CLOSING) {
-					mqttclient.publish((mqtt_topic + "/OUT/STATE").c_str(),"CLOSING");
-					mqttclient.publish(mqtt_topic.c_str(),"Closing"); //Support existing mqtt code
+					mqtt_publish_state("CLOSING", false);
+					mqttclient.publish(mqtt_topic.c_str(), "Closing"); //Support existing mqtt code
 				}
 				String msg;
 				sta_controller_fill_json(msg);
@@ -2024,6 +2072,7 @@ void process_alarm() {
 	if (warning_audio.tick(millis())) {
 		hold_network_delivery();
 		og.alarm=0; running=false;
+			door_command_sent(og.alarm_action);
 			switch (og.options[OPTION_SECV].ival) {
 				case 2: // SecPlus 2
 					switch (og.alarm_action) {
