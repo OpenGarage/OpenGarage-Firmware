@@ -275,7 +275,16 @@
         }
 
         #da_custom { margin-bottom: 1rem; }
-        #da_custom summary { cursor: pointer; }
+        .form-field label[for="da_address"] { margin-bottom: .125rem; }
+        #da_hint { display: block; font-size: .8rem; margin-bottom: .5rem; }
+        #da_custom summary { display: flex; align-items: center; gap: .45rem; cursor: pointer; list-style: none; }
+        #da_custom summary::-webkit-details-marker { display: none; }
+        #da_custom .expand-icon {
+            display: grid; place-items: center; width: 1.25rem; height: 1.25rem;
+            border-radius: 50%; background: #666; color: white; font-weight: bold;
+        }
+        #da_custom .expand-icon::before { content: "+"; line-height: 1; }
+        #da_custom[open] .expand-icon::before { content: "−"; }
         #da_custom[open] summary { margin-bottom: .5rem; }
 
         /* Modal / Popup */
@@ -645,8 +654,8 @@
         </div>
         <div class='modal-body'>
             <div class='form-field'>
-                <label for='da_address'>Device Address</label>
-                <small id='da_hint'>May be an IP, URL, or OTC Token</small>
+                <label for='da_address'>Device Address:</label>
+                <small id='da_hint'>(May be an IP, URL, or OTC Token)</small>
                 <input type='text' id='da_address' aria-describedby='da_hint' autocapitalize='none' spellcheck='false'>
             </div>
             <div class='form-field'>
@@ -654,7 +663,7 @@
                 <input type='password' id='da_devkey'>
             </div>
             <details id='da_custom' hidden>
-                <summary>Custom OTC server</summary>
+                <summary><span class="expand-icon" aria-hidden="true"></span>Custom OTC Server</summary>
                 <div class='form-field'>
                     <label for='da_server'>OTC Server:</label>
                     <input type='text' id='da_server'>
