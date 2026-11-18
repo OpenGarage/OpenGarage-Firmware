@@ -130,11 +130,9 @@
       <span class="cld"><span class="inp"><input type="password" id="auth" maxlength="64" placeholder="(unchanged if left blank)"></span>
         <label class="cb"><input type="checkbox" id="clear_auth"><span class="btn c">Clear saved token</span></label></span>
       <label class="lbl cld" for="otcm">Cloud Server:</label><span class="sel cld"><select id="otcm"><option value="0">Default</option><option value="1">Custom</option></select></span>
-      <label class="cb full cld"><input type="checkbox" id="nossl"><span class="btn c">Disable secure WebSocket</span></label>
-      <p class="full cld"><small>Secure WebSocket protects the cloud connection. Email briefly pauses cloud access. Cloud changes require a reboot.</small></p>
+      <label class="cb cld" style="grid-column:2"><input type="checkbox" id="nossl"><span class="btn c">Disable secure WebSocket</span></label>
       <label class="lbl cloud_custom" for="bdmn">Custom Server:</label><span class="inp cloud_custom"><input type="text" id="bdmn" maxlength="64"></span>
       <label class="lbl cloud_custom" for="bprt">Custom Port:</label><span class="inp cloud_custom"><input type="text" inputmode="numeric" id="bprt" maxlength="5"></span>
-      <p class="full cloud_custom"><small>Enter a hostname without ws:// or wss://. The checkbox selects security independently of the port. Secure custom servers need a certificate trusted by this firmware; private CAs are not supported.</small></p>
       <hr class="full cld">
       <label class="cb full"><input type="checkbox" id="mqen"><span class="btn c">Enable MQTT</span></label>
       <label class="lbl mqt" for="mqtt">MQTT Server:</label><span class="inp mqt"><input type="text" id="mqtt" maxlength="64"></span>
