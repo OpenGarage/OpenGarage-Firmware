@@ -87,6 +87,14 @@ const {chromium} = require('playwright');
         await page.click('#btn_dev_add_by_otc');
         assert.deepEqual(await page.locator('#popup_dev_add .form-field:visible input').evaluateAll(
             inputs => inputs.map(input => input.id)), ['da_token', 'da_devkey', 'da_server', 'da_port']);
+        for (const label of ['OTC Token:', 'OTC Server:']) {
+            const input = page.getByLabel(label, {exact: true});
+            assert.equal(await input.evaluate(el => {
+                const range = document.createRange();
+                range.selectNodeContents(el.labels[0]);
+                return range.getClientRects().length;
+            }), 1, label + ' should fit on one line');
+        }
         await page.fill('#da_token', 'OT' + '2'.repeat(30));
         await page.fill('#da_devkey', key);
         await page.click('#btn_dev_add_submit');

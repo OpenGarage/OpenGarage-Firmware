@@ -674,7 +674,7 @@
                 <input type='text' id='da_ip' placeholder='192.168.0.15'>
             </div>
             <div class='form-field dacld'>
-                <b><label id='lb_cld_token'></label> Token:</b>
+                <label for='da_token'>OTC Token:</label>
                 <input type='text' id='da_token'>
             </div>
             <div class='form-field'>
@@ -682,7 +682,7 @@
                 <input type='password' id='da_devkey'>
             </div>
             <div class='form-field dacld'>
-                <b><label id='lb_cld_server'></label> Server:</b>
+                <label for='da_server'>OTC Server:</label>
                 <input type='text' id='da_server'>
             </div>
             <div class='form-field dacld'>
@@ -1262,8 +1262,6 @@ document.addEventListener('DOMContentLoaded', function() {
         clear_da_fields();
 
         if (type === 'otc') {
-            document.getElementById('lb_cld_token').textContent = 'OTC';
-            document.getElementById('lb_cld_server').textContent = 'OTC';
             document.getElementById('da_server').value = device?.server || 'cloud.openthings.io';
             document.getElementById('da_port').value = device?.port || 443;
             document.getElementById('da_token').value = device?.token || '';
