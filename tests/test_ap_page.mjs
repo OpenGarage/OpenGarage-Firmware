@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 const html=fs.readFileSync('OpenGarage/html/ap_home.html','utf8');
-const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];
+const script=html.replace('<!--#include _cloud_endpoint.js-->', fs.readFileSync('OpenGarage/html/_cloud_endpoint.js','utf8')).match(/<script>([\s\S]*?)<\/script>/)[1];
 const elements=new Map();
 function element(id){if(!elements.has(id))elements.set(id,{value:'',checked:false,disabled:false,hidden:true,innerHTML:'',addEventListener(event,fn){this[event]=fn;}});return elements.get(id);}
 const requests=[];

@@ -491,6 +491,8 @@ $$('input[name="opt_group"]').forEach(r => r.addEventListener('change', toggle_o
 $$('input[name="secv"]').forEach(r => r.addEventListener('change', update_secv));
 $('sn2').addEventListener('change', update_sno);
 $('cld').addEventListener('change', update_cld);
+<!--#include _cloud_endpoint.js-->
+bindCloudEndpointFields($);
 $('otcm').addEventListener('change', update_cld);
 $('mqen').addEventListener('change', update_mqtt);
 $('emen').addEventListener('change', update_email);

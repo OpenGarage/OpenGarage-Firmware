@@ -50,3 +50,22 @@ assert.match(cloudLabel({cld:2,clds:1,cloud_secure:1,cloud_tls_state:2,time_vali
 assert.match(cloudLabel({cld:2,clds:3,cloud_secure:1,time_valid:1}),/connected/);
 assert(!cloudLabel({cld:2,clds:1,cloud_secure:0,time_valid:0}).includes('waiting for time'));
 console.log('PASS: homepage exposes strict-time waiting and secure-resource failure');
+
+const endpointHelper=fs.readFileSync(new URL('../OpenGarage/html/_cloud_endpoint.js',import.meta.url),'utf8');
+function endpointForm(host,port) {
+  const fields={};
+  for(const id of ['bdmn','bprt','otcm','nossl']) fields[id]={addEventListener(event,fn){this[event]=fn;}};
+  fields.bdmn.value=host; fields.bprt.value=port; fields.otcm.value='1';
+  vm.runInNewContext(endpointHelper+';bindCloudEndpointFields(byId)',{byId:id=>fields[id]});
+  return fields;
+}
+const publicForm=endpointForm('ws.cloud.openthings.io','80');
+publicForm.otcm.change();
+assert.deepEqual([publicForm.bdmn.value,publicForm.bprt.value],['ws.openthings.io','443']);
+publicForm.nossl.checked=true;publicForm.nossl.change();
+assert.deepEqual([publicForm.bdmn.value,publicForm.bprt.value],['ws.cloud.openthings.io','80']);
+publicForm.bprt.input();publicForm.nossl.checked=false;publicForm.nossl.change();
+assert.equal(publicForm.bprt.value,'80');
+const customForm=endpointForm('my.example','8443');
+customForm.otcm.change();customForm.nossl.checked=true;customForm.nossl.change();
+assert.deepEqual([customForm.bdmn.value,customForm.bprt.value],['my.example','8443']);
