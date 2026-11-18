@@ -14,6 +14,7 @@
 .btn.door:hover{filter:brightness(1.08)}
 .btn.door:active{filter:brightness(.9)}
   #div_cloud .rows{grid-template-columns:max-content minmax(0,195px)}
+  #nossl + .btn{padding-right:4px}
   #div_other{grid-template-columns:max-content minmax(0,160px)}
   .auto-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:.2em 0 .5em}
   .auto-row .inp.num{width:39px;margin:0}
@@ -130,7 +131,7 @@
       <span class="cld"><span class="inp"><input type="password" id="auth" maxlength="64" placeholder="(unchanged if left blank)"></span>
         <label class="cb"><input type="checkbox" id="clear_auth"><span class="btn c">Clear saved token</span></label></span>
       <label class="lbl cld" for="otcm">Cloud Server:</label><span class="sel cld"><select id="otcm"><option value="0">Default</option><option value="1">Custom</option></select></span>
-      <label class="cb cld" style="grid-column:2"><input type="checkbox" id="nossl"><span class="btn c">Disable WSS</span></label>
+      <label class="cb cld" style="grid-column:2"><input type="checkbox" id="nossl"><span class="btn c">Disable Secure WS</span></label>
       <label class="lbl cloud_custom" for="bdmn">Custom Server:</label><span class="inp cloud_custom"><input type="text" id="bdmn" maxlength="64"></span>
       <label class="lbl cloud_custom" for="bprt">Custom Port:</label><span class="inp cloud_custom"><input type="text" inputmode="numeric" id="bprt" maxlength="5"></span>
       <hr class="full cld">

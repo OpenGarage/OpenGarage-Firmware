@@ -15,7 +15,7 @@ networks that block NTP may lose remote access until this is resolved locally.
 The firmware does not use its build date as the current time and does not
 automatically fall back to an unencrypted connection.
 
-The cloud settings offer **Disable WSS** to turn off secure WebSocket for the cloud connection.
+The cloud settings offer **Disable Secure WS** to turn off secure WebSocket for the cloud connection.
 Save and reboot after changing it. Plain WebSocket does not provide transport
 encryption. For the default OTC service, the firmware selects the appropriate
 server and port. With **Custom**, configure the server and port yourself; the
