@@ -487,6 +487,7 @@
         .device-actions { flex-wrap: nowrap; }
         .control-group .reorder { flex: 0 0 44px; }
         .device-links { display: flex; gap: 0.5rem; }
+        .device-links svg { width: 1.25em; height: 1.25em; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
         #btn_dev_home {
             margin-top: 2rem;
         }
@@ -651,8 +652,8 @@
         </div>
 
         <div class="device-links">
-            <button class="btn btn-secondary" id="btn_dev_options">Edit Options</button>
-            <button class="btn btn-secondary" id="btn_dev_logs">View Logs</button>
+            <button class="btn btn-secondary" id="btn_dev_options"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.9 5.0L10.1 2.2L13.9 2.2L14.1 5.0L17.0 6.7L19.5 5.4L21.5 8.7L19.1 10.4L19.1 13.6L21.5 15.3L19.5 18.6L17.0 17.3L14.1 19.0L13.9 21.8L10.1 21.8L9.9 19.0L7.0 17.3L4.5 18.6L2.5 15.3L4.9 13.6L4.9 10.4L2.5 8.7L4.5 5.4L7.0 6.7Z"/><circle cx="12" cy="12" r="2.8"/></svg>Edit Options</button>
+            <button class="btn btn-secondary" id="btn_dev_logs"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><g fill="currentColor" stroke="none"><circle cx="4.5" cy="6" r="1.5"/><circle cx="4.5" cy="12" r="1.5"/><circle cx="4.5" cy="18" r="1.5"/></g></svg>View Logs</button>
         </div>
         <button class='btn btn-secondary' id='btn_dev_home'>Device Homepage ➡</button>
     </div>
@@ -672,13 +673,13 @@
                 <b>IP or domain name:</b>
                 <input type='text' id='da_ip' placeholder='192.168.0.15'>
             </div>
-            <div class='form-field'>
-                <label for='da_devkey'><b>Device key:</b></label>
-                <input type='password' id='da_devkey'>
-            </div>
             <div class='form-field dacld'>
                 <b><label id='lb_cld_token'></label> Token:</b>
                 <input type='text' id='da_token'>
+            </div>
+            <div class='form-field'>
+                <label for='da_devkey'><b>Device key:</b></label>
+                <input type='password' id='da_devkey'>
             </div>
             <div class='form-field dacld'>
                 <b><label id='lb_cld_server'></label> Server:</b>
@@ -1119,17 +1120,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const perform_btn_click = (config, action = null) => {
         if (config.door === -1) return;
 
-        const keyed = config.type === 'ip' || !(config.fwv > 0 && config.fwv < 127);
+        const requiresKey = config.type === 'ip' || !(config.fwv > 0 && config.fwv < 127);
         const editKey = () => {
             if (!devlist.includes(config)) return;
             setupAddModal(config.type, config);
             showMsg('#lb_da_msg', 'Enter the device key, save, then try the command again.');
             document.getElementById('da_devkey').focus();
         };
-        if (keyed && !config.devkey) return editKey();
+        if (requiresKey && !config.devkey) return editKey();
         const send = () => {
             const params = new URLSearchParams(action ? {[action]: 'toggle'} : {click: '1'});
-            if (keyed) params.set('dkey', config.devkey);
+            if (config.devkey) params.set('dkey', config.devkey);
             connect_device(config, result => {
                 if (result.result === 2) return editKey();
                 if (result.result !== 1) alert(result.item || `Command refused (${result.result})`);

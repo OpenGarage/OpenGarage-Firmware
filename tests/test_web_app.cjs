@@ -59,6 +59,15 @@ const {chromium} = require('playwright');
         await page.reload();
         await page.click('#currdev-btn');
         await Promise.all([page.waitForResponse(r => r.url().includes('/cc?')), page.click('#btn_confirm_ok')]);
+        assert.equal(commands.at(-1).url.searchParams.get('dkey'), key);
+        await page.evaluate(() => {
+            const saved = JSON.parse(localStorage.og_devices_v1);
+            delete saved.devlist[0].devkey;
+            localStorage.og_devices_v1 = JSON.stringify(saved);
+        });
+        await page.reload();
+        await page.click('#currdev-btn');
+        await Promise.all([page.waitForResponse(r => r.url().includes('/cc?')), page.click('#btn_confirm_ok')]);
         assert.equal(commands.at(-1).url.searchParams.has('dkey'), false);
         await page.click('#btn_dev_list');
         await page.click('#name1');
@@ -76,6 +85,8 @@ const {chromium} = require('playwright');
         await page.click('#btn_dev_add');
         assert.equal(await page.locator('#dev_addmenu a').count(), 2);
         await page.click('#btn_dev_add_by_otc');
+        assert.deepEqual(await page.locator('#popup_dev_add .form-field:visible input').evaluateAll(
+            inputs => inputs.map(input => input.id)), ['da_token', 'da_devkey', 'da_server', 'da_port']);
         await page.fill('#da_token', 'OT' + '2'.repeat(30));
         await page.fill('#da_devkey', key);
         await page.click('#btn_dev_add_submit');
