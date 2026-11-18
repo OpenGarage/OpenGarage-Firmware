@@ -25,6 +25,8 @@ stub = r'''
 #include "OpenGarage/device_key_policy.h"
 #include "OpenGarage/smtp_exchange.h"
 #define F(x) x
+bool secure_cloud_enabled=false;struct {bool valid=true;}local_clock;
+namespace og_tls {struct S {unsigned state=0;};inline S &status(){static S s;return s;}}
 #define HEX 16
 #define STRING_RESERVE_SIZE 256
 #define STA_UI_HTML_GZ_ID "0123456789abcdef"
@@ -52,7 +54,7 @@ code += '''struct {OptionStruct options[NUM_OPTIONS];int has_swrx=1;} og;
 bool secplus2_identity_ready=true;unsigned secplus2_client_id=0x12342908;
 String get_ap_ssid(){return "OG_TEST";}
 '''
-code += serializer + '\nvoid save(Request& req){OptionStruct* o;byte i;' + save + '}\n'
+code += serializer + '\nvoid save(Request& req){OptionStruct* o;byte i;bool legacy_endpoint_edit=false,custom=false,was_custom=false;' + save + '}\n'
 code += '''enum {CLOUD_NONE=0,CLOUD_OTC=2, OG_SN2_NONE=0, HTML_DATA_OUTOFBOUND=3,HTML_DATA_FORMATERROR=4};
 int result=0,res=0;
 std::string result_item;

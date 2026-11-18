@@ -1,0 +1,209 @@
+--- a/src/ESP8266WiFi.h
++++ b/src/ESP8266WiFi.h
+@@ -22,6 +22,7 @@
+ #ifndef WiFi_h
+ #define WiFi_h
+ 
++#include "OGCoreVersion.h"
+ #include <stdint.h>
+ 
+ extern "C" {
+--- a/src/WiFiClientSecureBearSSL.cpp
++++ b/src/WiFiClientSecureBearSSL.cpp
+@@ -232,6 +232,34 @@
+   return connect(host.c_str(), port);
+ }
+ 
++int WiFiClientSecureCtx::connectWithTimeout(const char* name, uint16_t port, uint32_t timeout_ms) {
++  // Do not hide an unbounded flush of a previous connection in this budget.
++  // WebSockets creates a fresh client for each attempt. Ordinary connect()
++  // remains available to other callers with its original semantics.
++  if (!name || !*name || !timeout_ms || _client || ctx_present()) return 0;
++  const ConnectionDeadline deadline{millis(), timeout_ms};
++  IPAddress address;
++  if (!WiFi.hostByName(name, address, deadline.remaining(millis()))) return 0;
++  uint32_t remaining = deadline.remaining(millis());
++  if (!remaining) return 0;
++  _timeout = remaining; // WiFiClient passes this to ClientContext::connect().
++  if (!WiFiClient::connect(address, port)) { _timeout = 15000; return 0; }
++  if (!deadline.remaining(millis())) {
++    _client->abort(); // No virtual TLS flush or additional network wait.
++    _freeSSL();
++    return 0;
++  }
++  const bool connected = _connectSSL(name, &deadline);
++  if (!deadline.remaining(millis())) {
++    _client->abort();
++    _freeSSL();
++    return 0;
++  }
++  // Preserve BearSSL's certificate/protocol error until the caller reads it.
++  if (!connected) _client->abort();
++  return connected;
++}
++
+ void WiFiClientSecureCtx::_freeSSL() {
+   // These are smart pointers and will free if refcnt==0
+   _sc = nullptr;
+@@ -244,6 +272,9 @@
+   // Reset non-allocated ptrs (pointing to bits potentially free'd above)
+   _recvapp_buf = nullptr;
+   _recvapp_len = 0;
++#ifdef OG_WSS_RESERVED_RX
++  if (_external_iobuf) _external_iobuf->release(this);
++#endif
+   // This connection is toast
+   _handshake_done = false;
+   _timeout = 15000;
+@@ -1120,7 +1151,7 @@
+ 
+ // Called by connect() to do the actual SSL setup and handshake.
+ // Returns if the SSL handshake succeeded.
+-bool WiFiClientSecureCtx::_connectSSL(const char* hostName) {
++bool WiFiClientSecureCtx::_connectSSL(const char* hostName, const ConnectionDeadline *deadline) {
+   DEBUG_BSSL("_connectSSL: start connection\n");
+   _freeSSL();
+   _oom_err = false;
+@@ -1132,16 +1163,30 @@
+   }
+ #endif
+ 
++#ifdef OG_WSS_RESERVED_RX
++  // Claim before TLS allocations. Never silently replace a configured reservation.
++  if (_external_iobuf && !_external_iobuf->acquire(this, _iobuf_in_size)) {
++    _oom_err=true; return false;
++  }
++#endif
+   _sc = std::make_shared<br_ssl_client_context>();
+   _eng = &_sc->eng; // Allocation/deallocation taken care of by the _sc shared_ptr
++#ifdef OG_WSS_RESERVED_RX
++  if (!_external_iobuf) _iobuf_in = _alloc_iobuf(_iobuf_in_size);
++#else
+   _iobuf_in = _alloc_iobuf(_iobuf_in_size);
++#endif
+   _iobuf_out = _alloc_iobuf(_iobuf_out_size);
+   DBG_MMU_PRINTF("\n_iobuf_in:       %p\n", _iobuf_in.get());
+   DBG_MMU_PRINTF(  "_iobuf_out:      %p\n", _iobuf_out.get());
+   DBG_MMU_PRINTF(  "_iobuf_in_size:  %u\n", _iobuf_in_size);
+   DBG_MMU_PRINTF(  "_iobuf_out_size: %u\n", _iobuf_out_size);
+ 
++#ifdef OG_WSS_RESERVED_RX
++  if (!_sc || !_inputBuffer() || !_iobuf_out) {
++#else
+   if (!_sc || !_iobuf_in || !_iobuf_out) {
++#endif
+     _freeSSL(); // Frees _sc, _iobuf*
+     _oom_err = true;
+     DEBUG_BSSL("_connectSSL: OOM error\n");
+@@ -1161,7 +1206,11 @@
+     DEBUG_BSSL("_connectSSL: Can't install x509 validator\n");
+     return false;
+   }
++#ifdef OG_WSS_RESERVED_RX
++  br_ssl_engine_set_buffers_bidi(_eng, _inputBuffer(), _iobuf_in_size, _iobuf_out.get(), _iobuf_out_size);
++#else
+   br_ssl_engine_set_buffers_bidi(_eng, _iobuf_in.get(), _iobuf_in_size, _iobuf_out.get(), _iobuf_out_size);
++#endif
+   br_ssl_engine_set_versions(_eng, _tls_min, _tls_max);
+ 
+   // Apply any client certificates, if supplied.
+@@ -1191,6 +1240,13 @@
+     return false;
+   }
+ 
++  if (deadline) {
++    // _freeSSL() above resets _timeout. Apply the shared budget only after
++    // TLS setup, immediately before waiting, not to the outer Stream wrapper.
++    const uint32_t remaining = deadline->remaining(millis());
++    if (!remaining) { _client->abort(); _freeSSL(); return false; }
++    _timeout = remaining;
++  }
+   auto ret = _wait_for_handshake();
+ #ifdef DEBUG_ESP_SSL
+   if (!ret) {
+--- a/src/WiFiClientSecureBearSSL.h
++++ b/src/WiFiClientSecureBearSSL.h
+@@ -23,11 +23,16 @@
+ 
+ #ifndef wificlientbearssl_h
+ #define wificlientbearssl_h
++#include "OGCoreVersion.h"
+ #include <vector>
+ #include "WiFiClient.h"
+ #include <bearssl/bearssl.h>
+ #include "BearSSLHelpers.h"
+ #include "CertStoreBearSSL.h"
++#include "ConnectionDeadline.h"
++#ifdef OG_WSS_RESERVED_RX
++#include "ExternalReceiveBuffer.h"
++#endif
+ 
+ namespace BearSSL {
+ 
+@@ -49,6 +54,8 @@
+     int connect(IPAddress ip, uint16_t port) override;
+     int connect(const String& host, uint16_t port) override;
+     int connect(const char* name, uint16_t port) override;
++    // Fresh client only. Milliseconds shared across DNS, TCP and TLS.
++    int connectWithTimeout(const char* name, uint16_t port, uint32_t timeout_ms);
+ 
+     uint8_t connected() override;
+     size_t write(const uint8_t *buf, size_t size) override;
+@@ -110,6 +117,15 @@
+ 
+     // Sets the requested buffer size for transmit and receive
+     void setBufferSizes(int recv, int xmit);
++#ifdef OG_WSS_RESERVED_RX
++    // Storage must outlive this context. An active context cannot switch buffers.
++    bool setExternalReceiveBuffer(ExternalReceiveBuffer *buffer) {
++      if (ctx_present()) return false;
++      if (buffer && buffer->capacity()<size_t(_iobuf_in_size)) return false;
++      if (_external_iobuf) _external_iobuf->release(this);
++      _external_iobuf=buffer; return true;
++    }
++#endif
+ 
+     // Returns whether MFLN negotiation for the above buffer sizes succeeded (after connection)
+     int getMFLNStatus() {
+@@ -148,7 +164,7 @@
+     virtual void peekConsume (size_t consume) override;
+ 
+   protected:
+-    bool _connectSSL(const char *hostName); // Do initial SSL handshake
++    bool _connectSSL(const char *hostName, const ConnectionDeadline *deadline = nullptr);
+ 
+   private:
+     void _clear();
+@@ -163,6 +179,12 @@
+     std::shared_ptr<br_x509_minimal_context> _x509_minimal;
+     std::shared_ptr<struct br_x509_insecure_context> _x509_insecure;
+     std::shared_ptr<br_x509_knownkey_context> _x509_knownkey;
++#ifdef OG_WSS_RESERVED_RX
++    ExternalReceiveBuffer *_external_iobuf=nullptr;
++    unsigned char *_inputBuffer() const {
++      return _external_iobuf ? _external_iobuf->dataFor(this) : _iobuf_in.get();
++    }
++#endif
+     std::shared_ptr<unsigned char> _iobuf_in;
+     std::shared_ptr<unsigned char> _iobuf_out;
+     time_t _now;
+@@ -266,6 +288,9 @@
+     int connect(IPAddress ip, uint16_t port) override { return _ctx->connect(ip, port); }
+     int connect(const String& host, uint16_t port) override { return _ctx->connect(host, port); }
+     int connect(const char* name, uint16_t port) override { return _ctx->connect(name, port); }
++    int connectWithTimeout(const char* name, uint16_t port, uint32_t timeout_ms) {
++      return _ctx->connectWithTimeout(name, port, timeout_ms);
++    }
+ 
+     uint8_t connected() override { return _ctx->connected(); }
+     size_t write(const uint8_t *buf, size_t size) override { return _ctx->write(buf, size); }
+@@ -320,6 +345,9 @@
+ 
+     // Sets the requested buffer size for transmit and receive
+     void setBufferSizes(int recv, int xmit) { _ctx->setBufferSizes(recv, xmit); }
++#ifdef OG_WSS_RESERVED_RX
++    bool setExternalReceiveBuffer(ExternalReceiveBuffer *buffer) { return _ctx->setExternalReceiveBuffer(buffer); }
++#endif
+ 
+     // Returns whether MFLN negotiation for the above buffer sizes succeeded (after connection)
+     int getMFLNStatus() { return _ctx->getMFLNStatus(); }

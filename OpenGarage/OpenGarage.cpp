@@ -23,6 +23,7 @@
 #include "OpenGarage.h"
 #include "distance_consensus.h"
 #include "config_store.h"
+#include "cloud_policy.h"
 
 byte  OpenGarage::state = OG_STATE_INITIAL;
 File  OpenGarage::log_file;
@@ -102,6 +103,8 @@ OptionStruct OpenGarage::options[] = {
 	{"wfr", 1, 1, ""},
 	{"wfg", 0, 1, ""},
 	{"kset",0, 1, ""},
+	{"otcm",0,1,""},
+	{"nossl",0,1,""},
 };
 
 /* Variables and functions for handling Ultrasonic Distance sensor */
@@ -318,7 +321,7 @@ static const uint16_t config_int_defaults[] PROGMEM = {
 	OG_LIGHT_BLINK_FOREVER, 0, 0, 0, 0, 0, 0, DEFAULT_OTC_PRT,
 	0, 0, 0, 0, 0, 1883, 0, 0,
 	0, 0, 0, DEFAULT_SMTP_PORT, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 1, 0, 0
+	0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0
 };
 static const char *const config_string_defaults[] PROGMEM = {
 	"", "", "", "", "", "", "", "",
@@ -327,7 +330,7 @@ static const char *const config_string_defaults[] PROGMEM = {
 	"", "", "", "", "", "", DEFAULT_OTC_DMN, "",
 	DEFAULT_DKEY, DEFAULT_NAME, "", "", "", "", "", "",
 	"", "", DEFAULT_SMTP_SERVER, "", "", "", "", "",
-	"", "255.255.255.0", "8.8.8.8", "", "", "", "", "", ""
+	"", "255.255.255.0", "8.8.8.8", "", "", "", "", "", "", "", ""
 };
 static_assert(sizeof(config_int_defaults)/sizeof(config_int_defaults[0])==NUM_OPTIONS,"Update config defaults");
 static_assert(sizeof(config_string_defaults)/sizeof(config_string_defaults[0])==NUM_OPTIONS,"Update config defaults");
@@ -378,7 +381,14 @@ bool OpenGarage::options_load(bool *key_marker_missing) {
   if(!pass && !config_defaults_missing(seen,false))return false;
  }
  const bool missing=(seen&(uint64_t(1)<<OPTION_KSET))==0;
- if(key_marker_missing)*key_marker_missing=missing;
+ const bool cloud_missing=(seen&(uint64_t(1)<<OPTION_OTCM))==0;
+ if(cloud_missing) {
+  const bool custom=!og_cloud::legacy_default(options[OPTION_BDMN].sval.c_str(),options[OPTION_BPRT].ival);
+  options[OPTION_OTCM].ival=custom?1:0;
+  // Do not silently switch an existing custom server to TLS.
+  if(!(seen&(uint64_t(1)<<OPTION_NOSSL)))options[OPTION_NOSSL].ival=custom?1:0;
+ }
+ if(key_marker_missing)*key_marker_missing=missing||cloud_missing;
  if(missing) {
   // Preserve a saved network or an explicitly chosen old key, including WiFi-
   // only reset in AP mode. An old unfinished setup with a saved SSID cannot be

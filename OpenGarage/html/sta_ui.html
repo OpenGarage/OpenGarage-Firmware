@@ -129,8 +129,12 @@
       <label class="lbl cld" for="auth">Cloud Token:</label>
       <span class="cld"><span class="inp"><input type="password" id="auth" maxlength="64" placeholder="(unchanged if left blank)"></span>
         <label class="cb"><input type="checkbox" id="clear_auth"><span class="btn c">Clear saved token</span></label></span>
-      <label class="lbl cld" for="bdmn">Cloud Server:</label><span class="inp cld"><input type="text" id="bdmn" maxlength="64"></span>
-      <label class="lbl cld" for="bprt">Cloud Port:</label><span class="inp cld"><input type="text" inputmode="numeric" id="bprt" maxlength="5"></span>
+      <label class="lbl cld" for="otcm">Cloud Server:</label><span class="sel cld"><select id="otcm"><option value="0">Default</option><option value="1">Custom</option></select></span>
+      <label class="cb full cld"><input type="checkbox" id="nossl"><span class="btn c">Disable secure WebSocket</span></label>
+      <p class="full cld"><small>Secure WebSocket protects the cloud connection. Email briefly pauses cloud access. Cloud changes require a reboot.</small></p>
+      <label class="lbl cloud_custom" for="bdmn">Custom Server:</label><span class="inp cloud_custom"><input type="text" id="bdmn" maxlength="64"></span>
+      <label class="lbl cloud_custom" for="bprt">Custom Port:</label><span class="inp cloud_custom"><input type="text" inputmode="numeric" id="bprt" maxlength="5"></span>
+      <p class="full cloud_custom"><small>Enter a hostname without ws:// or wss://. The checkbox selects security independently of the port. Secure custom servers need a certificate trusted by this firmware; private CAs are not supported.</small></p>
       <hr class="full cld">
       <label class="cb full"><input type="checkbox" id="mqen"><span class="btn c">Enable MQTT</span></label>
       <label class="lbl mqt" for="mqtt">MQTT Server:</label><span class="inp mqt"><input type="text" id="mqtt" maxlength="64"></span>
@@ -411,7 +415,11 @@ function show() {
     $('lbl_beat').textContent = jd.rcnt; $('lbl_beat').className = 'wide v';
     $('lbl_rssi').textContent = (jd.rssi > -71 ? 'Good' : (jd.rssi > -81 ? 'Weak' : 'Poor')) + ' (' + jd.rssi + ' dBm)';
     $('lbl_cld').textContent = jd.cld == 0 ? 'None' : jd.cld == 1 ? 'Blynk retired — configure OTC in Edit Options'
-      : 'OTC ' + ['(not enabled)', '(connecting...)', '(disconnected)', '(connected)'][jd.clds];
+      : 'OTC ' + (jd.cloud_secure ? 'secure ' : '') + ['(not enabled)', '(connecting...)', '(disconnected)', '(connected)'][jd.clds];
+    if (jd.cld === 2 && jd.cloud_secure && jd.clds !== 3) {
+      if (jd.cloud_tls_state === 2 || jd.cloud_tls_state === 6) $('lbl_cld').textContent = 'OTC — secure connection unavailable';
+      else if (jd.time_valid === 0) $('lbl_cld').textContent = 'OTC — waiting for time';
+    }
     dev_name = jd.name; set_title();
     if (jd.ui && jd.ui !== UI_ID) ui_changed(jd.ui);
     $('lbl_click').textContent = jd.door >= 2 ? 'Toggle Door' : (jd.door ? 'Close Door' : 'Open Door');
@@ -471,7 +479,7 @@ function update_secv() {
   show_row('dth', relay); show_row('sn2', relay); show_row('sno', relay);
   if (relay) update_sno();
 }
-function update_cld() { toggleAll('.cld', eval_cb('cld')); }
+function update_cld() { toggleAll('.cld', eval_cb('cld')); toggleAll('.cloud_custom', !!eval_cb('cld') && $('otcm').value === '1'); }
 function update_mqtt() { toggleAll('.mqt', eval_cb('mqen')); }
 function update_email() { toggleAll('.email', eval_cb('emen')); }
 function update_sfi() { show_row('cmr', eval_cb('sf_con')); }
@@ -487,6 +495,7 @@ $$('input[name="opt_group"]').forEach(r => r.addEventListener('change', toggle_o
 $$('input[name="secv"]').forEach(r => r.addEventListener('change', update_secv));
 $('sn2').addEventListener('change', update_sno);
 $('cld').addEventListener('change', update_cld);
+$('otcm').addEventListener('change', update_cld);
 $('mqen').addEventListener('change', update_mqtt);
 $('emen').addEventListener('change', update_email);
 $('sf_med').addEventListener('change', update_sfi);
@@ -541,6 +550,7 @@ $('btn_submit').addEventListener('click', function(e) {
   comm = 'dkey=' + encodeURIComponent(saveDeviceKey(okey));
   bc('sn1'); bc('sn2'); bc('sno'); bc('dth'); bc('vth'); bc('riv'); bc('bas'); bc('alm');
   comm += '&wfg=' + eval_cb('wfg');
+  comm += '&otcm=' + encodeURIComponent($('otcm').value) + '&nossl=' + eval_cb('nossl');
   bc('wfr'); bc('lsz'); bc('tsn'); bc('htp'); bc('cdt'); bc('dri'); bc('ati'); bc('atib');
   comm += '&aoo=' + eval_cb('aoo');
   if (security_capable) {
@@ -695,6 +705,8 @@ getJSON('jo').then(function(jd) {
   saved_otc_token = jd.cld === 2 && !!jd.auth_set;
   if (jd.cld === 2) cbt('cld');
   $('cloud_retired').hidden = jd.cld !== 1;
+  $('otcm').value = jd.otcm === 1 ? '1' : '0';
+  $('nossl').checked = jd.nossl === 1;
   update_cld();
   $('auth').value = '';
   const endpoint = cloud_endpoint(jd);

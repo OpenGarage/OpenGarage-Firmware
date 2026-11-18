@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess,tempfile
 source=Path('OpenGarage/main.cpp').read_text()
 policy=source[source.index('static bool network_delivery_busy() {'):source.index('\n}',source.index('static bool network_delivery_busy() {'))+2]
-record=source[source.index('static og_smtp::Delivery record_email_result'):source.index('og_smtp::Delivery emailNotify')]
+record=source[source.index('static og_smtp::Delivery record_email_result'):source.index('static bool email_settings_ready()')]
 functions=source[source.index('void perform_notify(String s) {'):source.index('void process_dynamics(')]
 stub=r'''
 #include "OpenGarage/network_policy.h"
@@ -24,7 +24,13 @@ bool update_started=false,identity_restart_pending=false,setup_reboot_pending=fa
 uint32_t local_action_ms=0;
 struct {bool command_pending(){return false;}}secplus2_garage;
 enum {OPTION_MQEN,OPTION_IFTT,OPTION_EMEN};
-struct Option {unsigned ival=0;String sval;};struct {Option options[3];bool alarm=false;}og;
+#define LOW 0
+#define DOOR_STATUS_OPENING 4
+#define DOOR_STATUS_CLOSING 3
+struct Option {unsigned ival=0;String sval;};struct {Option options[3];bool alarm=false;int button=1;int get_button(){return button;}}og;
+int door_status=0;bool secure_cloud_enabled=false,smtp_cloud_paused=false;uint32_t smtp_finished_ms=0;
+struct {bool valid=true;} local_clock;
+namespace og_tls {struct S{bool retained=true;};inline S &status(){static S s;return s;}}
 ''' + policy + r'''
 String pending_notification;uint32_t notification_ms=0,notification_dropped=0;
 og_network::Backoff email_retry(60000,600000),ifttt_retry(60000,600000);
@@ -67,6 +73,15 @@ int main(){
  assert(std::string(email_last)=="Refused: Not enough memory for SMTP (2)");
  email_refused=false;email_ok=true;perform_notify("next event");service_notifications();assert(email_sent==before+1);assert(email_failures==2);
  assert(std::string(email_last)=="Sent: accepted (250)");
+
+ // WSS alone adds button/motion/time/resource deferral; established sessions stay serviced.
+ secure_cloud_enabled=true;cloud.status=OTF::DISCONNECTED;unsigned wss_before=cloud.cloud;
+ og.button=LOW;service_cloud();assert(cloud.cloud==wss_before);og.button=1;
+ door_status=DOOR_STATUS_OPENING;service_cloud();assert(cloud.cloud==wss_before);door_status=0;
+ local_clock.valid=false;service_cloud();assert(cloud.cloud==wss_before);local_clock.valid=true;
+ og_tls::status().retained=false;service_cloud();assert(cloud.cloud==wss_before);og_tls::status().retained=true;
+ service_cloud();assert(cloud.cloud==wss_before+1);
+ secure_cloud_enabled=false;
 
  // Actual melody holds new cloud connects and notification delivery until all
  // notes finish, including the final40ms processing transition. Local HTTP and

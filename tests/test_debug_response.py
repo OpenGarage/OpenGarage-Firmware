@@ -30,6 +30,13 @@ uint8_t station_disconnect_reason=0;
 uint32_t millis(){return 100;}
 og_local::Clock local_clock;
 #define F(x) x
+#define OG_TLS_STACK_BYTES 6656
+unsigned stack_thunk_get_max_usage(){return 5940;}
+struct HeapSelectIram {};
+#define FPSTR(x) x
+bool secure_cloud_enabled=true;
+const char trustVersion[]="test-store",trustHash[]="test-hash";
+namespace og_tls {struct S {unsigned state=1,refusals=0;int error=0;};inline S &status(){static S s;return s;}}
 #define HEX 16
 #define STRING_RESERVE_SIZE 256
 static int allocation_budget=-1;
@@ -59,7 +66,7 @@ struct IP { String toString(){return "192.0.2.1";} };
 struct { IP localIP(){return {};} int RSSI(){return -50;} int channel(){return 1;} int getPhyMode(){return 3;} String BSSIDstr(){return "00:00:00:00:00:00";} } WiFi;
 struct ResetInfo { unsigned reason=0; };
 struct {
-  unsigned getMaxFreeBlockSize(){return 28000;}
+  unsigned getMaxFreeBlockSize(){return 28000;} unsigned getCpuFreqMHz(){return 160;}
   unsigned getFreeContStack(){return 1536;}
   unsigned getChipId(){return 123;} unsigned getFreeHeap(){return 30000;}
   unsigned getFlashChipRealSize(){return 4194304;}
@@ -109,7 +116,7 @@ with tempfile.TemporaryDirectory(prefix='og-db-test-') as scratch:
 
 station = set('rcnt fwv name mac mqtt_topic devip cid rssi bssid build Freeheap flash_size has_swrx'.split())
 ap = set('dist fwv has_swrx'.split())
-common = set('active_security_protocol free_heap largest_free_heap_block build_time otf_revision reset_reason reset_reason_code uptime_s min_free_heap max_loop_us min_free_cont_stack time_valid'.split())
+common = set('cloud_tls cpu_mhz active_security_protocol free_heap largest_free_heap_block build_time otf_revision reset_reason reset_reason_code uptime_s min_free_heap max_loop_us min_free_cont_stack time_valid'.split())
 one = {'secplus1_' + k for k in 'parity_errors invalid_frames rx_overflows tx_deferrals expired_commands door_age_ms light_lock_age_ms'.split()}
 two = {'secplus2_' + k for k in 'client_id identity_ready status_age_ms query_failures action_write_failures tx_deferrals expired_commands control_fault recovery'.split()}
 assert len(results) == 84
@@ -125,6 +132,8 @@ for hardware in (0, 1):
                 if offset == 6:
                     assert data['active_security_protocol'] == protocol
                     assert data['wifi_phy'] == 3
+                    assert data['cpu_mhz']==160
+                    assert data['cloud_tls']=={'enabled':1,'state':1,'allocation_refusals':0,'last_ssl_error':0,'stack_bytes':6656,'stack_peak':5940,'iram_largest_block':28000,'catalog_version':'test-store','catalog_hash':'test-hash'}
                     if hardware and protocol == 2:
                         assert data['secplus2_client_id'] == '0x12342908'
                         assert data['secplus2_identity_ready'] is True

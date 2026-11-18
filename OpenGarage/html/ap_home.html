@@ -277,11 +277,15 @@
                 <input type='password' id='auth'>
             </div>
             <div class="form-group">
-                <label for="bdmn">Server</label>
+                <label for="otcm">Cloud Server</label><select id="otcm" onchange="toggle_cloud_custom()"><option value="0">Default</option><option value="1">Custom</option></select>
+                <label><input type="checkbox" id="nossl">Disable secure WebSocket</label>
+            </div>
+            <div class="form-group cloud_custom" hidden>
+                <label for="bdmn">Custom Server</label>
                 <input type='text' id='bdmn'>
             </div>
-            <div class="form-group">
-                <label for="bprt">Port</label>
+            <div class="form-group cloud_custom" hidden>
+                <label for="bprt">Custom Port</label>
                 <input type='text' id='bprt'>
             </div>
         </div>
@@ -357,9 +361,10 @@ function setupError(jd){
   if(jd.result===2){keyRequired=true;id('key_section').hidden=false;return 'Check the existing device key and try again.';}
   return jd.item==='config'?'Settings are damaged. A physical factory reset is required.':jd.item==='save'?'Could not save settings. Please retry.':'Error code: '+jd.result;
 }
+function toggle_cloud_custom(){document.querySelectorAll('.cloud_custom').forEach(e=>{e.hidden=id('otcm').value!=='1';});}
 function toggle_cld(){
   id('tb_cld').hidden=true;
-  if(eval_cb('otc')) {id('tb_cld').hidden=false;id('bdmn').value='ws.cloud.openthings.io';id('bprt').value='80';}
+  if(eval_cb('otc')) {id('tb_cld').hidden=false;id('bdmn').value='ws.cloud.openthings.io';id('bprt').value='443';toggle_cloud_custom();}
 }
 function tryConnect(){
   var xhr=new XMLHttpRequest();
@@ -403,8 +408,9 @@ function sf(){
     if(id('auth').value.length<32) {show_msg('Cloud token is too short!','red');return;}
     comm+='&cld=otc';
     comm+='&auth='+encodeURIComponent(id('auth').value);
-    comm+='&bdmn='+id('bdmn').value;
-    comm+='&bprt='+id('bprt').value;
+    comm+='&otcm='+encodeURIComponent(id('otcm').value)+'&nossl='+eval_cb('nossl');
+    comm+='&bdmn='+encodeURIComponent(id('bdmn').value);
+    comm+='&bprt='+encodeURIComponent(id('bprt').value);
   }
   setupKey = id('dkey').value;
   comm += '&dkey='+encodeURIComponent(setupKey);

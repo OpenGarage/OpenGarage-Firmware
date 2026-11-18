@@ -62,3 +62,10 @@ context.fetch=async()=>({json:async()=>({result:2})});
 await element('save_key').click.call(element('save_key'));
 assert.equal(context.setupReady,true);assert.equal(element('key_section').hidden,false);
 assert.match(element('msg').innerHTML,/already been set/);assert.match(element('msg').innerHTML,/factory-reset/);
+
+// Cloud-off never sends stale Custom controls to setup.
+context.setupReady=true;context.keyRequired=true;element('dkey').value=key;element('otc').checked=false;element('otcm').value='1';
+element('bdmn').value='http://stale hidden value';element('bprt').value='invalid';
+context.sf();const off=new URL('http://og/'+requests.at(-1).url).searchParams;
+for(const name of ['cld','auth','otcm','nossl','bdmn','bprt'])assert.equal(off.has(name),false,name);
+console.log('PASS: cloud-off setup omits stale Custom controls');

@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "reviewed_on": "2026-11-14",
+  "source": {
+    "commit": "8c60e757c30b1b239bae46532b4f6d4ebb1e1cad",
+    "url": "https://raw.githubusercontent.com/nss-dev/nss/8c60e757c30b1b239bae46532b4f6d4ebb1e1cad/lib/ckfw/builtins/certdata.txt",
+    "sha256": "6d177e33ab54b338edfee24dc3868585833636716a320a725137ab4a15927292",
+    "commit_date": "2026-11-13T23:31:24Z"
+  },
+  "roots": [
+    {
+      "name": "GTS_Root_R1",
+      "sha256": "d947432abde7b7fa90fc2e6b59101b1280e0e1c7e4e40fa3c6887fff57a7f4cf",
+      "present": true,
+      "server_auth": "CKT_NSS_TRUSTED_DELEGATOR",
+      "server_distrust_after": "CK_BBOOL CK_FALSE"
+    },
+    {
+      "name": "GTS_Root_R3",
+      "sha256": "34d8a73ee208d9bcdb0d956520934b4e40e69482596e8b6f73c8426b010a6f48",
+      "present": true,
+      "server_auth": "CKT_NSS_TRUSTED_DELEGATOR",
+      "server_distrust_after": "CK_BBOOL CK_FALSE"
+    },
+    {
+      "name": "GTS_Root_R4",
+      "sha256": "349dfa4058c5e263123b398ae795573c4e1313c83fe68f93556cd5e8031b3c7d",
+      "present": true,
+      "server_auth": "CKT_NSS_TRUSTED_DELEGATOR",
+      "server_distrust_after": "CK_BBOOL CK_FALSE"
+    },
+    {
+      "name": "ISRG_Root_X1",
+      "sha256": "96bcec06264976f37460779acf28c5a7cfe8a3c0aae11a8ffcee05c0bddf08c6",
+      "present": true,
+      "server_auth": "CKT_NSS_TRUSTED_DELEGATOR",
+      "server_distrust_after": "CK_BBOOL CK_FALSE"
+    },
+    {
+      "name": "ISRG_Root_X2",
+      "sha256": "69729b8e15a86efc177a57afb7171dfc64add28c2fca8cf1507e34453ccb1470",
+      "present": true,
+      "server_auth": "CKT_NSS_TRUSTED_DELEGATOR",
+      "server_distrust_after": "CK_BBOOL CK_FALSE"
+    },
+    {
+      "name": "SSL.com_Root_Certification_Authority_ECC",
+      "sha256": "3417bb06cc6007da1b961c920b8ab4ce3fad820e4aa30b9acbc4a74ebdcebc65",
+      "present": true,
+      "server_auth": "CKT_NSS_TRUSTED_DELEGATOR",
+      "server_distrust_after": "CK_BBOOL CK_FALSE"
+    },
+    {
+      "name": "SSL.com_Root_Certification_Authority_RSA",
+      "sha256": "85666a562ee0be5ce925c1d8890a6f76a87ec16d4d7d5f29ea7419cf20123b69",
+      "present": true,
+      "server_auth": "CKT_NSS_TRUSTED_DELEGATOR",
+      "server_distrust_after": "CK_BBOOL CK_FALSE"
+    },
+    {
+      "name": "SSL.com_TLS_ECC_Root_CA_2022",
+      "sha256": "c32ffd9f46f936d16c3673990959434b9ad60aafbb9e7cf33654f144cc1ba143",
+      "present": true,
+      "server_auth": "CKT_NSS_TRUSTED_DELEGATOR",
+      "server_distrust_after": "CK_BBOOL CK_FALSE"
+    },
+    {
+      "name": "SSL.com_TLS_RSA_Root_CA_2022",
+      "sha256": "8faf7d2e2cb4709bb8e0b33666bf75a5dd45b5de480f8ea8d4bfe6bebc17f2ed",
+      "present": true,
+      "server_auth": "CKT_NSS_TRUSTED_DELEGATOR",
+      "server_distrust_after": "CK_BBOOL CK_FALSE"
+    },
+    {
+      "name": "Sectigo_Public_Server_Authentication_Root_E46",
+      "sha256": "c90f26f0fb1b4018b22227519b5ca2b53e2ca5b3be5cf18efe1bef47380c5383",
+      "present": true,
+      "server_auth": "CKT_NSS_TRUSTED_DELEGATOR",
+      "server_distrust_after": "CK_BBOOL CK_FALSE"
+    },
+    {
+      "name": "Sectigo_Public_Server_Authentication_Root_R46",
+      "sha256": "7bb647a62aeeac88bf257aa522d01ffea395e0ab45c73f93f65654ec38f25a06",
+      "present": true,
+      "server_auth": "CKT_NSS_TRUSTED_DELEGATOR",
+      "server_distrust_after": "CK_BBOOL CK_FALSE"
+    }
+  ]
+}

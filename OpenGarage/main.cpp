@@ -41,6 +41,8 @@
 #include "smtp_exchange.h"
 #include "pitches.h"
 #include "OpenGarage.h"
+#include "cloud_policy.h"
+#include <OGSecureCloud.h>
 #include "espconnect.h"
 
 OpenGarage og;
@@ -125,6 +127,9 @@ static BuzzerSink buzzer;
 static og_audio::Warning<BuzzerSink> warning_audio(buzzer);
 static og_audio::Melody<BuzzerSink> startup_audio(buzzer);
 static bool ip_audio_active=false, setup_reboot_pending=false;
+static bool secure_cloud_enabled=false, smtp_cloud_paused=false;
+static uint32_t smtp_finished_ms=0;
+
 static byte ip_note=0, ip_digit=0;
 
 void cancel_diagnostic_audio() {
@@ -256,11 +261,25 @@ static void append_age(DebugJson &json, uint32_t age) {
 }
 
 static void append_health_json(DebugJson &json) {
+    json+=F(",\"cloud_tls\":{");
+    json+=F("\"enabled\":");json+=secure_cloud_enabled?1:0;
+    json+=F(",\"state\":");json+=unsigned(og_tls::status().state);
+    json+=F(",\"allocation_refusals\":");json+=og_tls::status().refusals;
+    json+=F(",\"last_ssl_error\":");json+=og_tls::status().error;
+    json+=F(",\"stack_bytes\":");json+=OG_TLS_STACK_BYTES;
+    json+=F(",\"stack_peak\":");json+=stack_thunk_get_max_usage();
+    unsigned iram_block;
+    {HeapSelectIram heap;iram_block=ESP.getMaxFreeBlockSize();}
+    json+=F(",\"iram_largest_block\":");json+=iram_block;
+    json+=F(",\"catalog_version\":\"");json+=FPSTR(trustVersion);
+    json+=F("\",\"catalog_hash\":\"");json+=FPSTR(trustHash);json+=F("\"}");
+
 	json += F(",\"active_security_protocol\":"); json += og.options[OPTION_SECV].ival;
 	json += F(",\"free_heap\":"); json += ESP.getFreeHeap();
 	json += F(",\"largest_free_heap_block\":"); json += ESP.getMaxFreeBlockSize();
+	json += F(",\"cpu_mhz\":");json+=ESP.getCpuFreqMHz();
 	json += F(",\"build_time\":\""); json += F(__TIME__); json += F("\"");
-	json += F(",\"otf_revision\":\"7439002868a6b1c92fc140cdc2ee52095d7dd884\"");
+	json += F(",\"otf_revision\":\"1a65a4e4cd8f49a9f18ab708e27fa73403d43983\"");
 	json += F(",\"reset_reason\":\""); json += ESP.getResetReason(); json += F("\"");
 	json += F(",\"reset_reason_code\":"); json += ESP.getResetInfoPtr()->reason;
 	json += F(",\"uptime_s\":"); json += health_stats.uptime_s();
@@ -521,6 +540,9 @@ json += F(",\"fwv\":");
 		json += F(",\"humid\":");
 		json += humid;
 	}
+    json+=F(",\"cloud_secure\":");json+=secure_cloud_enabled?1:0;
+    json+=F(",\"cloud_tls_state\":");json+=unsigned(og_tls::status().state);
+    json+=F(",\"time_valid\":");json+=local_clock.valid?1:0;
 	json += F("}");
 }
 
@@ -1020,6 +1042,17 @@ void sta_change_options_main(const OptionParams &req, OTF::Response &res) {
 		return;
 	}
 
+    for(const char *field:{"otcm","nossl"})if(!og_cloud::flag(req.getQueryParameter(field))){otf_send_result(res,HTML_DATA_OUTOFBOUND,field);return;}
+    const char *cm=req.getQueryParameter("otcm"), *ch=req.getQueryParameter("bdmn"), *cp=req.getQueryParameter("bprt");
+    const bool was_custom=og.options[OPTION_OTCM].ival;
+    const bool legacy_endpoint_edit=!cm && (ch || cp);
+    const bool custom=cm?cm[0]=='1':legacy_endpoint_edit?
+        !og_cloud::legacy_default(ch?ch:og.options[OPTION_BDMN].sval.c_str(),cp?String(cp).toInt():og.options[OPTION_BPRT].ival):og.options[OPTION_OTCM].ival;
+    if(ch && strlen(ch)>64){otf_send_result(res,HTML_DATA_OUTOFBOUND,"bdmn");return;}
+    if(cp && !og_cloud::valid_port(cp)){otf_send_result(res,HTML_DATA_OUTOFBOUND,"bprt");return;}
+    if(custom && !og_cloud::valid_host(ch?ch:og.options[OPTION_BDMN].sval.c_str())){otf_send_result(res,HTML_DATA_OUTOFBOUND,"bdmn");return;}
+    if(custom && !cp && !og.options[OPTION_BPRT].ival){otf_send_result(res,HTML_DATA_OUTOFBOUND,"bprt");return;}
+
 	byte i;
 	OptionStruct *o = og.options;
 
@@ -1195,6 +1228,11 @@ void sta_change_options_main(const OptionParams &req, OTF::Response &res) {
 			}
 		}
 	}
+
+    if(legacy_endpoint_edit){
+        og.options[OPTION_OTCM].ival=custom?1:0;
+        if(custom && !was_custom && !req.getQueryParameter("nossl"))og.options[OPTION_NOSSL].ival=1;
+    }
 
 	for (byte field : {byte(OPTION_AUTH), byte(OPTION_APWD), byte(OPTION_IFTT), byte(OPTION_MQPW)}) {
 		const String clear_name = String("clear_") + og.options[field].name;
@@ -1372,6 +1410,12 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 	if (cloud && strcmp(cloud, "otc") != 0 && strcmp(cloud, "none") != 0) {
 		otf_send_result(res, HTML_DATA_OUTOFBOUND, "cld: Blynk support retired"); return;
 	}
+    const char *cm=req.getQueryParameter("otcm"),*ns=req.getQueryParameter("nossl");
+    const char *ch=req.getQueryParameter("bdmn"),*cp=req.getQueryParameter("bprt");
+    if(cloud && strcmp(cloud,"otc")==0 && (!og_cloud::flag(cm)||!og_cloud::flag(ns))){otf_send_result(res,HTML_DATA_OUTOFBOUND,"cloud");return;}
+    const bool custom=cm?cm[0]=='1':(ch&&!og_cloud::legacy_default(ch,cp?String(cp).toInt():80));
+    if(cloud && strcmp(cloud,"otc")==0 && custom && (!og_cloud::valid_host(ch)||!og_cloud::valid_port(cp))){otf_send_result(res,HTML_DATA_OUTOFBOUND,"cloud");return;}
+
 	char *ssid = req.getQueryParameter("ssid");
 	if(ssid!=NULL&&strlen(ssid)!=0) {
 		og.options[OPTION_SSID].sval = ssid;
@@ -1386,7 +1430,9 @@ void on_ap_change_config(const OTF::Request &req, OTF::Response &res) {
 				char *bprt = req.getQueryParameter("bprt");
 					og.options[OPTION_BDMN].sval=(bdmn==NULL||strlen(bdmn)==0)?DEFAULT_OTC_DMN:bdmn;
 					og.options[OPTION_BPRT].ival=(bprt==NULL||strlen(bprt)==0)?DEFAULT_OTC_PRT:String(bprt).toInt();
-					og.options[OPTION_CLD].ival = CLOUD_OTC;
+					og.options[OPTION_OTCM].ival=custom?1:0;
+                    og.options[OPTION_NOSSL].ival=ns?ns[0]=='1':custom;
+                    og.options[OPTION_CLD].ival = CLOUD_OTC;
 				og.options[OPTION_AUTH].sval = auth;
 				DEBUG_PRINTLN(og.options[OPTION_CLD].ival);
 
@@ -1509,6 +1555,9 @@ void do_setup() {
 	Serial.println(secplus2_client_id, HEX);
 	if (!secplus2_identity_ready) Serial.println(F("Security+ 2.0 disabled: identity storage unavailable or invalid"));
 	og.options_setup();
+    secure_cloud_enabled=!og.config_locked && og.get_mode()==OG_MOD_STA &&
+        og.options[OPTION_CLD].ival==CLOUD_OTC && og.options[OPTION_AUTH].sval.length()>=32 && !og.options[OPTION_NOSSL].ival;
+    if(secure_cloud_enabled && !og_tls::reserve())og_tls::refuse();
 	if (og.options[OPTION_MQEN].ival) ensure_mqtt_buffer();
 	mqttclient.setSocketTimeout(1);
 	wificlient.setTimeout(1000);
@@ -1534,9 +1583,11 @@ void do_setup() {
 	if(!otf) {
 		const String otfDeviceKey = og.options[OPTION_AUTH].sval;
 
-		if((og.options[OPTION_CLD].ival==CLOUD_OTC) && (otfDeviceKey.length() >= 32)) {
+		if(curr_mode==OG_MOD_STA && (og.options[OPTION_CLD].ival==CLOUD_OTC) && (otfDeviceKey.length() >= 32)) {
 			// Initialize with remote connection if a device key was specified.
-			otf = new OTF::OpenThingsFramework(og.options[OPTION_HTP].ival, og.options[OPTION_BDMN].sval, og.options[OPTION_BPRT].ival, otfDeviceKey, false);
+			const auto ep=og_cloud::endpoint(og.options[OPTION_OTCM].ival,og.options[OPTION_NOSSL].ival,
+                og.options[OPTION_BDMN].sval.c_str(),og.options[OPTION_BPRT].ival);
+            otf = new OTF::OpenThingsFramework(og.options[OPTION_HTP].ival,String(ep.host),ep.port,otfDeviceKey,ep.secure);
 			DEBUG_PRINTLN(F("Started OTF with remote connection"));
 		} else {
 			// Initialize just the local server if no device key was specified.
@@ -1920,7 +1971,14 @@ static og_smtp::Delivery record_email_result(og_smtp::Delivery result, const cha
     return result;
 }
 
-og_smtp::Delivery emailNotify(String s){
+static bool email_settings_ready() {
+    return og.options[OPTION_EMEN].ival && og.options[OPTION_SMTP].sval.length() &&
+        og.options[OPTION_APWD].sval.length() && og.options[OPTION_SEND].sval.length() &&
+        og.options[OPTION_RECP].sval.length();
+}
+
+static og_smtp::Delivery emailNotify_impl(String s){
+    if(!email_settings_ready())return record_email_result(og_smtp::Delivery::REFUSED,"Missing settings","2");
 	DEBUG_PRINTLN(" Sending EMail notification");
 	DEBUG_PRINTLN(GET_FREE_HEAP);
 	EMailSender::EMailMessage email_message;
@@ -1946,6 +2004,17 @@ og_smtp::Delivery emailNotify(String s){
             resp.desc.c_str(),resp.code.c_str());
 	}
 	return record_email_result(og_smtp::Delivery::REFUSED,"Missing settings","2");
+}
+
+og_smtp::Delivery emailNotify(String s) {
+    const bool pause=secure_cloud_enabled && otf && otf->cloudTransportActive() && email_settings_ready();
+    if(pause){
+        if(!otf->pauseCloud())return record_email_result(og_smtp::Delivery::REFUSED,"busy","2");
+        smtp_cloud_paused=true;
+    }
+    const auto result=emailNotify_impl(s);
+    if(smtp_cloud_paused)smtp_finished_ms=millis();
+    return result;
 }
 
 void mqttNotify(String s){
@@ -1988,7 +2057,14 @@ void service_cloud() {
 	// OTF owns jittered reconnect backoff and resets it only after a healthy
 	// session. Keep established sessions live during warnings; defer new
 	// connection work while local actions are busy. Local HTTP is always served.
-	otf->loop(online && (connected || !network_delivery_busy()));
+	bool allowed=online && (connected || !network_delivery_busy());
+    if(secure_cloud_enabled)allowed=allowed && og_tls::status().retained && local_clock.valid &&
+        (connected || (og.get_button()!=LOW && door_status!=DOOR_STATUS_OPENING && door_status!=DOOR_STATUS_CLOSING));
+    if(smtp_cloud_paused){
+        if(pending_notification.length() || uint32_t(millis()-smtp_finished_ms)<5000)allowed=false;
+        else smtp_cloud_paused=false;
+    }
+    otf->loop(allowed);
 }
 
 void process_dynamics(byte event) {

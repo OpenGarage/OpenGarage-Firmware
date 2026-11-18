@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "catalog_version": "candidate-2026-11-14.2",
+  "catalog_metadata_sha256": "99634204a476b33f1a18c113558514f47f47ec472bf2af22de69131d0015391f",
+  "reviewed_on": "2026-11-14",
+  "review_expires": "2027-02-12",
+  "nss_source": {
+    "commit": "8c60e757c30b1b239bae46532b4f6d4ebb1e1cad",
+    "url": "https://raw.githubusercontent.com/nss-dev/nss/8c60e757c30b1b239bae46532b4f6d4ebb1e1cad/lib/ckfw/builtins/certdata.txt",
+    "sha256": "6d177e33ab54b338edfee24dc3868585833636716a320a725137ab4a15927292",
+    "commit_date": "2026-11-13T23:31:24Z"
+  },
+  "tls_retirements": {
+    "SSL.com_Root_Certification_Authority_RSA": {
+      "stop_shipping_on": "2028-12-31",
+      "source": "https://bugzilla.mozilla.org/show_bug.cgi?id=2032170"
+    },
+    "SSL.com_Root_Certification_Authority_ECC": {
+      "stop_shipping_on": "2028-12-31",
+      "source": "https://bugzilla.mozilla.org/show_bug.cgi?id=2032170"
+    }
+  },
+  "excluded_roots": [
+    {
+      "name": "GTS_Root_R2",
+      "sha256": "8d25cd97229dbf70356bda4eb3cc734031e24cf00fafcfd32dc76eb5841c7ea8",
+      "reason": "NSS websites trust removed; email only",
+      "source": "https://bugzilla.mozilla.org/show_bug.cgi?id=2020137"
+    },
+    {
+      "name": "USERTrust_ECC_Certification_Authority",
+      "sha256": "4ff460d54b9c86dabfbcfc5712e0400d2bed3fbc4d4fbdaa86e06adcd2a9ad7a",
+      "reason": "Omitted at initial release: Mozilla websites trust retirement scheduled for 2027-04-15; current server hierarchy uses Sectigo R46/E46",
+      "source": "https://bugzilla.mozilla.org/show_bug.cgi?id=2017182"
+    },
+    {
+      "name": "USERTrust_RSA_Certification_Authority",
+      "sha256": "e793c9b02fd8aa13e21c31228accb08119643b749c898964b1746d46c3d4cbd2",
+      "reason": "Omitted at initial release: Mozilla websites trust retirement scheduled for 2027-04-15; current server hierarchy uses Sectigo R46/E46",
+      "source": "https://bugzilla.mozilla.org/show_bug.cgi?id=2017182"
+    }
+  ],
+  "review_sources": [
+    "https://developers.cloudflare.com/ssl/reference/certificate-authorities/",
+    "https://developers.cloudflare.com/ssl/edge-certificates/backup-certificates/",
+    "https://wiki.mozilla.org/CA/Additional_Trust_Changes",
+    "https://bugzilla.mozilla.org/show_bug.cgi?id=2017182",
+    "https://bugzilla.mozilla.org/show_bug.cgi?id=2032170",
+    "https://www.sectigo.com/resource-library/advisory-on-compromised-emudhra-intermediate-certificates"
+  ],
+  "maintenance_watch": [
+    {
+      "roots": [
+        "ISRG Root YE",
+        "ISRG Root YR"
+      ],
+      "action": "Review Mozilla TLS inclusion and Let\u2019s Encrypt chain plans. Existing YE/YR chain fixtures require X1/X2 cross-signs; review before servers remove those cross-signs."
+    }
+  ],
+  "shipping_approval": {
+    "approved_utc": "2026-11-15T00:30:02.712690+00:00",
+    "selection_review": "Owner/Claude approval of 2ebd8b6; USERTrust RSA/ECC omitted",
+    "validated_source_revision": "2ebd8b6c36c475ff412a89242018539613c222fc",
+    "validated_image_sha256": "a9450037b250aac7730c0bc76ecc5d48a9a5a3e402784c267f7bf7382e690d6a",
+    "full_boot_handshakes": 5,
+    "radio": "802.11g",
+    "cpu_mhz": 160,
+    "whole_loop_us": [
+      3242688,
+      3338005,
+      3191880,
+      3226790,
+      3260664
+    ],
+    "tls_peak_bytes": 5940,
+    "main_stack_min_after_email_bytes": 1456,
+    "scope": "Root-catalog approval, not whole-firmware publication approval. Repeat final-image timing after any later payload change; original settings/firmware/radio restored."
+  }
+}

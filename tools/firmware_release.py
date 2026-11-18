@@ -226,6 +226,14 @@ def require_pinned_dependencies(root=ROOT):
 
 
 def prepare(args):
+    # 1.2.7 introduces secure cloud. Check before touching a signing key/output.
+    # Load relative to this script so CLI and importlib-based host tests agree.
+    if args.version >= 127:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('og_wss_release_policy', Path(__file__).with_name('check_wss_catalog.py'))
+        policy = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(policy)
+        policy.check_catalog(getattr(args, 'root', ROOT))
     require_pinned_dependencies(getattr(args, 'root', ROOT))
     key=require_matching_key(args.private_key,args.public_header)
     rid=version_id(args.version)

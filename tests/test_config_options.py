@@ -30,6 +30,7 @@ using byte=unsigned char;
 using File=FS::File;
 FS FILESYS;
 #include "OpenGarage/defines.h"
+#include "OpenGarage/cloud_policy.h"
 #undef FILESYS
 bool fail_strings=false;
 struct String:std::string {
@@ -80,6 +81,13 @@ int main(){
   init();FILESYS.disk[og_config::current]=std::string("fwv:127\nssid:old-wifi\ndkey:opendoor\nkset:")+marker;
   OpenGarage::options_setup();assert(OpenGarage::config_locked);
  }
+ // Official legacy endpoint becomes secure default; custom host/port stays plain.
+ init();FILESYS.disk[og_config::current]="fwv:127\nssid:old-wifi\ndkey:kept-key\nbdmn:ws.cloud.openthings.io\nbprt:80\n";
+ OpenGarage::options_setup();assert(!OpenGarage::config_locked);assert(OpenGarage::options[OPTION_OTCM].ival==0 && OpenGarage::options[OPTION_NOSSL].ival==0);
+ init();FILESYS.disk[og_config::current]="fwv:127\nssid:old-wifi\ndkey:kept-key\nbdmn:custom.example\nbprt:8443\n";
+ OpenGarage::options_setup();assert(!OpenGarage::config_locked);assert(OpenGarage::options[OPTION_OTCM].ival==1 && OpenGarage::options[OPTION_NOSSL].ival==1);
+ assert(OpenGarage::options[OPTION_BDMN].sval=="custom.example" && OpenGarage::options[OPTION_BPRT].ival==8443);
+ OpenGarage::options[OPTION_NOSSL].ival=0;assert(OpenGarage::options_save());assert(OpenGarage::options_load());assert(OpenGarage::options[OPTION_NOSSL].ival==0);
  // Previous checksummed firmware already reports 127 but lacks the marker.
  init();assert(og_config::save(FILESYS,valid_legacy_config,[](auto &out){return out.text("fwv:127\nssid:old-wifi\ndkey:opendoor\n");}));
  OpenGarage::options_setup();assert(!OpenGarage::config_locked&&OpenGarage::options[OPTION_KSET].ival==1);

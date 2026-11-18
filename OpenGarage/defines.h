@@ -244,6 +244,8 @@ typedef enum {
 	OPTION_WFR,     // Automatic AP selection/roaming (0: off, 1: automatic)
 	OPTION_WFG,     // WiFi compatibility: 0 normal (11n enabled), 1 legacy 11g
 	OPTION_KSET,    // credential established/migrated; internal, not writable via /co
+	OPTION_OTCM,    // OTC endpoint: 0 managed default, 1 custom
+	OPTION_NOSSL,   // disable secure WebSocket: 0 WSS, 1 plain WS
 	NUM_OPTIONS     // number of options
 } OG_OPTION_enum;
 

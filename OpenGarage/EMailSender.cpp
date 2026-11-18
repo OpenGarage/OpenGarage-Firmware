@@ -33,6 +33,9 @@
  */
 
 #include "EMailSender.h"
+#ifdef OTF_SECURE_CLOUD
+#include <OGSecureCloud.h>
+#endif
 #include "smtp_exchange.h"
 #if defined(ESP8266)
 #include "smtp_probe.h"
@@ -496,7 +499,11 @@ EMailSender::Response EMailSender::send(const char* to[], byte sizeOfTo,  byte s
 #if defined(ESP8266)
   // Stock-layout measurement: 18.7 KB consumed by a send. Keep ~3 KB reserve;
   // require a 12 KB block for the stack and initial TLS contexts.
-  if(!og_smtp::memory_ready(ESP.getFreeHeap(),ESP.getMaxFreeBlockSize())) {
+  if(
+#ifdef OTF_SECURE_CLOUD
+      og_tls::status().retained ? !og_tls::smtp_ready() :
+#endif
+      !og_smtp::memory_ready(ESP.getFreeHeap(),ESP.getMaxFreeBlockSize())) {
       Response failed;failed.code="2";failed.desc="Not enough memory for SMTP";return failed;
   }
 #endif
