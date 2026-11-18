@@ -130,7 +130,7 @@
       <span class="cld"><span class="inp"><input type="password" id="auth" maxlength="64" placeholder="(unchanged if left blank)"></span>
         <label class="cb"><input type="checkbox" id="clear_auth"><span class="btn c">Clear saved token</span></label></span>
       <label class="lbl cld" for="otcm">Cloud Server:</label><span class="sel cld"><select id="otcm"><option value="0">Default</option><option value="1">Custom</option></select></span>
-      <label class="cb cld" style="grid-column:2"><input type="checkbox" id="nossl"><span class="btn c">Disable secure WebSocket</span></label>
+      <label class="cb cld" style="grid-column:2"><input type="checkbox" id="nossl"><span class="btn c">Disable WSS</span></label>
       <label class="lbl cloud_custom" for="bdmn">Custom Server:</label><span class="inp cloud_custom"><input type="text" id="bdmn" maxlength="64"></span>
       <label class="lbl cloud_custom" for="bprt">Custom Port:</label><span class="inp cloud_custom"><input type="text" inputmode="numeric" id="bprt" maxlength="5"></span>
       <hr class="full cld">
@@ -201,7 +201,6 @@
     <label class="lbl si" for="dns1">DNS1:</label><span class="inp si"><input type="text" id="dns1" maxlength="64"></span>
     <label class="cb full"><input type="checkbox" id="cb_key"><span class="btn c">Change Device Key</span></label>
     <label class="lbl ckey" for="nkey">New Key:</label><span class="inp ckey"><input type="password" id="nkey" maxlength="64" autocomplete="new-password"></span>
-    <p class="full ckey"><small>Use 10–64 printable ASCII characters with no leading or trailing spaces. Letters alone or a passphrase are fine.</small></p>
     <label class="lbl ckey" for="ckey">Confirm:</label><span class="inp ckey"><input type="password" id="ckey" maxlength="64" autocomplete="new-password"></span>
   </div>
 

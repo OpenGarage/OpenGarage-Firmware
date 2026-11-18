@@ -198,8 +198,7 @@
 
 <main>
     <h1>OpenGarage WiFi Setup</h1>
-    <p id="setup_time">Setup WiFi is available for 30 minutes after startup. Page activity does not extend it.</p>
-    <p><small>To reopen setup, hold the device button for about 5 seconds and release before 10 seconds.</small></p>
+    <p id="setup_time">Setup WiFi closes after 30 minutes.</p>
 
     <div class="form-group">
         <label>Available Networks</label>
@@ -223,10 +222,8 @@
 
     <section id="first_key" hidden>
         <h2>Choose your device key</h2>
-        <p>This key protects your garage controls and settings. Save it somewhere safe before continuing.</p>
         <div class="form-group"><label for="new_key">New Device Key</label><input type="password" id="new_key" maxlength="64" autocomplete="new-password"></div>
         <div class="form-group"><label for="confirm_key">Confirm Device Key</label><input type="password" id="confirm_key" maxlength="64" autocomplete="new-password"></div>
-        <p>Use 10–64 printable ASCII characters, without leading or trailing spaces. A passphrase is fine.</p>
         <p><button type="button" id="generate_key">Generate a Key</button></p>
         <p><label><input type="checkbox" id="show_key"> Show key</label></p>
         <p><button type="button" id="save_key">Save Device Key</button></p>
@@ -235,7 +232,6 @@
         <div id="key_section" class="form-group" hidden>
             <label for="dkey">Existing Device Key</label>
             <input type="password" id="dkey" autocomplete="current-password">
-            <small>This device is already configured. Enter its existing device key to change setup settings.</small>
         </div>
         <div class="form-group">
             <label for="ssid">WiFi SSID</label>
@@ -278,7 +274,7 @@
             </div>
             <div class="form-group">
                 <label for="otcm">Cloud Server</label><select id="otcm" onchange="toggle_cloud_custom()"><option value="0">Default</option><option value="1">Custom</option></select>
-                <label><input type="checkbox" id="nossl">Disable secure WebSocket</label>
+                <label><input type="checkbox" id="nossl">Disable WSS</label>
             </div>
             <div class="form-group cloud_custom" hidden>
                 <label for="bdmn">Custom Server</label>
@@ -351,7 +347,7 @@ async function refreshSetupTime(){
 }
 function tickSetupTime(){
   if(setupSeconds===null)return;
-  id('setup_time').textContent=setupSeconds>0?'Setup WiFi closes in '+Math.floor(setupSeconds/60)+':'+String(setupSeconds%60).padStart(2,'0')+'. Activity does not extend this window.':'Setup window ended. WiFi is off. Hold the device button for about 5 seconds to reopen setup.';
+  id('setup_time').textContent=setupSeconds>0?'Setup WiFi closes in '+Math.floor(setupSeconds/60)+':'+String(setupSeconds%60).padStart(2,'0'):'Setup window ended. WiFi is off. Hold the device button for about 5 seconds to reopen setup.';
   if(setupSeconds>0)--setupSeconds;
 }
 setTimeout(refreshSetupTime,500);setInterval(refreshSetupTime,15000);setInterval(tickSetupTime,1000);
