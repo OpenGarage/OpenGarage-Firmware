@@ -1,5 +1,8 @@
 # Setup WiFi and recovery in firmware 1.2.7
 
+Upgrading preserves your existing device key, even if it is shorter than the current minimum. To replace it, open **Edit Options → Advanced → Change Device Key**. Choose 10–64 printable ASCII characters with no leading or trailing spaces.
+
+
 The open setup WiFi is set to close after 30 minutes per setup session.
 Connecting a phone, keeping the page open or submitting requests does not extend
 that window. Some operations are refused shortly before it ends so they have

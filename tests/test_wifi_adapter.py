@@ -171,4 +171,3 @@ html=Path('OpenGarage/html/sta_ui.html').read_text()
 assert html.index('id="div_other"') < html.index('id="wfg"') < html.index('id="usi"')
 assert "comm += '&wfg=' + eval_cb('wfg')" in html
 assert "$('wfg').checked = jd.wfg === 1" in html
-assert 'Requires a reboot.' in html

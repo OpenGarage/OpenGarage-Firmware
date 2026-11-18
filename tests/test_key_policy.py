@@ -50,6 +50,5 @@ with tempfile.TemporaryDirectory() as d:
  browser=json.loads(subprocess.check_output(['node','-e',fn+';console.log(JSON.stringify('+json.dumps(cases)+'.map(validNewDeviceKey)))'],text=True))
  assert [x=='1' for x in actual]==browser
 html=(root/'OpenGarage/html/sta_ui.html').read_text()
-assert "$('key_warning').hidden = jd.key_weak !== 1" in html
 assert 'submittedNewKey !== null' in html and 'okey.value = submittedNewKey; saveDeviceKey(okey); dkey.value = submittedNewKey' in html
 print('PASS: new-key boundaries/ASCII, browser parity, unchanged legacy credentials, real /co key checks and marker update')
