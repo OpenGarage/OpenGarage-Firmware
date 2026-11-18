@@ -274,30 +274,9 @@
             border-color: var(--light-gray);
         }
 
-        /* Add Device Menu */
-        #dev_addmenu {
-            list-style: none;
-            padding: 0;
-            margin: 1rem 0;
-            background: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            width: 220px;
-            overflow: hidden;
-        }
-        #dev_addmenu a {
-            display: block;
-            padding: 0.75rem 1rem;
-            color: var(--secondary-color);
-            text-decoration: none;
-            border-bottom: 1px solid var(--light-gray);
-        }
-        #dev_addmenu a:hover {
-            background-color: var(--light-gray);
-        }
-        #dev_addmenu li:last-child a {
-            border-bottom: none;
-        }
+        #da_custom { margin-bottom: 1rem; }
+        #da_custom summary { cursor: pointer; }
+        #da_custom[open] summary { margin-bottom: .5rem; }
 
         /* Modal / Popup */
         .modal-overlay {
@@ -599,10 +578,6 @@
                 <button class='btn btn-primary clbtnmod' id='btn_dev_got' disabled>Go to ➡</button>
             </div>
         </div>
-        <ul id='dev_addmenu' style='display:none;'>
-            <li><a href='#' id='btn_dev_add_by_ip'>by IP</a></li>
-            <li><a href='#' id='btn_dev_add_by_otc'>by OTC token</a></li>
-        </ul>
         <div class='footer'>
             <hr>
             <p>Number of devices: <label id='ndevs'>0</label></p>
@@ -669,26 +644,26 @@
             <h3>Add A New Device</h3>
         </div>
         <div class='modal-body'>
-            <div class='form-field daip'>
-                <b>IP or domain name:</b>
-                <input type='text' id='da_ip' placeholder='192.168.0.15'>
-            </div>
-            <div class='form-field dacld'>
-                <label for='da_token'>OTC Token:</label>
-                <input type='text' id='da_token'>
+            <div class='form-field'>
+                <label for='da_address'>Device Address</label>
+                <small id='da_hint'>May be an IP, URL, or OTC Token</small>
+                <input type='text' id='da_address' aria-describedby='da_hint' autocapitalize='none' spellcheck='false'>
             </div>
             <div class='form-field'>
-                <label for='da_devkey'><b>Device key:</b></label>
+                <label for='da_devkey'>Device key:</label>
                 <input type='password' id='da_devkey'>
             </div>
-            <div class='form-field dacld'>
-                <label for='da_server'>OTC Server:</label>
-                <input type='text' id='da_server'>
-            </div>
-            <div class='form-field dacld'>
-                <b>Port:</b>
-                <input type='number' id='da_port'>
-            </div>
+            <details id='da_custom' hidden>
+                <summary>Custom OTC server</summary>
+                <div class='form-field'>
+                    <label for='da_server'>OTC Server:</label>
+                    <input type='text' id='da_server'>
+                </div>
+                <div class='form-field'>
+                    <label for='da_port'>Port:</label>
+                    <input type='number' id='da_port'>
+                </div>
+            </details>
             <div class='message-label' id='lb_da_msg'></div>
             <div class='control-group'>
                 <button id='btn_dev_add_cancel' class='btn btn-secondary dabtn'>Cancel</button>
@@ -798,7 +773,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     let devlist = [];
     let currdev = -1;
-    let dev_add_by = '';
     let editing = null;
     const supported = device => device.type === 'ip' || device.type === 'otc';
     let selected = -1;
@@ -938,7 +912,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const device = devlist[selected];
             document.getElementById('btn_dev_click').disabled = !supported(device) || device.door === -1;
             document.getElementById('btn_dev_got').disabled = !supported(device);
-            document.getElementById('btn_dev_edit').disabled = !supported(device);
             document.getElementById('btn_dev_up').disabled = selected < 1;
             document.getElementById('btn_dev_down').disabled = selected >= devlist.length - 1;
         }
@@ -1047,7 +1020,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- Device Communication ---
     const deviceUrl = (config, path) => {
-        if (config.type === 'ip') return `http://${config.ip}${path}`;
+        if (config.type === 'ip') {
+            const base = /^https?:\/\//i.test(config.ip) ? config.ip : 'http://' + config.ip;
+            return base.replace(/\/$/, '') + path;
+        }
         if (config.type === 'otc') return `https://${config.server}:${config.port || 443}/forward/v1/${encodeURIComponent(config.token)}${path}`;
         throw new Error('Unsupported device connection');
     };
@@ -1123,7 +1099,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const requiresKey = config.type === 'ip' || !(config.fwv > 0 && config.fwv < 127);
         const editKey = () => {
             if (!devlist.includes(config)) return;
-            setupAddModal(config.type, config);
+            setupDeviceModal(config);
             showMsg('#lb_da_msg', 'Enter the device key, save, then try the command again.');
             document.getElementById('da_devkey').focus();
         };
@@ -1219,18 +1195,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     document.getElementById('btn_dev_edit').onclick = () => {
         const device = devlist[selected];
-        if (device) setupAddModal(device.type, device);
+        if (device) setupDeviceModal(device);
     };
 
     // --- Modal Logic (Add) ---
     const openModal = (id) => document.getElementById(id).classList.add('visible'); 
     const closeModal = (id) => document.getElementById(id).classList.remove('visible'); 
 
-    document.getElementById('btn_dev_add').addEventListener('click', (e) => {
-        e.preventDefault();
-        const menu = document.getElementById('dev_addmenu');
-        menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
-    });
+    document.getElementById('btn_dev_add').onclick = () => setupDeviceModal();
 
     document.getElementById('btn_dev_add_close').addEventListener('click', () => closeModal('popup_dev_add'));
     document.getElementById('btn_dev_add_cancel').addEventListener('click', () => closeModal('popup_dev_add'));
@@ -1241,41 +1213,56 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    const clear_da_fields = () => {
-        document.getElementById('da_ip').value = '';
-        document.getElementById('da_devkey').value = '';
-        document.getElementById('da_token').value = '';
-        document.getElementById('da_server').value = '';
-        document.getElementById('da_port').value = '';
-        clearMsg('#lb_da_msg');
-    };
+    const address = document.getElementById('da_address');
+    const custom = document.getElementById('da_custom');
+    const serverField = document.getElementById('da_server');
+    const portField = document.getElementById('da_port');
+    const defaultServer = 'cloud.openthings.io';
+    const isToken = value => /^OT[A-Za-z0-9]{30}$/.test(value);
+    const isOtcAddress = value => isToken(value) ||
+        (editing?.type === 'otc' && value === editing.token);
 
-    const setupAddModal = (type, device = null) => {
+    function parseAddress(value) {
+        if (!value || /[\s\\?#]/.test(value)) throw new Error();
+        const explicit = /^https?:\/\//i.test(value);
+        if (!explicit && !validHost(value, true)) throw new Error();
+        const url = new URL(explicit ? value : 'http://' + value);
+        if (!url.hostname || url.username || url.password) throw new Error();
+        return url;
+    }
+
+    function updateAddress() {
+        const value = address.value.trim();
+        if (/^https:\/\//i.test(value)) {
+            try {
+                const url = parseAddress(value);
+                const match = url.pathname.match(/^\/forward\/v1\/(OT[A-Za-z0-9]{30})(?:\/(?:jc|vo|vl)?)?$/);
+                if (match) {
+                    address.value = match[1];
+                    serverField.value = url.hostname;
+                    portField.value = url.port || 443;
+                    custom.open = url.hostname !== defaultServer || !!url.port;
+                }
+            } catch { /* The address may still be incomplete while typing. */ }
+        }
+        custom.hidden = !isOtcAddress(address.value.trim());
+    }
+
+    address.addEventListener('input', () => { custom.hidden = !isOtcAddress(address.value.trim()); });
+    address.addEventListener('change', updateAddress);
+    const setupDeviceModal = (device = null) => {
         editing = device;
         document.querySelector('#popup_dev_add h3').textContent = device ? 'Edit Device' : 'Add A New Device';
         document.getElementById('btn_dev_add_submit').textContent = device ? 'Save' : 'Submit';
-        dev_add_by = type;
-        const isIp = type === 'ip';
-        document.querySelectorAll('.daip').forEach(el => el.style.display = isIp ? 'block' : 'none');
-        document.querySelectorAll('.dacld').forEach(el => el.style.display = isIp ? 'none' : 'block');
-
-        clear_da_fields();
-
-        if (type === 'otc') {
-            document.getElementById('da_server').value = device?.server || 'cloud.openthings.io';
-            document.getElementById('da_port').value = device?.port || 443;
-            document.getElementById('da_token').value = device?.token || '';
-        } else {
-            document.getElementById('da_ip').value = device?.ip || '';
-        }
+        address.value = device?.type === 'ip' ? device.ip : device?.type === 'otc' ? device.token : '';
         document.getElementById('da_devkey').value = device?.devkey || '';
-
-        document.getElementById('dev_addmenu').style.display = 'none';
+        serverField.value = device?.type === 'otc' && device.server || defaultServer;
+        portField.value = device?.type === 'otc' && device.port || 443;
+        custom.open = serverField.value !== defaultServer || portField.value !== '443';
+        updateAddress();
+        clearMsg('#lb_da_msg');
         openModal('popup_dev_add');
     };
-
-    document.getElementById('btn_dev_add_by_ip').addEventListener('click', (e) => { e.preventDefault(); setupAddModal('ip'); });
-    document.getElementById('btn_dev_add_by_otc').addEventListener('click', (e) => { e.preventDefault(); setupAddModal('otc'); });
 
     const validHost = (value, allowPort) => {
         if (!value || /[\s\\/?#@%]/.test(value)) return false;
@@ -1287,27 +1274,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('btn_dev_add_submit').addEventListener('click', () => {
         let config;
-        if (dev_add_by === 'ip') {
-            const ip = document.getElementById('da_ip').value.trim();
-            if (!validHost(ip, true)) return alert('Enter an IP address or hostname, optionally with a port.');
-            config = {ip};
-        } else if (dev_add_by === 'otc') {
-            const token = document.getElementById('da_token').value.trim();
-            if (token.length < 32) return alert('Invalid token length!');
-            const server = document.getElementById('da_server').value.trim();
+        updateAddress();
+        const value = address.value.trim();
+        if (isOtcAddress(value)) {
+            const server = serverField.value.trim();
             if (!validHost(server, false)) return alert('Enter the OTC server hostname.');
-            const port = Number(document.getElementById('da_port').value);
+            const port = Number(portField.value);
             if (!Number.isInteger(port) || port < 1 || port > 65535) return alert('Invalid port!');
-            config = { 'token': token, 'server': server, 'port': port };
+            config = {type: 'otc', token: value, server, port};
         } else {
-            return alert('Invalid add method');
+            try {
+                const url = parseAddress(value);
+                if (url.pathname.startsWith('/forward/v1/')) throw new Error();
+                const prefix = url.pathname.replace(/\/(jc|vo|vl)\/?$/, '').replace(/\/$/, '');
+                const base = url.protocol === 'http:' && !prefix ? url.host : url.origin;
+                config = {type: 'ip', ip: base + prefix};
+            } catch {
+                return showMsg('#lb_da_msg', 'Enter a device address or a valid OTC token.', 0, 'red');
+            }
         }
 
         config.devkey = document.getElementById('da_devkey').value;
         if (editing) {
             const index = devlist.indexOf(editing);
             if (index < 0) return;
-            const updated = {...editing, ...config, door: -1, fwv: null};
+            const updated = {...editing, door: -1, fwv: null};
+            for (const field of ['ip', 'token', 'server', 'port']) delete updated[field];
+            Object.assign(updated, config);
             devlist[index] = updated;
             save_storage();
             sync_table_to_devlist();
@@ -1320,7 +1313,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else update_status();
             return;
         }
-        Object.assign(config, { type: dev_add_by, name: 'OG', door: -1, car: -1, dist: -1, image: default_icon });
+        Object.assign(config, { name: 'OG', door: -1, car: -1, dist: -1, image: default_icon });
 
         showMsg('#lb_da_msg', 'Connecting...', 0, 'green');
         document.querySelectorAll('.dabtn').forEach(b => b.disabled = true);
