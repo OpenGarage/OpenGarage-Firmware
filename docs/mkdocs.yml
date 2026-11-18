@@ -13,7 +13,10 @@ theme: readthedocs
 nav:
   - 'Home': 'index.md'
   - 'FAQ': 'faq.md'
-  - 'Firmware v1.2.6 <span class="nav-new-badge" aria-label="New">NEW</span>':
+  - 'Firmware v1.2.8 <span class="nav-new-badge" aria-label="New">NEW</span>':
+    - 'User Manual': '1.2.8/manual.md'
+    - 'API Reference': '1.2.8/api.md'
+  - 'Firmware v1.2.6':
     - 'User Manual': '1.2.6/manual.md'
     - 'API Reference': '1.2.6/api.md'
   - 'Firmware v1.2.5':

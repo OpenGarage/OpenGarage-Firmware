@@ -24,7 +24,7 @@
 #define _DEFINES_H
 
 /** Firmware version, hardware version, and maximal values */
-#define OG_FWV     126 // Firmware version: 126 means 1.2.6 (development)
+#define OG_FWV     128 // Firmware version: 128 means 1.2.8 (development)
 
 /** GPIO pins */
 #define PIN_RELAY  15 // NodeMCU D8. Relay for triggering door action (for non-Security+).
@@ -241,8 +241,13 @@ typedef enum {
 	OPTION_HOST,    // custom host name
 	OPTION_PEM,     // Security+ 1.0 panel emulation (0: auto, 1: disabled)
 	OPTION_WFR,     // Automatic AP selection/roaming (0: off, 1: automatic)
+	OPTION_MQRT,    // MQTT: publish door state messages as retained (0: no, 1: yes)
+	OPTION_MGRD,    // ignore door commands sent through OpenGarage while the door is moving (0: no, 1: yes)
 	NUM_OPTIONS     // number of options
 } OG_OPTION_enum;
+
+// longest time (ms) OpenGarage ignores further door commands after one that should move the door
+#define OG_MOVE_GUARD_MS 45000
 
 // if button is pressed for 1 seconds, report IP
 #define BUTTON_REPORTIP_TIMEOUT 800
