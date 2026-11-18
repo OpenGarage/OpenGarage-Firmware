@@ -279,7 +279,7 @@ static void append_health_json(DebugJson &json) {
 	json += F(",\"largest_free_heap_block\":"); json += ESP.getMaxFreeBlockSize();
 	json += F(",\"cpu_mhz\":");json+=ESP.getCpuFreqMHz();
 	json += F(",\"build_time\":\""); json += F(__TIME__); json += F("\"");
-	json += F(",\"otf_revision\":\"1a65a4e4cd8f49a9f18ab708e27fa73403d43983\"");
+	json += F(",\"otf_revision\":\"4d047505bc065299dc5fd57d84968550b494aa46\"");
 	json += F(",\"reset_reason\":\""); json += ESP.getResetReason(); json += F("\"");
 	json += F(",\"reset_reason_code\":"); json += ESP.getResetInfoPtr()->reason;
 	json += F(",\"uptime_s\":"); json += health_stats.uptime_s();
@@ -1551,8 +1551,10 @@ void do_setup() {
 	if (secplus2_identity_ready) {
 		secplus2_identity_ready = secplus2_garage.set_client_id(secplus2_client_id);
 	}
+#ifdef SERIAL_DEBUG
 	Serial.print(F("Security+ 2.0 client ID: 0x"));
 	Serial.println(secplus2_client_id, HEX);
+#endif
 	if (!secplus2_identity_ready) Serial.println(F("Security+ 2.0 disabled: identity storage unavailable or invalid"));
 	og.options_setup();
     secure_cloud_enabled=!og.config_locked && og.get_mode()==OG_MOD_STA &&
