@@ -1112,7 +1112,14 @@ document.addEventListener('DOMContentLoaded', function() {
             showMsg('#lb_da_msg', 'Enter the device key, save, then try the command again.');
             document.getElementById('da_devkey').focus();
         };
-        if (requiresKey && !config.devkey) return editKey();
+        if (requiresKey && !config.devkey) {
+            if (action) {
+                const toggle = document.getElementById('sw_' + action);
+                toggle.checked = !toggle.checked;
+            }
+            alert('No device key is saved for this device in the app. Select the device in the list and choose Edit to enter its key.');
+            return;
+        }
         const send = () => {
             const params = new URLSearchParams(action ? {[action]: 'toggle'} : {click: '1'});
             if (config.devkey) params.set('dkey', config.devkey);

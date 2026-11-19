@@ -32,17 +32,34 @@ const {chromium} = require('playwright');
         });
         await page.goto('http://app.example/og_devices.html');
         await page.locator('#door0').filter({hasText:'closed'}).waitFor();
+        const checkMissingKey = async selector => {
+            const warning = page.waitForEvent('dialog').then(async dialog => {
+                const message = dialog.message();
+                await dialog.accept();
+                return message;
+            });
+            const [message] = await Promise.all([warning, page.click(selector)]);
+            assert.match(message, /No device key is saved.*choose Edit/);
+            assert.equal(await page.locator('#popup_dev_add.visible, #popup_confirm.visible').count(), 0);
+            assert.equal(commands.length, 0);
+        };
         await page.click('#name0');
+        await checkMissingKey('#btn_dev_click');
         await page.click('#btn_dev_got');
         await page.locator('#currdev-btn').filter({hasText:'Open'}).waitFor();
         for (const [button, suffix] of [['options','vo'], ['logs','vl']]) {
             await page.click('#btn_dev_' + button);
             assert.equal(await page.evaluate(() => window.lastOpened), 'https://relay.example:8443/forward/v1/' + devices[0].token + '/' + suffix);
         }
-        await page.click('#currdev-btn');
+        await checkMissingKey('#currdev-btn');
+        await checkMissingKey('label.switch:first-of-type:has(#sw_light)');
+        assert.equal(await page.locator('#sw_light').isChecked(), false);
+        await page.click('#btn_dev_list');
+        await page.click('#btn_dev_edit');
         await page.fill('#da_devkey', key);
         await page.click('#btn_dev_add_submit');
         assert.equal(commands.length, 0);
+        await page.click('#btn_dev_got');
         await page.click('#currdev-btn');
         await Promise.all([page.waitForResponse(r => r.url().includes('/cc?')), page.click('#btn_confirm_ok')]);
         assert.equal(commands.length, 1);
