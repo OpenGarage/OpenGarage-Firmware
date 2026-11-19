@@ -39,7 +39,7 @@ const {chromium} = require('playwright');
                 return message;
             });
             const [message] = await Promise.all([warning, page.click(selector)]);
-            assert.match(message, /No device key is saved.*choose Edit/);
+            assert.match(message, /No device key is saved.*Tap Edit to enter its key/);
             assert.equal(await page.locator('#popup_dev_add.visible, #popup_confirm.visible').count(), 0);
             assert.equal(commands.length, 0);
         };
