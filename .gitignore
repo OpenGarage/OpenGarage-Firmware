@@ -9,3 +9,6 @@ docs/docs/assets/bins/flash.sh
 # Python build/test caches
 __pycache__
 *.py[cod]
+
+# New tests and fixtures stay local unless explicitly selected for the core suite.
+/tests/**
