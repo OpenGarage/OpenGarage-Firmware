@@ -854,7 +854,7 @@ static void hold_network_delivery() {
 static bool network_delivery_busy() {
 	// Keep blocking connection attempts/notifications out of the short melody.
 	return startup_audio.active() || og.alarm || update_started || identity_restart_pending || setup_reboot_pending ||
-		secplus2_garage.command_pending() ||
+		secplus2_garage.command_pending() || secplus1_garage.command_pending() ||
 		(local_action_seen && uint32_t(millis()-local_action_ms)<5000);
 }
 
