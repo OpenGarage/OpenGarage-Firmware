@@ -30,7 +30,7 @@ const {chromium} = require('playwright');
             }
             return route.abort();
         });
-        await page.goto('http://app.example/og_devices.html');
+        await page.goto('http://localhost/og_devices.html');
         await page.locator('#door0').filter({hasText:'closed'}).waitFor();
         const checkMissingKey = async selector => {
             const warning = page.waitForEvent('dialog').then(async dialog => {
@@ -89,7 +89,7 @@ const {chromium} = require('playwright');
         await page.click('#btn_dev_list');
         await page.click('#name1');
         await page.click('#btn_dev_edit');
-        await page.fill('#da_address', 'changed.example:8082');
+        await page.fill('#da_address', 'changed.example:8082/jc');
         await page.fill('#da_devkey', key);
         await page.click('#btn_dev_add_submit');
         await page.click('#btn_dev_click');
@@ -101,6 +101,9 @@ const {chromium} = require('playwright');
         assert.equal(await page.locator('#lb_sel_msg').textContent(), 'ip (changed.example:8082)');
         await page.click('#btn_dev_add');
         assert.equal(await page.locator('#da_custom').isHidden(), true);
+        await page.fill('#da_address', 'ot' + '2'.repeat(30));
+        await page.click('#btn_dev_add_submit');
+        await page.locator('#lb_da_msg').filter({hasText:'valid OTC token'}).waitFor();
         await page.fill('#da_address', 'otgarage.local');
         assert.equal(await page.locator('#da_custom').isHidden(), true);
         await page.fill('#da_address', 'OT' + '2'.repeat(30));
@@ -185,6 +188,60 @@ const {chromium} = require('playwright');
         assert.equal(migrated.ip, '192.168.0.15:8080');
         assert.equal(migrated.image, 'old.png');
         assert.equal(migrated.token, undefined);
+        // A cloud backup from before both edits, plus an entry unique to the cloud.
+        const {pbkdf2Sync, createCipheriv} = require('node:crypto');
+        const salt = 'ab'.repeat(16);
+        const iv = Buffer.alloc(12);
+        const cipher = createCipheriv('aes-256-gcm', pbkdf2Sync('test', salt, 100000, 32, 'sha256'), iv);
+        const oldList = [{type:'blynk', auth:'retired-token'}, {type:'ip', ip:'bench.example:8081'},
+                         {type:'ip', ip:'other.example'}, {type:'ip', ip:'changed.example:8082'},
+                         {type:'otc', auth:devices[0].token, server:'relay.example', port:8443}];
+        const ciphertext = Buffer.concat([cipher.update(JSON.stringify(oldList)), cipher.final(), cipher.getAuthTag()]);
+        let backup = {v:2, salt, iv:iv.toString('hex'), ct:ciphertext.toString('hex')};
+        let upload;
+        await page.route('**/admin-ajax.php', route => {
+            const params = new URLSearchParams(route.request().postData());
+            switch (params.get('action')) {
+                case 'ajaxLogin': return route.fulfill({json:{token:'test'}});
+                case 'getSites': return route.fulfill({json:{sites:backup}});
+                case 'saveSites':
+                    if (upload === 'ok') backup = JSON.parse(decodeURIComponent(params.get('sites')));
+                    if (upload === 'http') return route.fulfill({status:503, body:''});
+                    if (upload === 'invalid') return route.fulfill({body:'bad json'});
+                    return route.fulfill({json:{success:upload === 'ok'}});
+                default: throw Error('Unexpected sync request');
+            }
+        });
+        await page.click('#btn_cloud_sync');
+        await page.fill('#cloud_user', 'tester');
+        await page.fill('#cloud_pass', 'test');
+        await page.click('#btn_cloud_login');
+        const syncMessage = async button => {
+            const message = page.waitForEvent('dialog').then(async d => {
+                const text = d.message();
+                await d.accept();
+                return text;
+            });
+            await page.click(button);
+            return message;
+        };
+        for (const [failure, button] of [['http','push'], ['invalid','merge'], ['refused','merge']]) {
+            upload = failure;
+            assert.match(await syncMessage('#btn_sync_' + button), /Could not save/);
+            assert.equal(await page.locator('#popup_sync_choice.visible').count(), 1);
+            assert.equal(await page.evaluate(() => JSON.parse(localStorage.og_devices_v1).devlist.length), 4);
+        }
+        upload = 'ok';
+        assert.equal(await syncMessage('#btn_sync_merge'), 'Sync Complete!');
+        const after = await page.evaluate(() => JSON.parse(localStorage.og_devices_v1).devlist);
+        assert.equal(after.length, 7);
+        assert.deepEqual(after.slice(4).map(d => d.token || d.ip), ['retired-token', 'bench.example:8081', 'other.example']);
+        assert.ok(after.some(d => d.ip === 'changed.example:8082'));
+        assert.ok(after.some(d => d.token === devices[0].token));
+        await page.click('#btn_cloud_sync');
+        await page.click('#btn_cloud_login');
+        assert.equal(await syncMessage('#btn_sync_pull'), 'Sync Complete!');
+        assert.equal(await page.evaluate(() => JSON.parse(localStorage.og_devices_v1).devlist.length), 7);
         console.log('PASS unified Add/Edit, URL and token routing, retired entries, device keys, and cloud sync');
     } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -1056,6 +1056,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    // Match the current connection. A controller may intentionally have
+    // separate LAN and OTC entries, even when both report the same MAC.
+    function connectionId(device) {
+        if (device.type === 'ip' && device.ip) return JSON.stringify(['ip', deviceUrl(device, '')]);
+        if (!device.token) return '';
+        if (device.type === 'otc') return JSON.stringify(['otc',
+            (device.server || 'cloud.openthings.io').toLowerCase(), Number(device.port || 443), device.token]);
+        return JSON.stringify(['retired', device.token]);
+    }
+
     const applyStatus = (device, status) => {
         const values = {fwv: Number(status.fwv), door: status.door, car: status.vehicle,
                         dist: status.dist, name: status.name};
@@ -1123,10 +1133,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const send = () => {
             const params = new URLSearchParams(action ? {[action]: 'toggle'} : {click: '1'});
             if (config.devkey) params.set('dkey', config.devkey);
+            const refreshSwitch = () => {
+                if (action && config_currdev === config) update_status_currdev();
+            };
             connect_device(config, result => {
+                if (result.result !== 1) refreshSwitch();
                 if (result.result === 2) return editKey();
                 if (result.result !== 1) alert(result.item || `Command refused (${result.result})`);
-            }, () => alert('No reply. Check the device status before trying again.'), '/cc?' + params);
+            }, () => {
+                refreshSwitch();
+                alert('No reply. Check the device status before trying again.');
+            }, '/cc?' + params);
         };
         if (action) send();
         else showConfirmation('The door will start moving. Are you sure?', send,
@@ -1225,7 +1242,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
         overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) overlay.classList.remove('visible');
+            if (e.target === overlay && overlay.getAttribute('aria-busy') !== 'true') overlay.classList.remove('visible');
         });
     });
 
@@ -1241,7 +1258,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function parseAddress(value) {
         if (!value || /[\s\\?#]/.test(value)) throw new Error();
         const explicit = /^https?:\/\//i.test(value);
-        if (!explicit && !validHost(value, true)) throw new Error();
+        if (!explicit) {
+            if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value) || /^ot[a-z0-9]{30}$/i.test(value)) throw new Error();
+            if (!validHost(value.split('/')[0], true)) throw new Error();
+        }
         const url = new URL(explicit ? value : 'http://' + value);
         if (!url.hostname || url.username || url.password) throw new Error();
         return url;
@@ -1317,6 +1337,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const updated = {...editing, door: -1, fwv: null};
             for (const field of ['ip', 'token', 'server', 'port']) delete updated[field];
             Object.assign(updated, config);
+            if (connectionId(editing) !== connectionId(updated)) delete updated.mac;
             devlist[index] = updated;
             save_storage();
             sync_table_to_devlist();
@@ -1680,8 +1701,9 @@ document.addEventListener('DOMContentLoaded', function() {
             params.append('sites', encodeURIComponent(JSON.stringify(encryptedPackage)));
             
             const res = await fetch(Cloud.api, { method: 'POST', body: params });
+            if (!res.ok) throw new Error('Cloud upload failed');
             const data = await res.json();
-            return data.success;
+            return data?.success === true;
         },
         
         mapFromCloud: (cloudItem) => {
@@ -1817,6 +1839,25 @@ document.addEventListener('DOMContentLoaded', function() {
         finishSync();
     };
 
+    async function uploadSync(sites) {
+        const modal = document.getElementById('popup_sync_choice');
+        modal.setAttribute('aria-busy', 'true');
+        const buttons = modal.querySelectorAll('button');
+        buttons.forEach(button => button.disabled = true);
+        try {
+            if (!await Cloud.saveSites(sites.map(Cloud.mapToCloud))) throw new Error('Upload refused');
+        } catch {
+            alert('Could not save the cloud device list. Please try again.');
+            return;
+        } finally {
+            modal.removeAttribute('aria-busy');
+            buttons.forEach(button => button.disabled = false);
+            setupSyncWindow(window.tempCloudSites);
+        }
+        devlist = sites;
+        finishSync();
+    }
+
     document.getElementById('btn_sync_push').onclick = async () => {
         if (window.tempCloudSites === null &&
             !confirm(`Replace the unreadable cloud backup with this device’s list (${devlist.length} devices)?`)) return;
@@ -1824,26 +1865,21 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!confirm(`Warning: Your local list is empty, but the cloud has ${window.tempCloudSites.length} devices.\n\nPushing now will DELETE all cloud data. Continue?`)) return;
         }
 
-        const exportList = devlist.map(Cloud.mapToCloud);
-        if(await Cloud.saveSites(exportList)) finishSync();
-        else alert("Failed to save to cloud");
+        await uploadSync(devlist);
     };
 
     document.getElementById('btn_sync_merge').onclick = async () => {
         if(!window.tempCloudSites) return;
-        const localTokens = new Set(devlist.map(d => d.token));
-        const localIps = new Set(devlist.map(d => d.ip));
-        
-        window.tempCloudSites.forEach(site => {
-            const mapped = Cloud.mapFromCloud(site);
-            const exists = (mapped.token && localTokens.has(mapped.token)) || 
-                           (mapped.ip && localIps.has(mapped.ip));
-            if(!exists) devlist.push(mapped);
-        });
-        
-        const exportList = devlist.map(Cloud.mapToCloud);
-        await Cloud.saveSites(exportList);
-        finishSync();
+        const merged = [...devlist];
+        const known = new Set(devlist.map(connectionId));
+        for (const site of window.tempCloudSites) {
+            const device = Cloud.mapFromCloud(site);
+            const id = connectionId(device);
+            if (id && known.has(id)) continue;
+            merged.push(device);
+            known.add(id);
+        }
+        await uploadSync(merged);
     };
 });
 </script>

@@ -21,6 +21,11 @@ encryption. For the default OTC service, the firmware selects the appropriate
 server and port. With **Custom**, configure the server and port yourself; the
 checkbox selects security, and the port number does not select it.
 
+The OpenGarage app sends the device key to the OTC forwarding server in the
+`/cc` command URL. The server operator can read the key, and request logs may
+retain it. When adding a custom server or pasting a forwarding URL, check that
+the hostname belongs to a service you trust with the device key.
+
 Secure custom servers must support TLS 1.2, present a certificate valid for the
 configured hostname and current time, and send the intermediate certificates
 needed to reach a root in this firmware's selected store. Use a DNS hostname.
