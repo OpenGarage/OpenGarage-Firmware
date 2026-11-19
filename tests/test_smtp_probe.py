@@ -40,7 +40,7 @@ int main(){
 '''
 with tempfile.TemporaryDirectory() as d:
  p=Path(d);(p/'WiFiClientSecure.h').write_text(mock);(p/'t.cpp').write_text(program)
- sdk=Path('/home/ruiwang/.platformio/packages/framework-arduinoespressif8266/tools/sdk/include/bearssl')
+ sdk=Path.home()/'.platformio/packages/framework-arduinoespressif8266/tools/sdk/include/bearssl'
  subprocess.run(['g++','-std=c++11','-I',d,'-I',str(sdk),'-I',str(r/'OpenGarage'),str(p/'t.cpp'),'-o',str(p/'t')],check=True)
  subprocess.run([str(p/'t')],check=True)
 print('MFLN probe: matching extension, mismatched extension and silent peer deadline: PASS')
