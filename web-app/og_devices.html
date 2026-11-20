@@ -1116,12 +1116,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (config.door === -1) return;
 
         const requiresKey = config.type === 'ip' || !(config.fwv > 0 && config.fwv < 127);
-        const editKey = () => {
-            if (!devlist.includes(config)) return;
-            setupDeviceModal(config);
-            showMsg('#lb_da_msg', 'Enter the device key, save, then try the command again.');
-            document.getElementById('da_devkey').focus();
-        };
         if (requiresKey && !config.devkey) {
             if (action) {
                 const toggle = document.getElementById('sw_' + action);
@@ -1138,7 +1132,10 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             connect_device(config, result => {
                 if (result.result !== 1) refreshSwitch();
-                if (result.result === 2) return editKey();
+                if (result.result === 2) {
+                    if (devlist.includes(config)) alert('Device key rejected. Tap Edit to check the saved key.');
+                    return;
+                }
                 if (result.result !== 1) alert(result.item || `Command refused (${result.result})`);
             }, () => {
                 refreshSwitch();
